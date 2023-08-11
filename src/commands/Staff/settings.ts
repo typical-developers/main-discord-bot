@@ -12,12 +12,6 @@ import { getGuildSettings, updateGuildSettings } from '#lib/util/database';
 })
 export class GuildSettingsCommand extends Subcommand {
 	readonly commandOptions: ApplicationCommandOptionData[] = [
-		// {
-		// 	type: ApplicationCommandOptionType.Subcommand,
-		// 	name: 'custom-voice',
-		// 	description: 'TBD.',
-		// 	options: []
-		// },
 		{
 			type: ApplicationCommandOptionType.Subcommand,
 			name: 'grantable-roles',
@@ -79,7 +73,13 @@ export class GuildSettingsCommand extends Subcommand {
 		}
 	}
 
-	public async setVoiceChannelSettings() {}
+	// public async setVoiceChannelSettings() {
+
+	// }
+
+	// public async setActvityRoleSettings() {
+
+	// }
 
 	public async setGrantableRoles(interaction: Subcommand.ChatInputCommandInteraction) {
 		if (!interaction.guildId) return;
