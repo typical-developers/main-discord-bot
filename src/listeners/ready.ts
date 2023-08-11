@@ -11,23 +11,5 @@ export class ReadyListener extends Listener {
 		if (!client) return;
 		if (!client.user) return;
 
-		// this.container.supabase.channel('table_db_changes')
-		// .on(
-		// 	'postgres_changes',
-		// 	{
-		// 		event: 'UPDATE',
-		// 		schema: 'public',
-		// 		table: 'points'
-		// 	},
-		// 	(payload: any) => {
-		// 		console.log(payload);
-		// 	}
-		// )
-		// .subscribe();
-
-		// client.user?.setActivity({
-		// 	type: ActivityType.Competing,
-		// 	name: 'being the worst bot ever made.'
-		// });
 	}
 }
