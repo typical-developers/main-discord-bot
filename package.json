@@ -1,0 +1,37 @@
+{
+  "name": "typical",
+  "version": "1.0.0",
+  "description": "A typical Discord bot.",
+  "main": "dist/index.js",
+  "type": "module",
+  "imports": {
+    "#lib/*": "./dist/lib/*.js"
+  },
+  "scripts": {
+    "clean": "tsc -build -clean ./src/tsconfig.json src",
+    "build": "npm run clean && tsc -build ./src/tsconfig.json src",
+    "start": "node dist/index.js",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "author": "LuckFire",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "@sapphire/decorators": "^6.0.2",
+    "@sapphire/discord-utilities": "^3.0.4",
+    "@sapphire/framework": "^4.5.1",
+    "@sapphire/pieces": "^3.7.0",
+    "@sapphire/plugin-subcommands": "^4.0.2",
+    "@sapphire/ts-config": "^4.0.1",
+    "@supabase/supabase-js": "^2.31.0",
+    "discord.js": "^14.12.1",
+    "mongodb": "^5.7.0",
+    "node-html-to-image": "^3.3.0"
+  },
+  "devDependencies": {
+    "@sapphire/prettier-config": "^2.0.0",
+    "prettier": "^3.0.0",
+    "tslib": "^2.6.1",
+    "typescript": "^5.1.6"
+  },
+  "prettier": "@sapphire/prettier-config"
+}

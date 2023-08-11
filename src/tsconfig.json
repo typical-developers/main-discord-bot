@@ -1,0 +1,14 @@
+{
+    "extends": "@sapphire/ts-config/extra-strict",
+	"compilerOptions": {
+		"module": "ESNext",
+		"ignoreDeprecations": "5.0",
+		"tsBuildInfoFile": "../dist/tsconfig.tsbuildinfo",
+        "baseUrl": ".",
+		"rootDir": ".",
+		"outDir": "../dist",
+		"paths": {
+			"#lib/*": ["lib/*"]
+		}
+	}
+}

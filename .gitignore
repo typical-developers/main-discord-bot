@@ -1,0 +1,7 @@
+src/env.json
+package-lock.json
+pnpm-lock.yaml
+node_modules
+dist
+
+supabase
