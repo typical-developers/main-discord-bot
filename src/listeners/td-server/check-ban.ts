@@ -8,11 +8,11 @@ import { Events, GuildMember } from 'discord.js';
 })
 export class ReadyListener extends Listener {
 	public override async run(member: GuildMember) {
-        if (member.guild.id !== '893717531179769887') return;
+		if (member.guild.id !== '893717531179769887') return;
 
-        const BANNED = (await this.container.client.guilds.fetch('865737627712749579')).bans.fetch(member.id).catch(() => null);
-        if (!BANNED) return;
+		const BANNED = (await this.container.client.guilds.fetch('865737627712749579')).bans.fetch(member.id).catch(() => null);
+		if (!BANNED) return;
 
-        member.roles.add('1132539246276784208');
+		member.roles.add('1132539246276784208');
 	}
 }

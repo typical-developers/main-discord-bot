@@ -130,7 +130,7 @@ export class GuildSettingsCommand extends Subcommand {
 			default:
 				break;
 		}
-		
+
 		await interaction.respond(CHOICES);
 	}
 
@@ -205,7 +205,7 @@ export class GuildSettingsCommand extends Subcommand {
 		const SETTINGS = await getGuildSettings(interaction.guild.id);
 		if (!SETTINGS) return;
 
-		const NEWSETTINGS = await updateGuildSettings(interaction.guild.id, { points_system: !SETTINGS.points_system })
+		const NEWSETTINGS = await updateGuildSettings(interaction.guild.id, { points_system: !SETTINGS.points_system });
 		if (!NEWSETTINGS) {
 			return interaction.reply({
 				ephemeral: true,
@@ -263,7 +263,7 @@ export class GuildSettingsCommand extends Subcommand {
 
 	public async removeActivityRole(interaction: Subcommand.ChatInputCommandInteraction) {
 		if (!interaction.guild) return;
-		
+
 		const ROLEID = interaction.options.getString('role', true);
 		if (!ROLEID) return;
 

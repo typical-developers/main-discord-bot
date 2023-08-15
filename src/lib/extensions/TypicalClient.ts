@@ -67,7 +67,7 @@ export default class TypicalClient extends SapphireClient {
 			cache: {
 				issueReports: new NodeCache({ stdTTL: 300, checkperiod: 300 })
 			}
-		}
+		};
 
 		return super.login(token);
 	}
