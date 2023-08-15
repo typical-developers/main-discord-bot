@@ -1,20 +1,25 @@
-import type { Database } from '#lib/types/supabase';
+import type {
+	GuildSettingsCache,
+	GuildSettingsInsert,
+	GuildSettingsRow,
+	GuildSettingsUpdate,
+	UserPointsCache,
+	UserPointsInsert,
+	UserPointsRow
+} from '#lib/types/supabase';
 import { container } from '@sapphire/pieces';
-import { Collection } from 'discord.js';
 
 const DATABASE = container.database.client;
 const CACHE = container.database.cache;
 
 export async function getGuildSettings(serverId: string) {
-	const CACHED = CACHE.guildSettings.get(serverId);
-
+	const CACHED = CACHE.guildSettings.get<GuildSettingsCache>(serverId);
 	if (CACHED) return CACHED;
 
-	let insertData: Database['public']['Tables']['guild-settings']['Row'] = {
+	let cacheData: GuildSettingsCache = {
 		activity_roles: [],
 		grantable_roles: [],
 		points_system: false,
-		server_id: serverId,
 		welcome_card: false,
 		welcome_channel: null,
 		welcome_notifs: false,
@@ -22,69 +27,80 @@ export async function getGuildSettings(serverId: string) {
 	};
 
 	let { data, error } = await DATABASE.from('guild-settings').select('*').eq('server_id', serverId);
+	if (!data || error) return null;
 
-	if (error) return null;
-	if (!data?.length) {
-		let { error } = await DATABASE.from('guild-settings').insert(insertData);
+	if (!data.length) {
+		let insert: GuildSettingsInsert = {
+			activity_roles: [],
+			grantable_roles: [],
+			points_system: false,
+			server_id: serverId,
+			welcome_card: false,
+			welcome_channel: null,
+			welcome_notifs: false,
+			welcome_string: null
+		};
+
+		let { error } = await DATABASE.from('guild-settings').insert<GuildSettingsInsert>(insert);
 		if (error) return null;
 	} else {
-		(insertData.activity_roles = data[0].activity_roles),
-			(insertData.grantable_roles = data[0].grantable_roles),
-			(insertData.points_system = data[0].points_system),
-			(insertData.welcome_card = data[0].welcome_card),
-			(insertData.welcome_channel = data[0].welcome_channel),
-			(insertData.welcome_notifs = data[0].welcome_notifs),
-			(insertData.welcome_string = data[0].welcome_string);
+		let settings: Partial<GuildSettingsRow> = data[0];
+
+		delete settings.id;
+		delete settings.server_id;
+
+		cacheData = Object.assign(cacheData, settings);
 	}
 
-	CACHE.guildSettings.set(serverId, insertData);
-	return insertData;
+	CACHE.guildSettings.set<GuildSettingsCache>(serverId, cacheData);
+	return cacheData;
 }
 
-export async function updateGuildSettings(serverId: string, update: Database['public']['Tables']['guild-settings']['Update']) {
-	const CURRENTSETTINGS = await getGuildSettings(serverId);
-	if (!CURRENTSETTINGS) return;
+export async function updateGuildSettings(serverId: string, update: GuildSettingsUpdate) {
+	const SETTINGS = await getGuildSettings(serverId);
+	if (!SETTINGS) return;
 
-	let { error } = await DATABASE.from('guild-settings').update(update).eq('server_id', serverId);
-
+	let { error } = await DATABASE.from('guild-settings').update<GuildSettingsUpdate>(update).eq('server_id', serverId);
 	if (error) return false;
 
-	CACHE.guildSettings.set(serverId, Object.assign(CURRENTSETTINGS, update));
+	console.log(Object.assign(SETTINGS, update));
 
+	CACHE.guildSettings.set<GuildSettingsCache>(serverId, Object.assign(SETTINGS, update));
 	return true;
 }
 
 export async function getUserPoints(userId: string, serverId: string) {
-	let cachedServer = CACHE.userPoints.get(serverId);
-	let cachedUser = cachedServer?.get(userId);
+	const CACHED = CACHE.userPoints.get<UserPointsRow>(`${serverId}.${userId}`);
+	if (CACHED) return CACHED;
 
-	if (!cachedServer) {
-		CACHE.userPoints.set(serverId, new Collection());
-		cachedServer = CACHE.userPoints.get(serverId);
-	}
-
-	if (cachedUser) return cachedUser;
-
-	let insertData: Database['public']['Tables']['points']['Row'] = {
+	let cacheData: UserPointsCache = {
 		amount: 0,
-		last_ran: 0,
-		server_id: serverId,
-		user_id: userId
+		last_ran: 0
 	};
 
 	let { data, error } = await DATABASE.from('points').select('*').eq('server_id', serverId).eq('user_id', userId);
+	if (!data || error) return null;
 
-	if (error) return null;
+	if (!data.length) {
+		let insert: UserPointsInsert = {
+			amount: 0,
+			last_ran: 0,
+			server_id: serverId,
+			user_id: userId
+		};
 
-	if (!data?.length) {
-		let { error } = await DATABASE.from('points').insert(insertData);
-
+		let { error } = await DATABASE.from('points').insert<UserPointsInsert>(insert);
 		if (error) return null;
 	} else {
-		insertData.amount = data[0].amount;
-		insertData.last_ran = data[0].last_ran;
+		let points: Partial<UserPointsRow> = data[0];
+
+		delete points.id;
+		delete points.server_id;
+		delete points.user_id;
+
+		cacheData = Object.assign(cacheData, points);
 	}
 
-	cachedServer?.set(userId, insertData);
-	return insertData;
+	CACHE.userPoints.set<UserPointsCache>(`${serverId}.${userId}`, cacheData);
+	return cacheData;
 }

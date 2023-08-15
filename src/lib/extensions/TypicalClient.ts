@@ -1,9 +1,9 @@
 import { SapphireClient, container } from '@sapphire/framework';
-import { GatewayIntentBits, Partials, Options, ActivityType, Collection } from 'discord.js';
+import { GatewayIntentBits, Partials, Options, ActivityType } from 'discord.js';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { getRootData } from '@sapphire/pieces';
-import { type Database } from '#lib/types/supabase';
 import config from '../../env.json' assert { type: 'json' };
+import NodeCache from 'node-cache';
 
 export default class TypicalClient extends SapphireClient {
 	readonly rootData = getRootData();
@@ -58,11 +58,16 @@ export default class TypicalClient extends SapphireClient {
 		container.database = {
 			client: createClient(config.supabase.url, config.supabase.key),
 			cache: {
-				guildSettings: new Collection(),
-				userPoints: new Collection(),
-				voiceChannels: new Collection()
+				guildSettings: new NodeCache(),
+				userPoints: new NodeCache({ stdTTL: 600, checkperiod: 300 })
 			}
 		};
+
+		container.failedReports = {
+			cache: {
+				issueReports: new NodeCache({ stdTTL: 300, checkperiod: 300 })
+			}
+		}
 
 		return super.login(token);
 	}
@@ -75,11 +80,14 @@ export default class TypicalClient extends SapphireClient {
 declare module '@sapphire/pieces' {
 	interface Container {
 		database: {
-			client: SupabaseClient<Database>;
+			client: SupabaseClient;
 			cache: {
-				guildSettings: Collection<string, Database['public']['Tables']['guild-settings']['Row']>;
-				userPoints: Collection<string, Collection<string, Database['public']['Tables']['points']['Row']>>;
-				voiceChannels: Collection<string, Collection<string, Object>>;
+				[key: string]: NodeCache;
+			};
+		};
+		failedReports: {
+			cache: {
+				[key: string]: NodeCache;
 			};
 		};
 	}

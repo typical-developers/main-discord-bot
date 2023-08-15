@@ -2,6 +2,7 @@ import { Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { ChannelType, Events, Message, inlineCode } from 'discord.js';
 import { getGuildSettings, getUserPoints } from '#lib/util/database';
+import type { UserPointsCache } from '#lib/types/supabase';
 
 @ApplyOptions<Listener.Options>({
 	event: Events.MessageCreate,
@@ -35,18 +36,16 @@ export class PointsGrant extends Listener {
 			.then(({ error }) => {
 				if (error) return null;
 
-				const DATA = Object.assign(USERPOINTS, {
+				let data: UserPointsCache = {
 					amount: USERPOINTS.amount + this.amount,
 					last_ran: RANTIME
-				});
+				};
 
-				const SERVERCACHE = this.container.database.cache.userPoints.get(message.guild!.id);
-				SERVERCACHE?.set(message.author.id, DATA);
-
-				return DATA;
+				this.container.database.cache.userPoints.set(`${message.guildId}.${message.author.id}`, data);
+				return data;
 			});
-
 		if (!UPDATEDENTRY) return;
+
 		if (GUILDSETTINGS.activity_roles) {
 			let GIVEROLES: { [key: string]: number } = {};
 			let totaledPoints = 0;
