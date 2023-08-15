@@ -1,5 +1,3 @@
-// import * as error from '#assets/icons/error.png';
-
 export const enum BrandColors {
 	CarminePink = 15350844,
 	Sunrise = 14970181,
@@ -11,12 +9,12 @@ export const enum BrandColors {
 	Grey = 8880805
 }
 
-// export enum StatusIcons {
-// 	Error = error,
-// 	Information = info,
-// 	Warning = warn,
-// 	Success = success
-// };
+export enum StatusIcons {
+	Error = 'https://cdn.discordapp.com/emojis/1139692291662024896.webp?size=44&quality=lossless',
+	Information = 'https://cdn.discordapp.com/emojis/1139692292899356842.webp?size=44&quality=lossless',
+	Warning = 'https://cdn.discordapp.com/emojis/1139692296506462208.webp?size=44&quality=lossless',
+	Success = 'https://cdn.discordapp.com/emojis/1139692294849695807.webp?size=44&quality=lossless'
+}
 
 export const enum StatusEmbedCodes {
 	Error = 0,

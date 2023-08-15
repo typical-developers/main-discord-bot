@@ -1,4 +1,4 @@
-import { BrandColors, StatusEmbedCodes } from '#lib/types/constants';
+import { BrandColors, StatusEmbedCodes, StatusIcons } from '#lib/types/constants';
 import { EmbedBuilder, type APIEmbed } from 'discord.js';
 
 export function createStatusEmbed(code: StatusEmbedCodes, embed: APIEmbed) {
@@ -10,25 +10,25 @@ export function createStatusEmbed(code: StatusEmbedCodes, embed: APIEmbed) {
 		case StatusEmbedCodes.Error:
 			EMBED.setColor(BrandColors.CarminePink).setAuthor({
 				name: embed.author?.name || 'Error',
-				iconURL: ''
+				iconURL: StatusIcons.Error
 			});
 			break;
 		case StatusEmbedCodes.Information:
 			EMBED.setColor(BrandColors.Violet).setAuthor({
 				name: embed.author?.name || 'Information',
-				iconURL: ''
+				iconURL: StatusIcons.Information
 			});
 			break;
 		case StatusEmbedCodes.Warning:
 			EMBED.setColor(BrandColors.Sunrise).setAuthor({
 				name: embed.author?.name || 'Warning',
-				iconURL: ''
+				iconURL: StatusIcons.Warning
 			});
 			break;
 		case StatusEmbedCodes.Success:
 			EMBED.setColor(BrandColors.Spearmint).setAuthor({
 				name: embed.author?.name || 'Success',
-				iconURL: ''
+				iconURL: StatusIcons.Success
 			});
 			break;
 	}
