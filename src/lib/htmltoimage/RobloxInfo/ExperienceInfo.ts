@@ -103,9 +103,7 @@ export default class ExperiencePage extends RobloxCard {
 					html('div', { class: 'title' }, experience.name),
 					html('div', { class: 'creator' }, ['By', html('span', {}, experience.creator)])
 				]),
-				experience.rating
-					? html('div', { class: 'chip outline' }, experience.rating)
-					: '',
+				experience.rating ? html('div', { class: 'chip outline' }, experience.rating) : '',
 				html('div', { class: 'stats' }, [
 					html('div', { class: 'stats-item' }, [html('span', { class: 'number' }, abbreviate(experience.stats.active)), 'active']),
 					html('div', { class: 'stats-item' }, [html('span', { class: 'number' }, abbreviate(experience.stats.visits)), 'visits']),

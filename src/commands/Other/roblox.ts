@@ -147,54 +147,57 @@ export class ActivtyCardCommand extends Subcommand {
 			.then((d) => d.json())
 			.catch(() => null);
 
-        if (!DETAILS) return null;
+		if (!DETAILS) return null;
 
-        const UNIVERSE = await noblox.getUniverseInfo([ DETAILS.universeId ]).catch(() => null) as unknown as UniverseInformation[];
-        if (!UNIVERSE) return null;
+		const UNIVERSE = (await noblox.getUniverseInfo([DETAILS.universeId]).catch(() => null)) as unknown as UniverseInformation[];
+		if (!UNIVERSE) return null;
 
-        const AGERECOMMENDATION = await fetch(`https://apis.roblox.com/experience-guidelines-api/experience-guidelines/get-age-recommendation`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                universeId: UNIVERSE[0].id
-            })
-        }).then((d) => d.json()).catch(() => null).then((d) => {
-            if (!d) return null;
+		const AGERECOMMENDATION = await fetch(`https://apis.roblox.com/experience-guidelines-api/experience-guidelines/get-age-recommendation`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				universeId: UNIVERSE[0].id
+			})
+		})
+			.then((d) => d.json())
+			.catch(() => null)
+			.then((d) => {
+				if (!d) return null;
 
-            let { ageRecommendationDetails } = d;
-            return `${ageRecommendationDetails.summary.ageRecommendation.displayName} - ${ageRecommendationDetails.descriptorUsages[0].descriptor.displayName}`
-        });
+				let { ageRecommendationDetails } = d;
+				return `${ageRecommendationDetails.summary.ageRecommendation.displayName} - ${ageRecommendationDetails.descriptorUsages[0].descriptor.displayName}`;
+			});
 
-        const THUMBNAIL = await noblox
-            .getThumbnails([
-                {
-                    targetId: UNIVERSE[0].rootPlaceId,
-                    type: 'GameThumbnail',
-                    size: '768x432',
-                    format: 'png'
-                }
-            ])
-            .catch(() => null);
-        if (!THUMBNAIL) return null;
+		const THUMBNAIL = await noblox
+			.getThumbnails([
+				{
+					targetId: UNIVERSE[0].rootPlaceId,
+					type: 'GameThumbnail',
+					size: '768x432',
+					format: 'png'
+				}
+			])
+			.catch(() => null);
+		if (!THUMBNAIL) return null;
 
-        return {
-            name: UNIVERSE[0].name,
-            creator: UNIVERSE[0].creator.name,
-            rating: AGERECOMMENDATION || undefined,
-            thumbnail: THUMBNAIL[0].imageUrl || '',
-            description: UNIVERSE[0].description,
-            dates: {
-                created: new Date(UNIVERSE[0].created),
-                updated: new Date(UNIVERSE[0].updated)
-            },
-            stats: {
-                active: UNIVERSE[0].playing || 0,
-                visits: UNIVERSE[0].visits || 0,
-                favorites: UNIVERSE[0].favoritedCount || 0
-            }
-        };
+		return {
+			name: UNIVERSE[0].name,
+			creator: UNIVERSE[0].creator.name,
+			rating: AGERECOMMENDATION || undefined,
+			thumbnail: THUMBNAIL[0].imageUrl || '',
+			description: UNIVERSE[0].description,
+			dates: {
+				created: new Date(UNIVERSE[0].created),
+				updated: new Date(UNIVERSE[0].updated)
+			},
+			stats: {
+				active: UNIVERSE[0].playing || 0,
+				visits: UNIVERSE[0].visits || 0,
+				favorites: UNIVERSE[0].favoritedCount || 0
+			}
+		};
 	}
 
 	public async experienceInfo(interaction: Subcommand.ChatInputCommandInteraction) {
