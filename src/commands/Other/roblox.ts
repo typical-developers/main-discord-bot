@@ -4,6 +4,7 @@ import { PermissionFlagsBits, type ApplicationCommandOptionData, ApplicationComm
 import noblox, { type UniverseInformation } from 'noblox.js';
 import UserProfile from '#lib/htmltoimage/RobloxInfo/UserProfile';
 import ExperiencePage from '#lib/htmltoimage/RobloxInfo/ExperienceInfo';
+import type { AgeRecommendation, Badges, Universe, User } from '#lib/types/fetch';
 
 @ApplyOptions<Subcommand.Options>({
 	description: 'Fetch information from Roblox.',
@@ -91,16 +92,17 @@ export class ActivtyCardCommand extends Subcommand {
 		const ADMINBADGE = await fetch(`https://accountinformation.roblox.com/v1/users/${userId}/roblox-badges`)
 			.then((d) => d.json())
 			.catch(() => null)
-			.then((d) => {
+			.then((d: Badges) => {
 				if (!d || d.findIndex(({ id }: any) => id === 1) === -1) return false;
 
 				return true;
 			});
 
+		// remove this whenever noblox decides to actually return it in their player info fetch
 		const VERIFIEDBADGE = await fetch(`https://users.roblox.com/v1/users/${userId}`)
 			.then((d) => d.json())
 			.catch(() => null)
-			.then((d) => {
+			.then((d: User) => {
 				if (!d || !d.hasVerifiedBadge) return false;
 
 				return true;
@@ -143,13 +145,17 @@ export class ActivtyCardCommand extends Subcommand {
 	}
 
 	private async getExperienceInfo(placeId: number) {
-		const DETAILS: any = await fetch(`https://apis.roblox.com/universes/v1/places/${placeId}/universe`)
+		const DETAILS: Universe = await fetch(`https://apis.roblox.com/universes/v1/places/${placeId}/universe`)
 			.then((d) => d.json())
-			.catch(() => null);
+			.catch(() => null)
+			.then((d) => {
+				if (!d.universeId) return null;
+				return d.universeId
+			});
 
 		if (!DETAILS) return null;
 
-		const UNIVERSE = (await noblox.getUniverseInfo([DETAILS.universeId]).catch(() => null)) as unknown as UniverseInformation[];
+		const UNIVERSE = (await noblox.getUniverseInfo([DETAILS.universeId!]).catch(() => null)) as unknown as UniverseInformation[];
 		if (!UNIVERSE) return null;
 
 		const AGERECOMMENDATION = await fetch(`https://apis.roblox.com/experience-guidelines-api/experience-guidelines/get-age-recommendation`, {
@@ -163,7 +169,7 @@ export class ActivtyCardCommand extends Subcommand {
 		})
 			.then((d) => d.json())
 			.catch(() => null)
-			.then((d) => {
+			.then((d: AgeRecommendation) => {
 				if (!d) return null;
 
 				let { ageRecommendationDetails } = d;
