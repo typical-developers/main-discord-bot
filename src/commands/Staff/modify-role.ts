@@ -60,12 +60,10 @@ export class ModifyRoleCommand extends Command {
 		const ROLE = await interaction.guild?.roles.fetch(ROLEID).catch(() => null);
 
 		if (!ROLE) {
-			interaction.reply({
+			return interaction.reply({
 				ephemeral: true,
 				content: 'There was an issue fetching the role to modify.'
 			});
-
-			return;
 		}
 
 		if (ROLE.members.has(USER.id)) {

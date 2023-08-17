@@ -65,7 +65,7 @@ export class PointsGrant extends Listener {
 			}
 
 			if (Object.keys(GIVEROLES).length !== 0) {
-				message.member?.roles.add(Object.keys(GIVEROLES).map((r) => r));
+				message.member?.roles.add(Object.keys(GIVEROLES).map((r) => r)).catch(() => null);
 				if (Object.keys(GIVEROLES).length > 1) return;
 
 				message.channel.send({

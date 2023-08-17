@@ -10,6 +10,5 @@ export class ReadyListener extends Listener {
 	public override async run(client: Client) {
 		if (!client) return;
 		if (!client.user) return;
-
 	}
 }

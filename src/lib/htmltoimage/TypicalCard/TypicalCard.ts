@@ -1,12 +1,12 @@
 import HTMLToImage from '#lib/htmltoimage/HTMLToImage';
 import { BrandColors } from '#lib/types/constants';
-import { css } from '#lib/util/html';
+import { css, root } from '#lib/util/html';
 
 export default class TypicalCard extends HTMLToImage {
 	public constructor(page: string, style: Array<string>) {
 		const PAGE = page;
 		const STYLE = [
-			css(':root', {
+			root({
 				'--carmine-pink': BrandColors.CarminePink.toString(16),
 				'--sunrise': BrandColors.Sunrise.toString(16),
 				'--spearmint': BrandColors.Spearmint.toString(16),
