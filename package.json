@@ -11,6 +11,7 @@
     "clean": "tsc -build -clean ./src/tsconfig.json src",
     "build": "npm run clean && tsc -build ./src/tsconfig.json src",
     "start": "node dist/index.js",
+    "deploy": "npm run build && npm run start",
     "format": "prettier --write \"src/**/*.ts\""
   },
   "author": "LuckFire",
@@ -25,6 +26,7 @@
     "@supabase/supabase-js": "^2.31.0",
     "discord.js": "^14.12.1",
     "mongodb": "^5.7.0",
+    "noblox.js": "^4.14.1",
     "node-cache": "^5.1.2",
     "node-html-to-image": "^3.3.0"
   },
