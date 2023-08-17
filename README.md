@@ -12,6 +12,9 @@ Please refer the the `src/env-example.json` file in the repository. The `env.jso
 ```
 npm run build
 ```
+### Assets
+It is required to install any fonts in `assets/fonts` on the machine the bot is running on. This is due to the fact it uses an html-to-image package to render images.
+
 
 # License
 > **Basic Rundown**  
