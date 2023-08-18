@@ -80,7 +80,7 @@ export class ReportFormModal extends InteractionHandler {
 					{ name: 'Took', value: inlineCode(`${new Date().getTime() - RAN}ms`), inline: true },
 					{ name: 'Type', value: inlineCode(typeof EVAL), inline: true },
 					{ name: 'Input', value: codeBlock(compiler, RAWCODE.slice(0, 1010)) },
-					{ name: 'Output', value: codeBlock('json', CLEAN.slice(0, 1010)) }
+					{ name: 'Output', value: codeBlock(compiler, CLEAN.slice(0, 1010)) }
 				]
 			});
 
@@ -105,7 +105,7 @@ export class ReportFormModal extends InteractionHandler {
 				author: { name: 'Failed to run code' },
 				fields: [
 					{ name: 'Took', value: inlineCode(`${new Date().getTime() - RAN}ms`), inline: true },
-					{ name: 'Input', value: codeBlock('json', RAWCODE.slice(0, 1010)) },
+					{ name: 'Input', value: codeBlock(compiler, RAWCODE.slice(0, 1010)) },
 					{ name: 'Error', value: codeBlock('xl', `${err}`) }
 				]
 			});
