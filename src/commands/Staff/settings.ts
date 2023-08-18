@@ -6,7 +6,6 @@ import { getGuildSettings, updateGuildSettings } from '#lib/util/database';
 @ApplyOptions<Subcommand.Options>({
 	description: "Update your guild's settings.",
 	subcommands: [
-		// { name: 'custom-voice', chatInputRun: 'setVoiceChannelSettings' },
 		{ name: 'grantable-roles', chatInputRun: 'setGrantableRoles' },
 		{
 			name: 'activity',
@@ -135,6 +134,7 @@ export class GuildSettingsCommand extends Subcommand {
 	}
 
 	public async setGrantableRoles(interaction: Subcommand.ChatInputCommandInteraction) {
+		if (interaction.isAutocomplete()) return;
 		if (!interaction.guildId) return;
 
 		const ADD = interaction.options.getRole('add');
@@ -262,6 +262,7 @@ export class GuildSettingsCommand extends Subcommand {
 	}
 
 	public async removeActivityRole(interaction: Subcommand.ChatInputCommandInteraction) {
+		if (interaction.isAutocomplete()) return;
 		if (!interaction.guild) return;
 
 		const ROLEID = interaction.options.getString('role', true);
