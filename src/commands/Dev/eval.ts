@@ -7,8 +7,8 @@ import {
 	ModalBuilder,
 	PermissionFlagsBits,
 	TextInputStyle,
-    ActionRowBuilder,
-    TextInputBuilder
+	ActionRowBuilder,
+	TextInputBuilder
 } from 'discord.js';
 import { DEVELOPERWHITELIST } from '#lib/types/constants';
 
@@ -16,7 +16,7 @@ import { DEVELOPERWHITELIST } from '#lib/types/constants';
 	description: 'Authorized users only. Be careful when not running the command silently in a public chat.'
 })
 export class EvalCommand extends Command {
-    readonly commandOptions: ApplicationCommandOptionData[] = [
+	readonly commandOptions: ApplicationCommandOptionData[] = [
 		{
 			type: ApplicationCommandOptionType.Boolean,
 			name: 'ephemeral',
@@ -32,52 +32,50 @@ export class EvalCommand extends Command {
 		{
 			type: ApplicationCommandOptionType.String,
 			name: 'compiler',
-			description: 'What code you\'re compiling (defaults to node).',
+			description: "What code you're compiling (defaults to node).",
 			choices: [
 				{ name: 'Javascript', value: 'js' },
-				{ name: 'Typescript', value: 'ts' },
+				{ name: 'Typescript', value: 'ts' }
 			]
 		}
 	];
 
-    public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
-		registry.registerChatInputCommand(
-			{
-				name: this.name,
-				description: this.description,
-				options: this.commandOptions,
-				defaultMemberPermissions: PermissionFlagsBits.Administrator
-			}
-		);
+	public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
+		registry.registerChatInputCommand({
+			name: this.name,
+			description: this.description,
+			options: this.commandOptions,
+			defaultMemberPermissions: PermissionFlagsBits.Administrator
+		});
 	}
 
-    public override async chatInputRun(interaction: ChatInputCommand.Interaction) {
-        if (!DEVELOPERWHITELIST.includes(interaction.user.id)) {
-            return interaction.reply({
-                content: 'Only developers can evaluate code.'
-            });
-        }
+	public override async chatInputRun(interaction: ChatInputCommand.Interaction) {
+		if (!DEVELOPERWHITELIST.includes(interaction.user.id)) {
+			return interaction.reply({
+				content: 'Only developers can evaluate code.'
+			});
+		}
 
-        const EPHEMERAL = interaction.options.getBoolean('ephemeral', true);
-        const FILEOUT = interaction.options.getBoolean('file-out', true);
+		const EPHEMERAL = interaction.options.getBoolean('ephemeral', true);
+		const FILEOUT = interaction.options.getBoolean('file-out', true);
 		const COMPILER = interaction.options.getString('compiler') || 'js';
 
-        const MODAL = new ModalBuilder({
-            customId: `Eval.${EPHEMERAL}.${FILEOUT}.${COMPILER}`,
-            title: 'Run code',
-            components: [
-                new ActionRowBuilder<TextInputBuilder>().addComponents(
-                    new TextInputBuilder({
-                        type: ComponentType.TextInput,
-                        customId: 'code',
-                        style: TextInputStyle.Paragraph,
-                        label: 'Code',
-                        required: true
-                    })
-                )
-            ]
-        });
+		const MODAL = new ModalBuilder({
+			customId: `Eval.${EPHEMERAL}.${FILEOUT}.${COMPILER}`,
+			title: 'Run code',
+			components: [
+				new ActionRowBuilder<TextInputBuilder>().addComponents(
+					new TextInputBuilder({
+						type: ComponentType.TextInput,
+						customId: 'code',
+						style: TextInputStyle.Paragraph,
+						label: 'Code',
+						required: true
+					})
+				)
+			]
+		});
 
-        return interaction.showModal(MODAL);
-    }
+		return interaction.showModal(MODAL);
+	}
 }

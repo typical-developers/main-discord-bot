@@ -149,7 +149,7 @@ export class RobloxInfoCommand extends Subcommand {
 			.catch(() => null)
 			.then((d) => {
 				if (!d.universeId) return null;
-				return d.universeId
+				return d.universeId;
 			});
 
 		if (!DETAILS) return null;
