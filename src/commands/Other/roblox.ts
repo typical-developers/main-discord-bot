@@ -1,6 +1,6 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { Subcommand } from '@sapphire/plugin-subcommands';
-import { PermissionFlagsBits, type ApplicationCommandOptionData, ApplicationCommandOptionType, AttachmentBuilder } from 'discord.js';
+import { type ApplicationCommandOptionData, ApplicationCommandOptionType, AttachmentBuilder } from 'discord.js';
 import noblox, { type UniverseInformation } from 'noblox.js';
 import UserProfile from '#lib/htmltoimage/RobloxInfo/UserProfile';
 import ExperiencePage from '#lib/htmltoimage/RobloxInfo/ExperienceInfo';
@@ -13,7 +13,7 @@ import type { AgeRecommendation, Badges, Universe, User } from '#lib/types/fetch
 		{ name: 'experience', chatInputRun: 'experienceInfo' }
 	]
 })
-export class ActivtyCardCommand extends Subcommand {
+export class RobloxInfoCommand extends Subcommand {
 	readonly commandOptions: ApplicationCommandOptionData[] = [
 		{
 			type: ApplicationCommandOptionType.Subcommand,
@@ -48,8 +48,7 @@ export class ActivtyCardCommand extends Subcommand {
 		registry.registerChatInputCommand({
 			name: this.name,
 			description: this.description,
-			options: this.commandOptions,
-			defaultMemberPermissions: PermissionFlagsBits.ManageRoles
+			options: this.commandOptions
 		});
 	}
 
