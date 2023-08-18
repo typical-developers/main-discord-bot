@@ -28,7 +28,8 @@
     "mongodb": "^5.7.0",
     "noblox.js": "^4.14.1",
     "node-cache": "^5.1.2",
-    "node-html-to-image": "^3.3.0"
+    "node-html-to-image": "^3.3.0",
+    "vm2": "^3.9.19"
   },
   "devDependencies": {
     "@sapphire/prettier-config": "^2.0.0",
