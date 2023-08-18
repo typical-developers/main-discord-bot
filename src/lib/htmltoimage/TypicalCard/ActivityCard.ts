@@ -12,7 +12,7 @@ interface UserDetails {
 interface RankingDetails {
 	title: string;
 	titleColor?: string;
-	// rank: number;
+	rank?: number;
 	points: {
 		total: number;
 		currentProgress: number;
@@ -39,11 +39,13 @@ export default class ActivityCard extends TypicalCard {
 				html('div', { class: 'stat-item' }, [
 					html('div', { class: 'stat-item-header' }, 'Points'),
 					html('div', { class: 'stat-item-content' }, ranking.points.total.toString())
-				]) //,
-				// html('div', { class: 'stat-item' }, [
-				// 	html('div', { class: 'stat-item-header' }, 'Rank'),
-				// 	html('div', { class: 'stat-item-content' }, `#` + ranking.rank.toString())
-				// ])
+				]),
+				ranking.rank
+					? html('div', { class: 'stat-item' }, [
+							html('div', { class: 'stat-item-header' }, 'Rank'),
+							html('div', { class: 'stat-item-content' }, `#` + ranking.rank.toString())
+					  ])
+					: ''
 			])
 		]);
 
