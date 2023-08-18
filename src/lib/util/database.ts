@@ -63,8 +63,6 @@ export async function updateGuildSettings(serverId: string, update: GuildSetting
 	let { error } = await DATABASE.from('guild-settings').update<GuildSettingsUpdate>(update).eq('server_id', serverId);
 	if (error) return false;
 
-	console.log(Object.assign(SETTINGS, update));
-
 	CACHE.guildSettings.set<GuildSettingsCache>(serverId, Object.assign(SETTINGS, update));
 	return true;
 }
