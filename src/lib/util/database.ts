@@ -5,7 +5,8 @@ import type {
 	GuildSettingsUpdate,
 	UserPointsCache,
 	UserPointsInsert,
-	UserPointsRow
+	UserPointsRow,
+	UserPointsUpdate
 } from '#lib/types/supabase';
 import { container } from '@sapphire/pieces';
 
@@ -58,13 +59,13 @@ export async function getGuildSettings(serverId: string) {
 
 export async function updateGuildSettings(serverId: string, update: GuildSettingsUpdate) {
 	const SETTINGS = await getGuildSettings(serverId);
-	if (!SETTINGS) return;
+	if (!SETTINGS) return null;
 
 	let { error } = await DATABASE.from('guild-settings').update<GuildSettingsUpdate>(update).eq('server_id', serverId);
-	if (error) return false;
+	if (error) return null;
 
 	CACHE.guildSettings.set<GuildSettingsCache>(serverId, Object.assign(SETTINGS, update));
-	return true;
+	return CACHE.guildSettings.get<GuildSettingsCache>(serverId);
 }
 
 export async function getUserPoints(userId: string, serverId: string) {
@@ -101,4 +102,15 @@ export async function getUserPoints(userId: string, serverId: string) {
 
 	CACHE.userPoints.set<UserPointsCache>(`${serverId}.${userId}`, cacheData);
 	return cacheData;
+}
+
+export async function updateUserPoints(userId: string, serverId: string, update: UserPointsUpdate) {
+	const USERPOINTS = await getUserPoints(userId, serverId);
+	if (!USERPOINTS) return null;
+
+	let { error } = await DATABASE.from('points').update<UserPointsUpdate>(update).eq('user_id', userId).eq('server_id', serverId);
+	if (error) return null;
+
+	CACHE.userPoints.set<UserPointsCache>(`${serverId}.${userId}`, Object.assign(USERPOINTS, update));
+	return CACHE.userPoints.get<UserPointsCache>(`${serverId}.${userId}`);
 }

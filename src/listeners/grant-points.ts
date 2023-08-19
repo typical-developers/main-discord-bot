@@ -1,8 +1,7 @@
 import { Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { ChannelType, Events, Message, inlineCode } from 'discord.js';
-import { getGuildSettings, getUserPoints } from '#lib/util/database';
-import type { UserPointsCache } from '#lib/types/supabase';
+import { getGuildSettings, getUserPoints, updateUserPoints } from '#lib/util/database';
 
 @ApplyOptions<Listener.Options>({
 	event: Events.MessageCreate,
@@ -25,25 +24,10 @@ export class PointsGrant extends Listener {
 		const RANTIME = Math.floor(new Date().getTime() / 1000);
 		if (RANTIME < (USERPOINTS.last_ran || 0) + this.cooldown) return;
 
-		let UPDATEDENTRY = await this.container.database.client
-			.from('points')
-			.update({
-				amount: USERPOINTS.amount + this.amount,
-				last_ran: RANTIME
-			})
-			.eq('server_id', message.guild.id)
-			.eq('user_id', message.author.id)
-			.then(({ error }) => {
-				if (error) return null;
-
-				let data: UserPointsCache = {
-					amount: USERPOINTS.amount + this.amount,
-					last_ran: RANTIME
-				};
-
-				this.container.database.cache.userPoints.set(`${message.guildId}.${message.author.id}`, data);
-				return data;
-			});
+		const UPDATEDENTRY = await updateUserPoints(message.author.id, message.guild.id, {
+			amount: USERPOINTS.amount + this.amount,
+			last_ran: RANTIME
+		});
 		if (!UPDATEDENTRY) return;
 
 		if (GUILDSETTINGS.activity_roles) {
