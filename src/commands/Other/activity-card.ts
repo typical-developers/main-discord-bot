@@ -38,18 +38,22 @@ export class ActivtyCardCommand extends Command {
 			});
 	}
 
-	// dunno of a better way to do it, defo isnt the most optimial
-	private async getRank(serverId: string, userId: string): Promise<any> {
+	private async getRank(serverId: string, userId: string, range: number = 0): Promise<any> {
 		let { data, error } = await this.container.database.client
 			.from('points')
 			.select('*')
 			.eq('server_id', serverId)
-			.order('amount', { ascending: false });
+			.order('amount', { ascending: false })
+			.range(range, range + 2500);
 
-		if (!data || error) return 0;
+		if (error) return 0;
 
-		const INDEX = data.findIndex(({ user_id }) => user_id === userId);
-		return INDEX + 1;
+		const INDEX = data?.findIndex(({ user_id }) => user_id === userId);
+		if (!data || !INDEX || INDEX === -1) {
+			return await this.getRank(serverId, userId, range + 2500);
+		}
+
+		return INDEX + range + 1;
 	}
 
 	private async activityCard(interaction: ChatInputCommand.Interaction | ContextMenuCommandInteraction, member: GuildMember) {
