@@ -39,6 +39,9 @@ export class ActivtyCardCommand extends Command {
 	}
 
 	private async getRank(serverId: string, userId: string, range: number = 0): Promise<any> {
+		const USERPOINTS = await getUserPoints(userId, serverId);
+		if (!USERPOINTS) return 0;
+
 		let { data, error } = await this.container.database.client
 			.from('points')
 			.select('*')
@@ -49,7 +52,7 @@ export class ActivtyCardCommand extends Command {
 		if (error) return 0;
 
 		const INDEX = data?.findIndex(({ user_id }) => user_id === userId);
-		if (!data || !INDEX || INDEX === -1) {
+		if (INDEX === undefined || INDEX < 0) {
 			return await this.getRank(serverId, userId, range + 2500);
 		}
 
