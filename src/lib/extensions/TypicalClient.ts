@@ -69,11 +69,11 @@ export default class TypicalClient extends SapphireClient {
 			}
 		};
 
-		return super.login(token);
+		return await super.login(token);
 	}
 
 	public override async destroy(): Promise<void> {
-		return super.destroy();
+		return await super.destroy();
 	}
 }
 
