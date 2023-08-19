@@ -52,7 +52,7 @@ export class ActivtyCardCommand extends Command {
 		if (error) return 0;
 
 		const INDEX = data?.findIndex(({ user_id }) => user_id === userId);
-		if (INDEX === undefined || INDEX < 0) {
+		if (INDEX === undefined || INDEX === -1) {
 			return await this.getRank(serverId, userId, range + 2500);
 		}
 
