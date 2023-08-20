@@ -144,17 +144,17 @@ export class RobloxInfoCommand extends Subcommand {
 	}
 
 	private async getExperienceInfo(placeId: number) {
-		const DETAILS: Universe = await fetch(`https://apis.roblox.com/universes/v1/places/${placeId}/universe`)
+		const UNIVERSEID: Universe = await fetch(`https://apis.roblox.com/universes/v1/places/${placeId}/universe`)
 			.then((d) => d.json())
 			.catch(() => null)
 			.then((d) => {
 				if (!d.universeId) return null;
-				return d.universeId;
+				return d;
 			});
 
-		if (!DETAILS) return null;
+		if (!UNIVERSEID) return null;
 
-		const UNIVERSE = (await noblox.getUniverseInfo([DETAILS.universeId!]).catch(() => null)) as unknown as UniverseInformation[];
+		const UNIVERSE = (await noblox.getUniverseInfo([UNIVERSEID.universeId!]).catch(() => null)) as unknown as UniverseInformation[];
 		if (!UNIVERSE) return null;
 
 		const AGERECOMMENDATION = await fetch(`https://apis.roblox.com/experience-guidelines-api/experience-guidelines/get-age-recommendation`, {
