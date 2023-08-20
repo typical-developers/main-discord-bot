@@ -30,7 +30,7 @@ export class ReportFormModal extends InteractionHandler {
 
 	readonly reportChannels: { [key: string]: { [key: string]: string } } = {
 		Oaklands: {
-			Issue: '1023642035229564930'
+			Issue: '1117658035784007701'
 		}
 	};
 
