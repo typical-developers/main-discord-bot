@@ -148,7 +148,7 @@ export class ActivtyCardCommand extends Command {
 		if (!MEMBER) {
 			return interaction.reply({
 				ephemeral: true,
-				content: `I was unable to fetch <@${interaction.targetId}>\'s activit card.`
+				content: `I was unable to fetch <@${interaction.targetId}>\'s activity card.`
 			});
 		}
 
