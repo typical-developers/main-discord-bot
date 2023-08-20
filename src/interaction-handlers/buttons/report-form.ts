@@ -1,7 +1,6 @@
-import { InteractionHandler, InteractionHandlerTypes } from '@sapphire/framework';
+import { InteractionHandler, InteractionHandlerTypes, container } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { ActionRowBuilder, ButtonInteraction, ModalBuilder, TextInputBuilder } from 'discord.js';
-import { FailedIssueReports, FailedUserReports } from '#lib/types/collections';
+import { ActionRowBuilder, ButtonInteraction, ComponentType, ModalBuilder, ModalSubmitFields, TextInputBuilder, TextInputStyle } from 'discord.js';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button
@@ -10,43 +9,93 @@ export class ReportFormModal extends InteractionHandler {
 	public override async parse(interaction: ButtonInteraction) {
 		if (!interaction.customId.startsWith('ReportForm')) return this.none();
 
-		let [, type, place, isResubmit] = interaction.customId.split('.');
-		let resubmit = !!isResubmit;
+		let [, type, place] = interaction.customId.split('.');
 
-		return this.some<InteractionRun>({ type, place, resubmit });
+		return this.some<InteractionRun>({ type, place });
 	}
 
-	private get issueFormComponents() {
-		return [new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder({}))];
+	private get issueComponents() {
+		return [
+			new ActionRowBuilder<TextInputBuilder>().addComponents(
+				new TextInputBuilder({
+					type: ComponentType.TextInput,
+					customId: 'username',
+					style: TextInputStyle.Short,
+					label: 'What is your Roblox username?',
+					minLength: 3,
+					max_length: 20
+				})
+			),
+			new ActionRowBuilder<TextInputBuilder>().addComponents(
+				new TextInputBuilder({
+					type: ComponentType.TextInput,
+					customId: 'version',
+					style: TextInputStyle.Short,
+					label: 'What version did the issue occur in?',
+					max_length: 12
+				})
+			),
+			new ActionRowBuilder<TextInputBuilder>().addComponents(
+				new TextInputBuilder({
+					type: ComponentType.TextInput,
+					customId: 'media',
+					style: TextInputStyle.Paragraph,
+					label: 'Show some videos / images of the issue.',
+					placeholder: 'Only certain URLs are supported. \n- YouTub\n- Streamable\n- Medal\n- URLs with media extensions'
+				})
+			),
+			new ActionRowBuilder<TextInputBuilder>().addComponents(
+				new TextInputBuilder({
+					type: ComponentType.TextInput,
+					customId: 'details',
+					style: TextInputStyle.Paragraph,
+					label: 'Do you have any other details?',
+					required: false
+				})
+			)
+		];
 	}
 
-	private get reportFormComponents() {
-		return [new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder({}))];
-	}
+	private getComponents(user: string, type: 'Issue') {
+		let components: ActionRowBuilder<TextInputBuilder>[] = [];
+		let cachedComponents: ModalSubmitFields | undefined;
 
-	public override async run(interaction: ButtonInteraction, options: InteractionRun) {
-		let { type, place, resubmit } = options;
+		const CACHE = container.failedReports.cache;
+		switch (type) {
+			case 'Issue': {
+				components = this.issueComponents;
+				cachedComponents = CACHE.issueReports.get<ModalSubmitFields>(user);
+				break;
+			}
+			default:
+				break;
+		}
 
-		const COMPONENTS = type === 'Issue' ? this.issueFormComponents : this.reportFormComponents;
-		const MODAL = new ModalBuilder({
-			title: `Report ${type} (${place})`,
-			customId: `ReportForm.${type}.${place}`
-		});
+		if (cachedComponents) {
+			for (let [index, component] of components.entries()) {
+				const COMPONENT = component.components[0].toJSON();
+				const FIELD = cachedComponents.getField(COMPONENT.custom_id);
 
-		if (resubmit) {
-			const FAILEDREPORT = type === 'Issue' ? FailedIssueReports.get(interaction.user.id) : FailedUserReports.get(interaction.user.id);
+				if (!FIELD) continue;
 
-			for (let [index, component] of COMPONENTS.entries()) {
-				if (!FAILEDREPORT) break;
-
-				const NEWCOMPONENT = component.toJSON().components[0];
-				const OLDVALUE = FAILEDREPORT?.getTextInputValue(NEWCOMPONENT.custom_id) || '';
-
-				COMPONENTS[index].components[0].setValue(OLDVALUE);
+				components[index].components[0].setValue(FIELD.value);
 			}
 		}
 
-		MODAL.setComponents(COMPONENTS);
+		return components;
+	}
+
+	public override async run(interaction: ButtonInteraction, options: InteractionRun) {
+		let { type, place } = options;
+
+		if (type !== 'Issue') return;
+
+		const COMPONENTS = this.getComponents(interaction.user.id, type);
+		const MODAL = new ModalBuilder({
+			title: `Report ${type} in ${place}`,
+			customId: `ReportForm.${type}.${place}`,
+			components: COMPONENTS
+		});
 
 		return interaction.showModal(MODAL);
 	}
@@ -55,5 +104,4 @@ export class ReportFormModal extends InteractionHandler {
 interface InteractionRun {
 	type: string;
 	place: string;
-	resubmit: boolean;
 }

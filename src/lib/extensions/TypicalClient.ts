@@ -65,7 +65,7 @@ export default class TypicalClient extends SapphireClient {
 
 		container.failedReports = {
 			cache: {
-				issueReports: new NodeCache({ stdTTL: 300, checkperiod: 300 })
+				issueReports: new NodeCache({ stdTTL: 600, checkperiod: 300 })
 			}
 		};
 
