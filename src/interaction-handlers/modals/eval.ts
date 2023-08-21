@@ -10,6 +10,8 @@ import { createStatusEmbed } from '#lib/util/embeds';
 // There are for the sandbox.
 // There is probably a better way to do this, I just dont know what way.
 import discordjs from 'discord.js';
+import * as constants from '#lib/types/constants';
+import * as embeds from '#lib/util/embeds';
 import * as database from '#lib/util/database';
 
 @ApplyOptions<InteractionHandler.Options>({
@@ -58,7 +60,9 @@ export class ReportFormModal extends InteractionHandler {
 				interaction: interaction,
 				util: {
 					djs: discordjs,
-					database: database
+					database: database,
+					constants: constants,
+					embeds: embeds
 				}
 			}
 		});
