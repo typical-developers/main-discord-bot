@@ -1,5 +1,5 @@
 import { SapphireClient, container } from '@sapphire/framework';
-import { GatewayIntentBits, Partials, Options, ActivityType } from 'discord.js';
+import { GatewayIntentBits, Partials, Options } from 'discord.js';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { getRootData } from '@sapphire/pieces';
 import config from '../../env.json' assert { type: 'json' };
@@ -42,15 +42,7 @@ export default class TypicalClient extends SapphireClient {
 				GuildMemberManager: {
 					maxSize: 50
 				}
-			}),
-			presence: {
-				activities: [
-					{
-						type: ActivityType.Competing,
-						name: 'being the worst bot ever made.'
-					}
-				]
-			}
+			})
 		});
 	}
 
