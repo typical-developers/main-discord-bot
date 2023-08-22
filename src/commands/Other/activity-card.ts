@@ -61,6 +61,7 @@ export class ActivtyCardCommand extends Command {
 
 	private async activityCard(interaction: ChatInputCommand.Interaction | ContextMenuCommandInteraction, member: GuildMember) {
 		if (!interaction.guild) return;
+		if (member.user.bot) return;
 
 		const GUILDSETTINGS = await getGuildSettings(interaction.guild.id);
 		if (!GUILDSETTINGS?.points_system) {
