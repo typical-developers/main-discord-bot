@@ -102,7 +102,7 @@ export class ActivtyCardCommand extends Command {
 			}
 		}
 
-		const ACTIVITYCARD = new ActivityCard(
+		const ACTIVITYCARD = await new ActivityCard(
 			{
 				name: member.user.globalName || member.user.username,
 				avatarURL: member.displayAvatarURL({ forceStatic: true, size: 512 }) || member.user.defaultAvatarURL,
@@ -118,8 +118,9 @@ export class ActivtyCardCommand extends Command {
 				}
 			}
 		).draw();
+		if (!ACTIVITYCARD) return;
 
-		const ATTACHMENT = new AttachmentBuilder(await ACTIVITYCARD, { name: 'card.png' });
+		const ATTACHMENT = new AttachmentBuilder(ACTIVITYCARD, { name: 'card.png' });
 		return interaction.editReply({
 			files: [ATTACHMENT]
 		});

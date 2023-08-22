@@ -135,9 +135,10 @@ export class RobloxInfoCommand extends Subcommand {
 
 		await interaction.deferReply({ fetchReply: true });
 
-		const PROFILE = new UserProfile(INFO).draw();
+		const PROFILE = await new UserProfile(INFO).draw();
+		if (!PROFILE) return;
 
-		const ATTACHMENT = new AttachmentBuilder(await PROFILE, { name: 'user-profile.png' });
+		const ATTACHMENT = new AttachmentBuilder(PROFILE, { name: 'user-profile.png' });
 		return interaction.editReply({
 			files: [ATTACHMENT]
 		});
@@ -213,9 +214,10 @@ export class RobloxInfoCommand extends Subcommand {
 
 		await interaction.deferReply({ fetchReply: true });
 
-		const EXPERIENCE = new ExperiencePage(UNIVERSEDETAILS).draw();
+		const EXPERIENCE = await new ExperiencePage(UNIVERSEDETAILS).draw();
+		if (!EXPERIENCE) return;
 
-		const ATTACHMENT = new AttachmentBuilder(await EXPERIENCE, { name: 'experience.png' });
+		const ATTACHMENT = new AttachmentBuilder(EXPERIENCE, { name: 'experience.png' });
 		return interaction.editReply({
 			files: [ATTACHMENT]
 		});

@@ -32,7 +32,7 @@ export default class HTMLToImage {
 	}
 
 	public async draw() {
-		const IMAGE = await nodeHtmlToImage({
+		return await nodeHtmlToImage({
 			puppeteerArgs: {
 				args: ['--no-sandbox', '--disable-setuid-sandbox'],
 				ignoreDefaultArgs: ['--disable-extensions']
@@ -40,8 +40,12 @@ export default class HTMLToImage {
 			// output: 'image.png',
 			transparent: true,
 			html: this.page
-		});
-
-		return Readable.from(IMAGE);
+		})
+			.then((image) => {
+				return Readable.from(image);
+			})
+			.catch(() => {
+				return null;
+			});
 	}
 }
