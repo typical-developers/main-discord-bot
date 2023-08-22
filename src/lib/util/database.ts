@@ -116,12 +116,7 @@ export async function updateUserPoints(userId: string, serverId: string, update:
 }
 
 export async function getLeaderboard(serverId: string, start: number = 0, end: number = 25): Promise<UserPointsRow[] | null> {
-	let { data, error } = await DATABASE
-		.from('points')
-		.select('*')
-		.eq('server_id', serverId)
-		.order('amount', { ascending: false })
-		.range(start, end);
+	let { data, error } = await DATABASE.from('points').select('*').eq('server_id', serverId).order('amount', { ascending: false }).range(start, end);
 
 	if (error) return null;
 

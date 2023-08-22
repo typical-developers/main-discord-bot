@@ -17,7 +17,7 @@ export class EvalCommand extends Command {
 
 	public override async chatInputRun(interaction: ChatInputCommand.Interaction) {
 		if (!interaction.guild) return;
-		
+
 		const GUILDSETTINGS = await getGuildSettings(interaction.guild.id);
 		if (!GUILDSETTINGS) return;
 
