@@ -5,7 +5,7 @@ import { ActionRowBuilder, ButtonInteraction, ComponentType, ModalBuilder, Modal
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button
 })
-export class ReportFormModal extends InteractionHandler {
+export class ReportFormButton extends InteractionHandler {
 	public override async parse(interaction: ButtonInteraction) {
 		if (!interaction.customId.startsWith('ReportForm')) return this.none();
 

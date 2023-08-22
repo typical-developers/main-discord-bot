@@ -7,7 +7,7 @@ import { BrandColors } from '#lib/types/constants';
 @ApplyOptions<ChatInputCommand.Options>({
 	description: 'Get the activity leaderboard for this guild.'
 })
-export class EvalCommand extends Command {
+export class ActivityLeaderboardCommand extends Command {
 	public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
 		registry.registerChatInputCommand({
 			name: this.name,

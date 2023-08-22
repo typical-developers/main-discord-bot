@@ -17,7 +17,7 @@ import { BrandColors, StatusEmbedCodes } from '#lib/types/constants';
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.ModalSubmit
 })
-export class ReportFormModal extends InteractionHandler {
+export class ReportSubmitModal extends InteractionHandler {
 	readonly cooldown: { [key: string]: Date } = {};
 
 	readonly mediaRegexs = [

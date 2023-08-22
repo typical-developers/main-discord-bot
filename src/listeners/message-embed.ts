@@ -12,8 +12,7 @@ interface MessageLinkGroup {
 
 @ApplyOptions<Listener.Options>({
 	event: Events.MessageCreate,
-	once: false,
-	enabled: false
+	once: false
 })
 export default class MessageListener extends Listener {
 	public async fetchMessages(links: MessageLinkGroup[], member: GuildMember) {
