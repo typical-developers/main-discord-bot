@@ -17,12 +17,13 @@ import * as database from '#lib/util/database';
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.ModalSubmit
 })
-export class ReportFormModal extends InteractionHandler {
+export class EvalModal extends InteractionHandler {
 	public override async parse(interaction: ModalSubmitInteraction) {
 		if (!interaction.customId.startsWith('Eval')) return this.none();
 
 		if (!DEVELOPERWHITELIST.includes(interaction.user.id)) {
 			interaction.reply({
+				ephemeral: true,
 				content: 'Only developers can evaluate code.'
 			});
 

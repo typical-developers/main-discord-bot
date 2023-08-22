@@ -52,6 +52,7 @@ export class EvalCommand extends Command {
 	public override async chatInputRun(interaction: ChatInputCommand.Interaction) {
 		if (!DEVELOPERWHITELIST.includes(interaction.user.id)) {
 			return interaction.reply({
+				ephemeral: true,
 				content: 'Only developers can evaluate code.'
 			});
 		}
