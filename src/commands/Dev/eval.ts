@@ -32,7 +32,7 @@ export class EvalCommand extends Command {
 		{
 			type: ApplicationCommandOptionType.String,
 			name: 'compiler',
-			description: "What code you're compiling (defaults to node).",
+			description: "What code you're compiling (defaults to javascript).",
 			choices: [
 				{ name: 'Javascript', value: 'js' },
 				{ name: 'Typescript', value: 'ts' }
