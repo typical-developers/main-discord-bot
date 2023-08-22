@@ -13,7 +13,7 @@ export class ReadyListener extends Listener {
 		if (!client.user) return;
 
 		let pastPlaying: number = 0;
-		return setInterval(async () => {
+		setInterval(async () => {
 			const game: any = await noblox.getUniverseInfo(3666294218).catch(() => null);
 			if (!game) return;
 
@@ -27,5 +27,7 @@ export class ReadyListener extends Listener {
 				pastPlaying = playing;
 			}
 		});
+
+		return;
 	}
 }
