@@ -206,5 +206,7 @@ export function abbreviate(number: any) {
 		}
 	}
 
+	if (typeof number !== 'string') number = number.toString();
+
 	return number;
 }
