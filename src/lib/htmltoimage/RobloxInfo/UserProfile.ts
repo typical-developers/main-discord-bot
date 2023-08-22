@@ -1,4 +1,4 @@
-import RobloxCard from './RobloxInfo.js';
+import RobloxCard, { abbreviate } from './RobloxInfo.js';
 import { css, html } from '#lib/util/html';
 
 export interface ProfileDetails {
@@ -104,9 +104,9 @@ export default class UserProfile extends RobloxCard {
 					])
 				]),
 				html('div', { class: 'stats' }, [
-					html('div', { class: 'stats-item' }, [html('span', { class: 'number' }, profile.stats.friends.toString()), 'friends']),
-					html('div', { class: 'stats-item' }, [html('span', { class: 'number' }, profile.stats.followers.toString()), 'followers']),
-					html('div', { class: 'stats-item' }, [html('span', { class: 'number' }, profile.stats.following.toString()), 'following'])
+					html('div', { class: 'stats-item' }, [html('span', { class: 'number' }, abbreviate(profile.stats.friends)), 'friends']),
+					html('div', { class: 'stats-item' }, [html('span', { class: 'number' }, abbreviate(profile.stats.followers)), 'followers']),
+					html('div', { class: 'stats-item' }, [html('span', { class: 'number' }, abbreviate(profile.stats.following)), 'following'])
 				])
 			])
 		]);
