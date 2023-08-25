@@ -22,11 +22,11 @@ export class PointsGrant extends Listener {
 		if (!USERPOINTS) return;
 
 		const RANTIME = Math.floor(new Date().getTime() / 1000);
-		if (RANTIME < (USERPOINTS.last_ran || 0) + this.cooldown) return;
+		if (USERPOINTS.last_ran + this.cooldown > RANTIME) return;
 
 		const UPDATEDENTRY = await updateUserPoints(message.author.id, message.guild.id, {
 			amount: USERPOINTS.amount + this.amount,
-			last_ran: RANTIME
+			last_ran: RANTIME + this.cooldown
 		});
 		if (!UPDATEDENTRY) return;
 
