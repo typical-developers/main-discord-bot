@@ -6,7 +6,7 @@ import { Events, GuildMember } from 'discord.js';
 	event: Events.GuildMemberAdd,
 	once: false
 })
-export class ReadyListener extends Listener {
+export class BanCheckListener extends Listener {
 	public override async run(member: GuildMember) {
 		if (member.guild.id !== '893717531179769887') return;
 

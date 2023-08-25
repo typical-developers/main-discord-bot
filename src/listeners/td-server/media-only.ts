@@ -7,7 +7,7 @@ import { Events, Message } from 'discord.js';
 	once: false,
 	enabled: false
 })
-export class ReadyListener extends Listener {
+export class MediaOnlyListener extends Listener {
 	readonly channels: string[] = ['1086472593894277190', '1063479705723998359'];
 
 	readonly regexes = [
