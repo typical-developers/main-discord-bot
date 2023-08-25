@@ -13,7 +13,7 @@ import { container } from '@sapphire/pieces';
 const DATABASE = container.database.client;
 const CACHE = container.database.cache;
 
-export async function getGuildSettings(serverId: string) {
+export async function getGuildSettings(serverId: string, newEntry: boolean = true) {
 	const CACHED = CACHE.guildSettings.get<GuildSettingsCache>(serverId);
 	if (CACHED) return CACHED;
 
@@ -30,7 +30,7 @@ export async function getGuildSettings(serverId: string) {
 	let { data, error } = await DATABASE.from('guild-settings').select('*').eq('server_id', serverId);
 	if (!data || error) return null;
 
-	if (!data.length) {
+	if (!data.length && newEntry) {
 		let insert: GuildSettingsInsert = {
 			activity_roles: [],
 			grantable_roles: [],
@@ -46,6 +46,7 @@ export async function getGuildSettings(serverId: string) {
 		if (error) return null;
 	} else {
 		let settings: Partial<GuildSettingsRow> = data[0];
+		if (!settings) return null;
 
 		delete settings.id;
 		delete settings.server_id;
@@ -68,7 +69,7 @@ export async function updateGuildSettings(serverId: string, update: GuildSetting
 	return CACHE.guildSettings.get<GuildSettingsCache>(serverId);
 }
 
-export async function getUserPoints(userId: string, serverId: string) {
+export async function getUserPoints(userId: string, serverId: string, newEntry: boolean = true) {
 	const CACHED = CACHE.userPoints.get<UserPointsRow>(`${serverId}.${userId}`);
 	if (CACHED) return CACHED;
 
@@ -80,7 +81,7 @@ export async function getUserPoints(userId: string, serverId: string) {
 	let { data, error } = await DATABASE.from('points').select('*').eq('server_id', serverId).eq('user_id', userId);
 	if (!data || error) return null;
 
-	if (!data.length) {
+	if (!data.length && newEntry) {
 		let insert: UserPointsInsert = {
 			amount: 0,
 			last_ran: 0,
@@ -92,6 +93,7 @@ export async function getUserPoints(userId: string, serverId: string) {
 		if (error) return null;
 	} else {
 		let points: Partial<UserPointsRow> = data[0];
+		if (!points) return null;
 
 		delete points.id;
 		delete points.server_id;

@@ -39,7 +39,7 @@ export class ActivtyCardCommand extends Command {
 	}
 
 	private async getRank(serverId: string, userId: string, range: number = 0): Promise<any> {
-		const USERPOINTS = await getUserPoints(userId, serverId);
+		const USERPOINTS = await getUserPoints(userId, serverId, false);
 		if (!USERPOINTS) return 0;
 
 		let { data, error } = await this.container.database.client
@@ -71,8 +71,13 @@ export class ActivtyCardCommand extends Command {
 			});
 		}
 
-		const USERPOINTS = await getUserPoints(member.id, interaction.guild.id);
-		if (!USERPOINTS) return;
+		const USERPOINTS = await getUserPoints(member.id, interaction.guild.id, false);
+		if (!USERPOINTS) {
+			return interaction.reply({
+				ephemeral: true,
+				content: 'This user does not have any activity poitns!'
+			});
+		};
 
 		await interaction.deferReply({ fetchReply: true });
 
@@ -104,7 +109,7 @@ export class ActivtyCardCommand extends Command {
 
 		const ACTIVITYCARD = await new ActivityCard(
 			{
-				name: member.user.globalName || member.user.username,
+				name: member.user.username,
 				avatarURL: member.displayAvatarURL({ forceStatic: true, size: 512 }) || member.user.defaultAvatarURL,
 				status: member.presence?.status
 			},
