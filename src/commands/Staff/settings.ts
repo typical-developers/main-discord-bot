@@ -90,7 +90,8 @@ export class GuildSettingsCommand extends Subcommand {
 			name: this.name,
 			description: this.description,
 			options: this.commandOptions,
-			defaultMemberPermissions: PermissionFlagsBits.ManageGuild
+			defaultMemberPermissions: PermissionFlagsBits.ManageGuild,
+			dmPermission: false
 		});
 	}
 

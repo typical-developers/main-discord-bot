@@ -28,7 +28,8 @@ export class ModifyRoleCommand extends Command {
 			name: this.name,
 			description: this.description,
 			options: this.commandOptions,
-			defaultMemberPermissions: PermissionFlagsBits.ManageRoles
+			defaultMemberPermissions: PermissionFlagsBits.ManageRoles,
+			dmPermission: false
 		});
 	}
 
