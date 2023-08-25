@@ -1,7 +1,7 @@
 import { Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { Events, Client, ActivityType } from 'discord.js';
-import noblox from 'noblox.js';
+import noblox, { type UniverseInformation } from 'noblox.js';
 
 @ApplyOptions<Listener.Options>({
 	event: Events.ClientReady,
@@ -9,12 +9,10 @@ import noblox from 'noblox.js';
 })
 export class ReadyListener extends Listener {
 	public override async run(client: Client) {
-		if (!client) return;
-		if (!client.user) return;
-
 		let pastPlaying: number = 0;
+
 		setInterval(async () => {
-			const game: any = await noblox.getUniverseInfo(3666294218).catch(() => null);
+			const game = await noblox.getUniverseInfo(3666294218).catch(() => null) as unknown as UniverseInformation[];
 			if (!game) return;
 
 			let playing = game[0].playing;
@@ -26,7 +24,7 @@ export class ReadyListener extends Listener {
 
 				pastPlaying = playing;
 			}
-		});
+		}, 5000);
 
 		return;
 	}
