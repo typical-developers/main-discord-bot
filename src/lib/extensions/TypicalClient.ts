@@ -50,7 +50,7 @@ export default class TypicalClient extends SapphireClient {
 			client: createClient(config.supabase.url, config.supabase.key),
 			cache: {
 				guildSettings: new NodeCache(),
-				userPoints: new NodeCache({ stdTTL: 600, checkperiod: 300 })
+				userPoints: new NodeCache({ stdTTL: 1800, checkperiod: 600 })
 			}
 		};
 
