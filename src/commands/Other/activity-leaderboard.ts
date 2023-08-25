@@ -11,7 +11,8 @@ export class ActivityLeaderboardCommand extends Command {
 	public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
 		registry.registerChatInputCommand({
 			name: this.name,
-			description: this.description
+			description: this.description,
+			dmPermission: false
 		});
 	}
 
