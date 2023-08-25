@@ -17,8 +17,7 @@ export default class TypicalClient extends SapphireClient {
 				GatewayIntentBits.GuildMembers,
 				GatewayIntentBits.GuildPresences,
 				GatewayIntentBits.DirectMessages,
-				GatewayIntentBits.MessageContent,
-				GatewayIntentBits.GuildVoiceStates
+				GatewayIntentBits.MessageContent
 			],
 			partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.User],
 			sweepers: {
