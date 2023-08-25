@@ -4,8 +4,7 @@ import { Events, Message } from 'discord.js';
 
 @ApplyOptions<Listener.Options>({
 	event: Events.MessageCreate,
-	once: false,
-	enabled: false
+	once: false
 })
 export class MediaOnlyListener extends Listener {
 	readonly channels: string[] = ['1086472593894277190', '1063479705723998359'];

@@ -4,8 +4,7 @@ import { Events, Message } from 'discord.js';
 
 @ApplyOptions<Listener.Options>({
 	event: Events.MessageCreate,
-	once: false,
-	enabled: false
+	once: false
 })
 export class ContentChannelListener extends Listener {
 	readonly channel = '1077960509615251557';
