@@ -84,14 +84,14 @@ export class ActivtyCardCommand extends Command {
 		const PROGRESS = {
 			title: '',
 			points: {
-				previous: 0,
-				next: 0
+				currentProgress: 0,
+				nextRequired: 0
 			}
 		};
 		for (let [points, roleId] of GUILDSETTINGS.activity_roles) {
-			PROGRESS.points.next += points;
+			PROGRESS.points.nextRequired += points;
 
-			if (USERPOINTS.amount >= PROGRESS.points.next) {
+			if (USERPOINTS.amount >= PROGRESS.points.nextRequired) {
 				const ROLE = await interaction.guild.roles.fetch(roleId);
 				if (!ROLE) return;
 
@@ -100,8 +100,9 @@ export class ActivtyCardCommand extends Command {
 				continue;
 			}
 
-			if (USERPOINTS.amount <= PROGRESS.points.next) {
-				PROGRESS.points.previous = PROGRESS.points.next;
+			if (USERPOINTS.amount <= PROGRESS.points.nextRequired) {
+				PROGRESS.points.currentProgress = PROGRESS.points.nextRequired;
+				PROGRESS.points.nextRequired += points;
 
 				break;
 			}
@@ -118,8 +119,8 @@ export class ActivtyCardCommand extends Command {
 				rank: await this.getRank(interaction.guild.id, member.id),
 				points: {
 					total: USERPOINTS.amount,
-					currentProgress: USERPOINTS.amount - (PROGRESS.points.previous - PROGRESS.points.next),
-					nextProgress: PROGRESS.points.next
+					currentProgress: PROGRESS.points.currentProgress - USERPOINTS.amount,
+					nextProgress: PROGRESS.points.nextRequired - PROGRESS.points.currentProgress
 				}
 			}
 		).draw();
