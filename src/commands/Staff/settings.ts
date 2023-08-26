@@ -269,6 +269,9 @@ export class GuildSettingsCommand extends Subcommand {
 		const ROLEID = interaction.options.getString('role', true);
 		if (!ROLEID) return;
 
+		const ROLE = await interaction.guild.roles.fetch(ROLEID);
+		if (!ROLE) return;
+
 		const GUILDSETTINGS = await getGuildSettings(interaction.guild.id);
 		if (!GUILDSETTINGS) return;
 
