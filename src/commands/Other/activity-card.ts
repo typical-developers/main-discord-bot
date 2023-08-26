@@ -83,26 +83,39 @@ export class ActivtyCardCommand extends Command {
 
 		const PROGRESS = {
 			title: '',
-			points: {
-				currentProgress: 0,
-				nextRequired: 0
-			}
+			progress: USERPOINTS.amount,
+			required: 0,
+			totalPoints: 0
 		};
-		for (let [points, roleId] of GUILDSETTINGS.activity_roles) {
-			PROGRESS.points.nextRequired += points;
+		for (let [index, [points, roleId]] of GUILDSETTINGS.activity_roles.entries()) {
+			PROGRESS.totalPoints += points;
 
-			if (USERPOINTS.amount >= PROGRESS.points.nextRequired) {
-				const ROLE = await interaction.guild.roles.fetch(roleId);
-				if (!ROLE) return;
-
-				PROGRESS.title = ROLE.name;
-
+			// will set their role title if they have more than the totaled amount
+			if (PROGRESS.totalPoints <= USERPOINTS.amount) {
+				const ROLE = await interaction.guild.roles.fetch(roleId).catch(() => null);
+				
+				PROGRESS.title = ROLE?.name || 'Unknown Title';
 				continue;
 			}
 
-			if (USERPOINTS.amount <= PROGRESS.points.nextRequired) {
-				PROGRESS.points.currentProgress = PROGRESS.points.nextRequired;
-				PROGRESS.points.nextRequired += points;
+			if (PROGRESS.totalPoints >= USERPOINTS.amount) {
+				if (index === 0 && points !== USERPOINTS.amount) {
+					PROGRESS.progress = USERPOINTS.amount;
+					PROGRESS.required = PROGRESS.totalPoints;
+					break;
+				}
+
+				if (PROGRESS.required === USERPOINTS.amount - points) {
+					let [nextProgress] = GUILDSETTINGS.activity_roles[index + 1] !== undefined
+						? GUILDSETTINGS.activity_roles[index + 1]
+						: [points];
+
+					PROGRESS.progress = USERPOINTS.amount - (PROGRESS.totalPoints - nextProgress);
+					PROGRESS.required = nextProgress;
+				} else {
+					PROGRESS.progress = USERPOINTS.amount - (PROGRESS.totalPoints - points);
+					PROGRESS.required = points;
+				}
 
 				break;
 			}
@@ -115,12 +128,12 @@ export class ActivtyCardCommand extends Command {
 				status: member.presence?.status
 			},
 			{
-				title: PROGRESS.title,
+				title: PROGRESS.title, //PROGRESS.title,
 				rank: await this.getRank(interaction.guild.id, member.id),
 				points: {
 					total: USERPOINTS.amount,
-					currentProgress: PROGRESS.points.currentProgress - USERPOINTS.amount,
-					nextProgress: PROGRESS.points.nextRequired - PROGRESS.points.currentProgress
+					currentProgress: PROGRESS.progress,
+					nextProgress: PROGRESS.required
 				}
 			}
 		).draw();
