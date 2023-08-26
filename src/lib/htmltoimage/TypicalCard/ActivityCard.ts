@@ -59,7 +59,7 @@ export default class ActivityCard extends TypicalCard {
 			html(
 				'div',
 				{ class: 'activity-progress-text' },
-				ranking.points.currentProgress < ranking.points.nextProgress
+				ranking.points.currentProgress >= 0
 					? `${ranking.points.currentProgress} / ${ranking.points.nextProgress}`
 					: ranking.points.total.toString()
 			)
