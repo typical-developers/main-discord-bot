@@ -10,9 +10,9 @@ import {
 	ActionRowBuilder,
 	TextInputBuilder
 } from 'discord.js';
-import { DEVELOPERWHITELIST } from '#lib/types/constants';
 
 @ApplyOptions<ChatInputCommand.Options>({
+	preconditions: ['OwnerOnly'],
 	description: 'Authorized users only. Be careful when not running the command silently in a public chat.'
 })
 export class EvalCommand extends Command {
@@ -50,13 +50,6 @@ export class EvalCommand extends Command {
 	}
 
 	public override async chatInputRun(interaction: ChatInputCommand.Interaction) {
-		if (!DEVELOPERWHITELIST.includes(interaction.user.id)) {
-			return interaction.reply({
-				ephemeral: true,
-				content: 'Only developers can evaluate code.'
-			});
-		}
-
 		const EPHEMERAL = interaction.options.getBoolean('ephemeral', true);
 		const FILEOUT = interaction.options.getBoolean('file-out', true);
 		const COMPILER = interaction.options.getString('compiler') || 'js';

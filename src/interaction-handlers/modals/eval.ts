@@ -4,7 +4,7 @@ import { AttachmentBuilder, ModalSubmitInteraction, codeBlock, inlineCode } from
 import { inspect } from 'util';
 import { VM } from 'vm2';
 import ts from 'typescript';
-import { DEVELOPERWHITELIST, StatusEmbedCodes } from '#lib/types/constants';
+import { StatusEmbedCodes } from '#lib/types/constants';
 import { createStatusEmbed } from '#lib/util/embeds';
 
 // There are for the sandbox.
@@ -20,15 +20,6 @@ import * as database from '#lib/util/database';
 export class EvalModal extends InteractionHandler {
 	public override async parse(interaction: ModalSubmitInteraction) {
 		if (!interaction.customId.startsWith('Eval')) return this.none();
-
-		if (!DEVELOPERWHITELIST.includes(interaction.user.id)) {
-			interaction.reply({
-				ephemeral: true,
-				content: 'Only developers can evaluate code.'
-			});
-
-			return this.none();
-		}
 
 		let [, ephemeral, fileOut, compiler] = interaction.customId.split('.');
 

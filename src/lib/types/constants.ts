@@ -22,5 +22,3 @@ export const enum StatusEmbedCodes {
 	Warning = 2,
 	Success = 3
 }
-
-export const DEVELOPERWHITELIST = ['399416615742996480', '547951620235984906'];
