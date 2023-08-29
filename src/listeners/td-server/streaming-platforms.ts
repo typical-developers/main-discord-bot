@@ -10,9 +10,9 @@ export class ContentChannelListener extends Listener {
 	readonly channel = '1077960509615251557';
 
 	readonly regexes = [
-		'(?<youtube>youtu(.be/.+|be.com/(watch?v=.+)))',
-		'(?<twitch>twitch.tv/.+)',
-		'(?<tiktok>tiktok.com/@.+/video/.+|vm.tiktok.com/.+)'
+		new RegExp(/(?<youtube>youtu(\.be\/.+|be.com\/watch\?v=.+))/).source,
+		new RegExp(/(?<twitch>twitch\.tv\/.+)/).source,
+		new RegExp(/(?<tiktok>tiktok\.com\/@.+\/video\/.+|vm\.tiktok\.com\/.+)/).source
 	];
 
 	public override async run(message: Message) {

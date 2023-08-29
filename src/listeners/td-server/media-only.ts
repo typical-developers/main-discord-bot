@@ -10,12 +10,12 @@ export class MediaOnlyListener extends Listener {
 	readonly channels: string[] = ['1086472593894277190', '1063479705723998359'];
 
 	readonly regexes = [
-		'(?<media>.+/.+.(jpg|jpeg|png|gif|mp4|mov))',
-		'(?<youtube>youtu(.be/.+|be.com/(watch?v=.+)))',
-		'(?<streamable>streamable.com/.+)',
-		'(?<imgur>imgur.com/.+)',
-		'(?<medal>medal.tv/.+)',
-		'(?<tiktok>tiktok.com/@.+/video/.+|vm.tiktok.com/.+)'
+		new RegExp(/(?<media>.+\/.+.(jpg|jpeg|png|gif|mp4|mov))/).source,
+		new RegExp(/(?<youtube>youtu(\.be\/.+|be.com\/watch\?v=.+))/).source,
+		new RegExp(/(?<streamable>streamable\.com\/.+)/).source,
+		new RegExp(/(?<imgur>imgur\.com\/.+)/).source,
+		new RegExp(/(?<medal>medal\.tv\/.+)/),
+		new RegExp(/(?<tiktok>tiktok\.com\/@.+\/video\/.+|vm\.tiktok\.com\/.+)/).source
 	];
 
 	public override async run(message: Message) {
