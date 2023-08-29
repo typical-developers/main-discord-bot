@@ -12,7 +12,7 @@ export class ReadyListener extends Listener {
 		let pastPlaying: number = 0;
 
 		setInterval(async () => {
-			const game = await noblox.getUniverseInfo(3666294218).catch(() => null) as unknown as UniverseInformation[];
+			const game = (await noblox.getUniverseInfo(3666294218).catch(() => null)) as unknown as UniverseInformation[];
 			if (!game) return;
 
 			let playing = game[0].playing;

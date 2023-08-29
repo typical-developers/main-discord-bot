@@ -7,13 +7,11 @@ export class StaffOnlyPrecondition extends Precondition {
 		'399416615742996480' // LuckFire
 	];
 
-    private async checkOwner(userId: string) {
-        return this.owners.includes(userId)
-            ? this.ok()
-            : this.error({ message: 'Only owners have the permission to run this command.' });
-    }
+	private async checkOwner(userId: string) {
+		return this.owners.includes(userId) ? this.ok() : this.error({ message: 'Only owners have the permission to run this command.' });
+	}
 
 	public override async chatInputRun(interaction: ChatInputCommandInteraction) {
-        return this.checkOwner(interaction.user.id);
+		return this.checkOwner(interaction.user.id);
 	}
 }

@@ -77,7 +77,7 @@ export class ActivtyCardCommand extends Command {
 				ephemeral: true,
 				content: 'This user does not have any activity poitns!'
 			});
-		};
+		}
 
 		await interaction.deferReply({ fetchReply: true });
 
@@ -93,7 +93,7 @@ export class ActivtyCardCommand extends Command {
 			// will set their role title if they have more than the totaled amount
 			if (PROGRESS.totalPoints <= USERPOINTS.amount) {
 				const ROLE = await interaction.guild.roles.fetch(roleId).catch(() => null);
-				
+
 				PROGRESS.title = ROLE?.name || 'Unknown Title';
 				continue;
 			}
@@ -106,9 +106,7 @@ export class ActivtyCardCommand extends Command {
 				}
 
 				if (PROGRESS.required === USERPOINTS.amount - points) {
-					let [nextProgress] = GUILDSETTINGS.activity_roles[index + 1] !== undefined
-						? GUILDSETTINGS.activity_roles[index + 1]
-						: [points];
+					let [nextProgress] = GUILDSETTINGS.activity_roles[index + 1] !== undefined ? GUILDSETTINGS.activity_roles[index + 1] : [points];
 
 					PROGRESS.progress = USERPOINTS.amount - (PROGRESS.totalPoints - nextProgress);
 					PROGRESS.required = nextProgress;
