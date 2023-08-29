@@ -52,34 +52,6 @@ export class RobloxInfoCommand extends Subcommand {
 		});
 	}
 
-	public override async autocompleteRun(interaction: Subcommand.AutocompleteInteraction) {
-		const CHOICES = [];
-
-		switch (interaction.options.getSubcommand()) {
-			case 'user':
-				const USERNAME = interaction.options.getNumber('player', true);
-
-				const SEARCH = await fetch(`https://www.roblox.com/search/users/results?keyword=${USERNAME}&maxRows=25&startIndex=0`)
-					.then((d) => d.json())
-					.catch(() => null)
-					.then((d) => d);
-				if (!SEARCH || !SEARCH?.UserSearchResults) return;
-
-				for (let user of SEARCH.UserSearchResults) {
-					CHOICES.push({
-						name: `@${user.Name} (${user.UserId})`,
-						value: user.UserId
-					});
-				}
-
-				break;
-			default:
-				break;
-		}
-
-		await interaction.respond(CHOICES);
-	}
-
 	private async getUserCardInfo(userId: number) {
 		const DETAILS = await noblox.getPlayerInfo(userId).catch(() => null);
 		const AVATAR = await noblox
