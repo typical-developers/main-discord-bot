@@ -11,6 +11,7 @@ export class BanCheckListener extends Listener {
 		if (member.guild.id !== '893717531179769887') return;
 
 		const BANNED = (await this.container.client.guilds.fetch('865737627712749579')).bans.fetch(member.id).catch(() => null);
+		console.log(BANNED);
 		if (!BANNED) return;
 
 		member.roles.add('1132539246276784208');
