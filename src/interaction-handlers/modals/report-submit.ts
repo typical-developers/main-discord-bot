@@ -21,11 +21,11 @@ export class ReportSubmitModal extends InteractionHandler {
 	readonly cooldown: { [key: string]: Date } = {};
 
 	readonly mediaRegexs = [
-		'(?<media>.+/.+.(jpg|jpeg|png|gif|mp4|mov))',
-		'(?<youtube>youtu(.be/.+|be.com/(watch?v=.+)))',
-		'(?<streamable>streamable.com/.+)',
-		'(?<imgur>imgur.com/.+)',
-		'(?<medal>medal.tv/.+)'
+		new RegExp(/(?<media>.+\/.+.(jpg|jpeg|png|gif|mp4|mov))/).source,
+		new RegExp(/(?<youtube>youtu(\.be\/.+|be.com\/watch\?v=.+))/).source,
+		new RegExp(/(?<streamable>streamable\.com\/.+)/).source,
+		new RegExp(/(?<imgur>imgur\.com\/.+)/).source,
+		new RegExp(/(?<medal>medal\.tv\/.+)/),
 	];
 
 	readonly reportChannels: { [key: string]: { [key: string]: string } } = {
@@ -214,13 +214,17 @@ export class ReportSubmitModal extends InteractionHandler {
 		REPORTCHANNEL?.send({
 			embeds: [REPORT]
 		})
-			.then(() => {
+			.then((message) => {
 				const EMBED = createStatusEmbed(StatusEmbedCodes.Success, {
 					author: { name: 'Successfully Submitted Report' },
 					description: 'Thank you for submitting a report! Developers will investigate the issue when they are available.'
 				});
 
 				this.setComponentsCache(interaction, type, true);
+
+				message.startThread({
+					name: `Report Discussion`
+				}).catch(() => null);
 
 				interaction.reply({
 					ephemeral: true,
