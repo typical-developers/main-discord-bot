@@ -42,7 +42,7 @@ export class PointsGrant extends Listener {
 					const ROLE = await message.guild.roles.fetch(roleId).catch(() => null);
 
 					if (!ROLE) continue;
-					if (ROLE.members.has(message.author.id)) continue;
+					if (message.member?.roles.cache.has(roleId)) continue;
 
 					GIVEROLES[roleId] = totaledPoints;
 				}
