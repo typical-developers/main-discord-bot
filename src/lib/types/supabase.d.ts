@@ -1,7 +1,7 @@
 export interface GuildSettingsRow {
 	id: number;
-	activity_roles: [number, string][] | never[];
-	grantable_roles: string[] | never[];
+	activity_roles: [number, string][];
+	grantable_roles: string[];
 	points_system: boolean;
 	server_id: string;
 	welcome_card: boolean;
@@ -12,8 +12,8 @@ export interface GuildSettingsRow {
 
 export interface GuildSettingsInsert {
 	id?: number;
-	activity_roles?: [number, string][] | never[];
-	grantable_roles?: string[] | never[];
+	activity_roles?: [number, string][];
+	grantable_roles?: string[];
 	points_system?: boolean;
 	server_id: string;
 	welcome_card?: boolean;
@@ -24,8 +24,8 @@ export interface GuildSettingsInsert {
 
 export interface GuildSettingsUpdate {
 	id?: number;
-	activity_roles?: [number, string][] | never[];
-	grantable_roles?: string[] | never[];
+	activity_roles?: [number, string][];
+	grantable_roles?: string[];
 	points_system?: boolean;
 	server_id?: string;
 	welcome_card?: boolean;
@@ -35,8 +35,8 @@ export interface GuildSettingsUpdate {
 }
 
 export interface GuildSettingsCache {
-	activity_roles: [number, string][] | never[];
-	grantable_roles: string[] | never[];
+	activity_roles: [number, string][];
+	grantable_roles: string[];
 	points_system: boolean;
 	welcome_card: boolean;
 	welcome_channel: string | null;
