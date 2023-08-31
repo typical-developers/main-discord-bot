@@ -20,11 +20,7 @@ export async function getGuildSettings(serverId: string, newEntry: boolean = tru
 	let cacheData: GuildSettingsCache = {
 		activity_roles: [],
 		grantable_roles: [],
-		points_system: false,
-		welcome_card: false,
-		welcome_channel: null,
-		welcome_notifs: false,
-		welcome_string: null
+		points_system: false
 	};
 
 	let { data, error } = await DATABASE.from('guild-settings').select('*').eq('server_id', serverId);
@@ -35,11 +31,7 @@ export async function getGuildSettings(serverId: string, newEntry: boolean = tru
 			activity_roles: [],
 			grantable_roles: [],
 			points_system: false,
-			server_id: serverId,
-			welcome_card: false,
-			welcome_channel: null,
-			welcome_notifs: false,
-			welcome_string: null
+			server_id: serverId
 		};
 
 		let { error } = await DATABASE.from('guild-settings').insert<GuildSettingsInsert>(insert);

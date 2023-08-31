@@ -4,10 +4,6 @@ export interface GuildSettingsRow {
 	grantable_roles: string[];
 	points_system: boolean;
 	server_id: string;
-	welcome_card: boolean;
-	welcome_channel: string | null;
-	welcome_notifs: boolean;
-	welcome_string: string | null;
 }
 
 export interface GuildSettingsInsert {
@@ -16,10 +12,6 @@ export interface GuildSettingsInsert {
 	grantable_roles?: string[];
 	points_system?: boolean;
 	server_id: string;
-	welcome_card?: boolean;
-	welcome_channel?: string | null;
-	welcome_notifs?: boolean;
-	welcome_string?: string | null;
 }
 
 export interface GuildSettingsUpdate {
@@ -28,20 +20,12 @@ export interface GuildSettingsUpdate {
 	grantable_roles?: string[];
 	points_system?: boolean;
 	server_id?: string;
-	welcome_card?: boolean;
-	welcome_channel?: string | null;
-	welcome_notifs?: boolean;
-	welcome_string?: string | null;
 }
 
 export interface GuildSettingsCache {
 	activity_roles: [number, string][];
 	grantable_roles: string[];
 	points_system: boolean;
-	welcome_card: boolean;
-	welcome_channel: string | null;
-	welcome_notifs: boolean;
-	welcome_string: string | null;
 }
 
 export interface UserPointsRow {
