@@ -31,14 +31,13 @@ export class PointsGrant extends Listener {
 		if (!UPDATEDENTRY) return;
 
 		if (GUILDSETTINGS.activity_roles) {
-			let GIVEROLES: { [key: string]: number } = {};
-			let totaledPoints = 0;
-
+			const GIVEROLES = [];
 			const MEMBER = await message.member?.fetch().catch(() => null);
 			if (!MEMBER) return;
 
+			let totaledPoints = 0;
 			for (let activityRole of GUILDSETTINGS.activity_roles) {
-				let [pointsRequired, roleId]: [number, string] = activityRole;
+				let [pointsRequired, roleId] = activityRole;
 				totaledPoints += pointsRequired;
 
 				if (UPDATEDENTRY.amount >= totaledPoints) {
@@ -47,20 +46,23 @@ export class PointsGrant extends Listener {
 					if (!ROLE) continue;
 					if (MEMBER.roles.cache.has(roleId)) continue;
 
-					GIVEROLES[roleId] = totaledPoints;
-				}
+					GIVEROLES.push(roleId);
+				} else {
+					totaledPoints -= pointsRequired;
+					break;
+				};
 			}
 
-			if (Object.keys(GIVEROLES).length !== 0) {
-				message.member?.roles.add(Object.keys(GIVEROLES).map((r) => r)).catch(() => null);
-				if (Object.keys(GIVEROLES).length > 1) return;
+			if (GIVEROLES.length > 0) {
+				await MEMBER.roles.add(GIVEROLES);
+			} else return;
 
-				message.channel.send({
-					content: `<@${message.author.id}> You have reached ${inlineCode(
-						Object.values(GIVEROLES)[0].toString()
-					)} activity points and have unlocked a new activity role!`
+			if (GIVEROLES.length === 1) {
+				await message.channel.send({
+					content: `<@${message.author.id}> You have reached ${inlineCode(totaledPoints.toString())} activiy points and have unlocked a new role!`
 				});
-			}
+			};
+
 		}
 	}
 }
