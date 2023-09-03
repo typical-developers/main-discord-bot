@@ -50,7 +50,7 @@ export class PointsGrant extends Listener {
 				} else {
 					totaledPoints -= pointsRequired;
 					break;
-				};
+				}
 			}
 
 			if (GIVEROLES.length > 0) {
@@ -59,10 +59,11 @@ export class PointsGrant extends Listener {
 
 			if (GIVEROLES.length === 1) {
 				await message.channel.send({
-					content: `<@${message.author.id}> You have reached ${inlineCode(totaledPoints.toString())} activiy points and have unlocked a new role!`
+					content: `<@${message.author.id}> You have reached ${inlineCode(
+						totaledPoints.toString()
+					)} activiy points and have unlocked a new role!`
 				});
-			};
-
+			}
 		}
 	}
 }

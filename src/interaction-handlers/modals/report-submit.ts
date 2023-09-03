@@ -25,7 +25,7 @@ export class ReportSubmitModal extends InteractionHandler {
 		new RegExp(/(?<youtube>youtu(\.be\/.+|be.com\/watch\?v=.+))/).source,
 		new RegExp(/(?<streamable>streamable\.com\/.+)/).source,
 		new RegExp(/(?<imgur>imgur\.com\/.+)/).source,
-		new RegExp(/(?<medal>medal\.tv\/.+)/),
+		new RegExp(/(?<medal>medal\.tv\/.+)/)
 	];
 
 	readonly reportChannels: { [key: string]: { [key: string]: string } } = {
@@ -222,9 +222,11 @@ export class ReportSubmitModal extends InteractionHandler {
 
 				this.setComponentsCache(interaction, type, true);
 
-				message.startThread({
-					name: `Report Discussion`
-				}).catch(() => null);
+				message
+					.startThread({
+						name: `Report Discussion`
+					})
+					.catch(() => null);
 
 				interaction.reply({
 					ephemeral: true,

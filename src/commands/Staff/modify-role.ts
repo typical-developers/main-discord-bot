@@ -55,7 +55,7 @@ export class ModifyRoleCommand extends Command {
 
 	public override async chatInputRun(interaction: ChatInputCommand.Interaction) {
 		if (!interaction.guild) return;
-		
+
 		const USER = interaction.options.getUser('member', true);
 		const ROLEID = interaction.options.getString('role', true);
 
