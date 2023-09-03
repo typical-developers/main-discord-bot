@@ -34,6 +34,9 @@ export class PointsGrant extends Listener {
 			let GIVEROLES: { [key: string]: number } = {};
 			let totaledPoints = 0;
 
+			const MEMBER = await message.member?.fetch().catch(() => null);
+			if (!MEMBER) return;
+
 			for (let activityRole of GUILDSETTINGS.activity_roles) {
 				let [pointsRequired, roleId]: [number, string] = activityRole;
 				totaledPoints += pointsRequired;
@@ -42,7 +45,7 @@ export class PointsGrant extends Listener {
 					const ROLE = await message.guild.roles.fetch(roleId).catch(() => null);
 
 					if (!ROLE) continue;
-					if (message.member?.roles.cache.has(roleId)) continue;
+					if (MEMBER.roles.cache.has(roleId)) continue;
 
 					GIVEROLES[roleId] = totaledPoints;
 				}
