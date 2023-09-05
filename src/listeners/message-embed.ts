@@ -40,7 +40,7 @@ export default class MessageListener extends Listener {
 			if (!MESSAGE) continue;
 
 			MESSAGE.attachments = MESSAGE.attachments.filter((attachment: Attachment) => !attachment.url.endsWith('mp4'));
-			if (MESSAGE?.embeds[0]?.data.type !== EmbedType.AutoModerationMessage && !MESSAGE.content.length && !MESSAGE.attachments.first()) continue;
+			if (MESSAGE?.embeds[0]?.data?.type !== EmbedType.AutoModerationMessage && !MESSAGE.content.length && !MESSAGE.attachments.first()) continue;
 
 			MESSAGES.push(MESSAGE);
 		}
@@ -109,7 +109,7 @@ export default class MessageListener extends Listener {
 				})
 			];
 
-			if (message.embeds[0].data.type === EmbedType.AutoModerationMessage) {
+			if (message?.embeds[0]?.data?.type === EmbedType.AutoModerationMessage) {
 				let { fields } = message.embeds[0].data;
 
 				EMBED[0].setDescription(message.embeds[0].data.description!);
