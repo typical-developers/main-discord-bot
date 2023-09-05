@@ -49,7 +49,7 @@ export class ActivtyCardCommand extends Command {
 			.order('amount', { ascending: false })
 			.range(range, range + 2500);
 
-		if (!data || error) return 0;
+		if (!data || !data.length || error) return 0;
 
 		const INDEX = data.findIndex(({ user_id }) => user_id === userId);
 		if (INDEX === -1) {
