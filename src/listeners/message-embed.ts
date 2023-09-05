@@ -112,7 +112,7 @@ export default class MessageListener extends Listener {
 			if (message.embeds[0].data.type === EmbedType.AutoModerationMessage) {
 				let { fields } = message.embeds[0].data;
 
-				EMBED[0].setDescription(message.embeds[0].data.fields![4].value);
+				EMBED[0].setDescription(message.embeds[0].data.description!);
 				// EMBED[0].setThumbnail('https://discord.com/assets/b3e8bfa5e3780afd7a4f9a1695776e16.png');
 				EMBED[0].addFields([
 					{ name: 'Rule', value: inlineCode(fields![0].value), inline: true },
