@@ -1,19 +1,7 @@
 import { Events, Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { MessageLinkRegex } from '@sapphire/discord-utilities';
-import {
-	Collection,
-	GuildMember,
-	Message,
-	type Channel,
-	ChannelType,
-	PermissionFlagsBits,
-	Attachment,
-	EmbedBuilder,
-	TextChannel,
-	EmbedType,
-	inlineCode
-} from 'discord.js';
+import { Message, ChannelType, PermissionFlagsBits, Attachment, EmbedBuilder, TextChannel, EmbedType, inlineCode, type Snowflake } from 'discord.js';
 import { BrandColors } from '#lib/types/constants';
 
 interface MessageLinkGroup {
@@ -27,26 +15,24 @@ interface MessageLinkGroup {
 	once: false
 })
 export default class MessageListener extends Listener {
-	public async fetchMessages(links: MessageLinkGroup[], member: GuildMember) {
-		const CHANNELCACHE: Collection<string, Channel | null> = new Collection();
+	public async fetchMessages(links: MessageLinkGroup[], userId: Snowflake) {
 		const MESSAGES: Message[] = [];
 
 		for (let link of links) {
-			if (!CHANNELCACHE.get(link.channelId)) {
-				CHANNELCACHE.set(link.channelId, await this.container.client.channels.fetch(link.channelId));
-			}
-
-			const CHANNEL = CHANNELCACHE.get(link.channelId);
+			const CHANNEL = await this.container.client.channels.fetch(link.channelId);
+			const GUILD = await this.container.client.guilds.fetch(link.guildId);
+			const MEMBER = await GUILD.members.fetch(userId);
+			if (!MEMBER) continue;
 			if (!CHANNEL) continue;
+			
 			if (CHANNEL.type === ChannelType.DM || CHANNEL.type === ChannelType.GroupDM || CHANNEL.type === ChannelType.GuildCategory) continue;
 
 			if (CHANNEL.type === ChannelType.GuildText || CHANNEL.type === ChannelType.GuildVoice) {
-				console.log((await member.fetch()).permissions.toArray());
-				if (!CHANNEL.permissionsFor(await member.fetch()).has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory])) continue;
+				if (!CHANNEL.permissionsFor(MEMBER).has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory])) continue;
 			}
 
 			if (CHANNEL.type === ChannelType.PrivateThread) {
-				if (!CHANNEL.members.fetch(member.id)) continue;
+				if (!CHANNEL.members.fetch(MEMBER.id)) continue;
 			}
 
 			const MESSAGE = await CHANNEL.messages.fetch(link.messageId);
@@ -91,10 +77,7 @@ export default class MessageListener extends Listener {
 		const LINKS = this.getMessageLinks(message.content);
 		if (!LINKS) return;
 
-		const MEMBER = await message.member?.fetch();
-		if (!MEMBER) return;
-
-		const MESSAGES = await this.fetchMessages(LINKS, MEMBER);
+		const MESSAGES = await this.fetchMessages(LINKS, message.author.id);
 		if (!MESSAGES) return;
 
 		const EMBEDS: EmbedBuilder[] = [];
