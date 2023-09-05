@@ -1,7 +1,19 @@
 import { Events, Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { MessageLinkRegex } from '@sapphire/discord-utilities';
-import { Collection, GuildMember, Message, type Channel, ChannelType, PermissionFlagsBits, Attachment, EmbedBuilder, TextChannel, EmbedType, inlineCode } from 'discord.js';
+import {
+	Collection,
+	GuildMember,
+	Message,
+	type Channel,
+	ChannelType,
+	PermissionFlagsBits,
+	Attachment,
+	EmbedBuilder,
+	TextChannel,
+	EmbedType,
+	inlineCode
+} from 'discord.js';
 import { BrandColors } from '#lib/types/constants';
 
 interface MessageLinkGroup {
@@ -40,7 +52,8 @@ export default class MessageListener extends Listener {
 			if (!MESSAGE) continue;
 
 			MESSAGE.attachments = MESSAGE.attachments.filter((attachment: Attachment) => !attachment.url.endsWith('mp4'));
-			if (MESSAGE?.embeds[0]?.data?.type !== EmbedType.AutoModerationMessage && !MESSAGE.content.length && !MESSAGE.attachments.first()) continue;
+			if (MESSAGE?.embeds[0]?.data?.type !== EmbedType.AutoModerationMessage && !MESSAGE.content.length && !MESSAGE.attachments.first())
+				continue;
 
 			MESSAGES.push(MESSAGE);
 		}
@@ -110,17 +123,16 @@ export default class MessageListener extends Listener {
 			];
 
 			if (message?.embeds[0]?.data?.type === EmbedType.AutoModerationMessage) {
-				let { fields } = message.embeds[0].data;
+				let [rule, channel, _, keyword] = message.embeds[0].data.fields!;
 
 				EMBED[0].setDescription(message.embeds[0].data.description!);
-				// EMBED[0].setThumbnail('https://discord.com/assets/b3e8bfa5e3780afd7a4f9a1695776e16.png');
 				EMBED[0].addFields([
-					{ name: 'Rule', value: inlineCode(fields![0].value), inline: true },
-					{ name: 'Channel', value: `<#${fields![1].value}>`, inline: true },
-					{ name: 'Keyword', value: inlineCode(fields![3].value), inline: true },
+					{ name: 'Rule', value: inlineCode(rule.value), inline: true },
+					{ name: 'Channel', value: `<#${channel.value}>`, inline: true },
+					{ name: 'Keyword', value: inlineCode(keyword.value), inline: true }
 				]);
 			}
-			
+
 			const ATTACHMENTS = Array.from(attachments.values()).splice(0, 4);
 			ATTACHMENTS.forEach((attachment, index) => {
 				if (index === 0) {
