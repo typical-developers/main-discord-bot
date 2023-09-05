@@ -41,7 +41,7 @@ export default class MessageListener extends Listener {
 			if (CHANNEL.type === ChannelType.DM || CHANNEL.type === ChannelType.GroupDM || CHANNEL.type === ChannelType.GuildCategory) continue;
 
 			if (CHANNEL.type === ChannelType.GuildText || CHANNEL.type === ChannelType.GuildVoice) {
-				if (!CHANNEL.permissionsFor(member).has([PermissionFlagsBits.ViewChannel])) continue;
+				if (!CHANNEL.permissionsFor(await member.fetch()).has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory])) continue;
 			}
 
 			if (CHANNEL.type === ChannelType.PrivateThread) {
