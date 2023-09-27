@@ -24,6 +24,9 @@ export class MediaOnlyListener extends Listener {
 		const CONTENTS = message.content.split(/(?:\n| )+/);
 		const REGEX = new RegExp(`^https?:\/\/(www\.)?(${this.regexes.join('|')})$`);
 
+		const ROLES = (await message.member?.fetch())?.roles.cache;
+		if (ROLES?.has('865737785457770527') || ROLES?.has('893988372585017374') || ROLES?.has('1035574540727767060')) return;
+
 		let hasLink = false;
 		for (let content of CONTENTS) {
 			const RESULT = REGEX.exec(content);
