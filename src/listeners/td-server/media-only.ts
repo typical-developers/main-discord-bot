@@ -14,7 +14,7 @@ export class MediaOnlyListener extends Listener {
 		new RegExp(/(?<youtube>youtu(\.be\/.+|be.com\/watch\?v=.+))/).source,
 		new RegExp(/(?<streamable>streamable\.com\/.+)/).source,
 		new RegExp(/(?<imgur>imgur\.com\/.+)/).source,
-		new RegExp(/(?<medal>medal\.tv\/.+)/),
+		new RegExp(/(?<medal>medal\.tv\/.+)/).source,
 		new RegExp(/(?<tiktok>tiktok\.com\/@.+\/video\/.+|vm\.tiktok\.com\/.+)/).source
 	];
 
