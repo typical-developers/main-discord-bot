@@ -32,9 +32,7 @@ export default class MessageListener extends Listener {
 
 				// This makes sure staff channels in TD cant have their messages accidentally sent outside of it.
 				// This means staff messages no longer embed period, besides inside of internal.
-				if (CHANNEL.parent?.id === "886647020683657216") {
-					if (CHANNEL.guildId !== "1067144248463466526") continue;
-				}
+				if (CHANNEL.parentId === "886647020683657216" && CHANNEL.guildId !== "1067144248463466526") continue;
 			}
 
 			if (CHANNEL.type === ChannelType.PrivateThread) {
