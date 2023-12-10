@@ -4,7 +4,8 @@ import type { ChatInputCommandInteraction } from 'discord.js';
 export class StaffOnlyPrecondition extends Precondition {
 	readonly owners = [
 		'547951620235984906', // Hoofer
-		'399416615742996480' // LuckFire
+		'337440972239798273', // Noval
+		'256815446802694144' // Lucas
 	];
 
 	private async checkOwner(userId: string) {
