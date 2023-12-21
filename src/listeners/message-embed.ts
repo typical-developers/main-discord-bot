@@ -24,7 +24,7 @@ export default class MessageListener extends Listener {
 			const MEMBER = await GUILD.members.fetch(userId);
 			if (!MEMBER) continue;
 			if (!CHANNEL) continue;
-			
+
 			if (CHANNEL.type === ChannelType.DM || CHANNEL.type === ChannelType.GroupDM || CHANNEL.type === ChannelType.GuildCategory) continue;
 
 			if (CHANNEL.type === ChannelType.GuildText || CHANNEL.type === ChannelType.GuildVoice || CHANNEL.type === ChannelType.GuildAnnouncement) {
@@ -32,7 +32,7 @@ export default class MessageListener extends Listener {
 
 				// This makes sure staff channels in TD cant have their messages accidentally sent outside of it.
 				// This means staff messages no longer embed period, besides inside of internal.
-				if (CHANNEL.parentId === "886647020683657216" && CHANNEL.guildId !== "1067144248463466526") continue;
+				if (CHANNEL.parentId === '886647020683657216' && CHANNEL.guildId !== '1067144248463466526') continue;
 			}
 
 			if (CHANNEL.type === ChannelType.PrivateThread) {
