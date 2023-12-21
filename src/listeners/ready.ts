@@ -71,7 +71,7 @@ export class ReadyListener extends Listener {
 					this.currentStatus = "PLAYERS";
 
 					const remaining = this.countdown(new Date(Date.now()), new Date("Dec 25, 2023 12:00:00 UTC-05:00"));
-					if (remaining == null) {
+					if (remaining === null) {
 						client.user?.setActivity({
 							type: ActivityType.Watching,
 							name: `the oakmas tree`
