@@ -58,22 +58,33 @@ export class ReadyListener extends Listener {
 			// Would always have to update the current status to go down the line and restart but it works!
 			switch (this.currentStatus) {
 				case "PLAYERS":
+					this.currentStatus = "COUNTDOWN";
+
 					const playing = await this.players(3666294218);
 					client.user?.setActivity({
 						type: ActivityType.Watching,
 						name: `Oaklands・${playing} playing`
 					});
 
-					this.currentStatus = "COUNTDOWN";
 					return;
 				case "COUNTDOWN":
+					this.currentStatus = "PLAYERS";
+
 					const remaining = this.countdown(new Date(Date.now()), new Date("Dec 25, 2023 12:00:00 UTC-05:00"));
+					if (remaining == null) {
+						client.user?.setActivity({
+							type: ActivityType.Watching,
+							name: `the oakmas tree`
+						});
+
+						return;
+					}
+
 					client.user?.setActivity({
 						type: ActivityType.Watching,
 						name: `for santa・${remaining}`
 					});
 
-					this.currentStatus = "PLAYERS";
 					return;
 			}
 		}, 5000);
