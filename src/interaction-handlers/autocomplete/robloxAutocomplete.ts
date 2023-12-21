@@ -4,7 +4,8 @@ import { AutocompleteInteraction, type ApplicationCommandOptionChoiceData } from
 import noblox from 'noblox.js';
 
 @ApplyOptions<InteractionHandler.Options>({
-	interactionHandlerType: InteractionHandlerTypes.Autocomplete
+	interactionHandlerType: InteractionHandlerTypes.Autocomplete,
+	enabled: false
 })
 export class RobloxAutocompleteInteraction extends InteractionHandler {
 	public override async parse(interaction: AutocompleteInteraction) {

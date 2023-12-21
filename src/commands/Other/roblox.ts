@@ -11,7 +11,8 @@ import type { AgeRecommendation, Badges, Universe, User } from '#lib/types/fetch
 	subcommands: [
 		{ name: 'user', chatInputRun: 'userInfo' },
 		{ name: 'experience', chatInputRun: 'experienceInfo' }
-	]
+	],
+	enabled: false
 })
 export class RobloxInfoCommand extends Subcommand {
 	readonly commandOptions: ApplicationCommandOptionData[] = [

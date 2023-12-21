@@ -3,7 +3,8 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { ActionRowBuilder, ButtonInteraction, ComponentType, ModalBuilder, ModalSubmitFields, TextInputBuilder, TextInputStyle } from 'discord.js';
 
 @ApplyOptions<InteractionHandler.Options>({
-	interactionHandlerType: InteractionHandlerTypes.Button
+	interactionHandlerType: InteractionHandlerTypes.Button,
+	enabled: false
 })
 export class ReportFormButton extends InteractionHandler {
 	public override async parse(interaction: ButtonInteraction) {

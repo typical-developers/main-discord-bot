@@ -15,7 +15,8 @@ import { createStatusEmbed } from '#lib/util/embeds';
 import { BrandColors, StatusEmbedCodes } from '#lib/types/constants';
 
 @ApplyOptions<InteractionHandler.Options>({
-	interactionHandlerType: InteractionHandlerTypes.ModalSubmit
+	interactionHandlerType: InteractionHandlerTypes.ModalSubmit,
+	enabled: false
 })
 export class ReportSubmitModal extends InteractionHandler {
 	readonly cooldown: { [key: string]: Date } = {};
