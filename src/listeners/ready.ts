@@ -8,8 +8,8 @@ import noblox, { type UniverseInformation } from 'noblox.js';
 	once: true
 })
 export class ReadyListener extends Listener {
-	private pastPlaying: number = 0;
-	private currentStatus: "PLAYERS" | "COUNTDOWN" = "PLAYERS";
+	private oakPlaying: number = 0;
+	private currentStatus: "COUNTDOWN" | "OAK_PLAYING" | "ALL_PLAYING" = "OAK_PLAYING";
 
 	// References from https://stackabuse.com/javascript-get-number-of-days-between-dates
 	private countdown(start: Date, end: Date) {
@@ -39,16 +39,15 @@ export class ReadyListener extends Listener {
 		}
 	}
 
-	private async players(universe: number) {
+	private async players(universe: number, oldPlaying: number) {
 		const game = (await noblox.getUniverseInfo(universe).catch(() => null)) as unknown as UniverseInformation[];
-		if (!game) return this.pastPlaying;
+		if (!game) return oldPlaying;
 
 		let playing = game[0].playing;
-		if (typeof playing !== 'number' || playing === this.pastPlaying) {
-			return this.pastPlaying;
+		if (typeof playing !== 'number' || playing === oldPlaying) {
+			return oldPlaying;
 		}
 
-		this.pastPlaying = playing;
 		return playing;
 	}
 
@@ -57,24 +56,14 @@ export class ReadyListener extends Listener {
 			// Using a switch-case here since it'd be easier to expand on in the future if I wanted to.
 			// Would always have to update the current status to go down the line and restart but it works!
 			switch (this.currentStatus) {
-				case "PLAYERS":
-					this.currentStatus = "COUNTDOWN";
-
-					const playing = await this.players(3666294218);
-					client.user?.setActivity({
-						type: ActivityType.Watching,
-						name: `Oaklands・${playing} playing`
-					});
-
-					return;
 				case "COUNTDOWN":
-					this.currentStatus = "PLAYERS";
+					this.currentStatus = "OAK_PLAYING";
 
 					const remaining = this.countdown(new Date(Date.now()), new Date("Dec 25, 2023 12:00:00 UTC-05:00"));
 					if (remaining === null) {
 						client.user?.setActivity({
 							type: ActivityType.Watching,
-							name: `the oakmas tree`
+							name: `Santa's sleigh`
 						});
 
 						return;
@@ -82,12 +71,32 @@ export class ReadyListener extends Listener {
 
 					client.user?.setActivity({
 						type: ActivityType.Watching,
-						name: `for santa・${remaining}`
+						name: `for Santa・${remaining}`
 					});
 
 					return;
+				case "OAK_PLAYING":
+					this.currentStatus = "COUNTDOWN";
+
+					this.oakPlaying = await this.players(3666294218, this.oakPlaying);
+					client.user?.setActivity({
+						type: ActivityType.Watching,
+						name: `Oaklands・${this.oakPlaying} playing`
+					});
+
+					return;
+				// case "ALL_PLAYING":
+				// 	this.currentStatus = "OAK_PLAYING";
+
+				// 	const total = this.oakPlaying;
+				// 	client.user?.setActivity({
+				// 		type: ActivityType.Watching,
+				// 		name: `everything・${total} playing`
+				// 	});
+
+				// 	return;
 			}
-		}, 5000);
+		}, 10 * 1000);
 
 		return;
 	}
