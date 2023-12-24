@@ -59,7 +59,7 @@ export class ReadyListener extends Listener {
 				case "COUNTDOWN":
 					this.currentStatus = "OAK_PLAYING";
 
-					const remaining = this.countdown(new Date(Date.now()), new Date("Dec 25, 2023 12:00:00 UTC-05:00"));
+					const remaining = this.countdown(new Date(Date.now()), new Date("Dec 24, 2023 23:59:59 UTC-05:00"));
 					if (remaining === null) {
 						client.user?.setActivity({
 							type: ActivityType.Watching,
