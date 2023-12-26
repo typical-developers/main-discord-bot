@@ -108,7 +108,7 @@ export class ReadyListener extends Listener {
 		}
 
 		setTimeout(() => {
-			return (client);
+			return this.statusInverval(client);
 		}, this.statusUpdate * 1000);
 	}
 
