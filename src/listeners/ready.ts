@@ -11,7 +11,7 @@ interface CountdownDetails { value: number | null, string: string | null, remain
 })
 export class ReadyListener extends Listener {
 	private statusUpdate: number = 10;
-	private currentStatus: "COUNTDOWN" | "OAK_PLAYING" | "ALL_PLAYING" = "COUNTDOWN";
+	private currentStatus: "COUNTDOWN" | "OAK_PLAYING" | "ALL_PLAYING" = "OAK_PLAYING";
 	private oakPlaying: number = 0;
 
 	// References from https://stackabuse.com/javascript-get-number-of-days-between-dates
@@ -96,7 +96,6 @@ export class ReadyListener extends Listener {
 
 				break;
 			case "OAK_PLAYING":
-				this.currentStatus = "COUNTDOWN";
 				this.oakPlaying = await this.players(3666294218, this.oakPlaying);
 
 				client.user?.setActivity({
