@@ -23,7 +23,7 @@ export class ReportSubmitModal extends InteractionHandler {
 
 	readonly mediaRegexs = [
 		new RegExp(/(?<media>.+\/.+.(jpg|jpeg|png|gif|mp4|mov))/).source,
-		new RegExp(/(?<youtube>youtu(\.be\/.+|be.com\/watch\?v=.+))/).source,
+		new RegExp(/(?<youtube>youtu(\.be\/.+|be\.com\/(watch\?v=|shorts\/).+|))/).source,
 		new RegExp(/(?<streamable>streamable\.com\/.+)/).source,
 		new RegExp(/(?<imgur>imgur\.com\/.+)/).source,
 		new RegExp(/(?<medal>medal\.tv\/.+)/)

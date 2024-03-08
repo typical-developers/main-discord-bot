@@ -10,7 +10,7 @@ export class ContentChannelListener extends Listener {
 	readonly channel = '1077960509615251557';
 
 	readonly regexes = [
-		new RegExp(/(?<youtube>youtu(\.be\/.+|be.com\/watch\?v=.+))/).source,
+		new RegExp(/(?<youtube>youtu(\.be\/.+|be\.com\/(watch\?v=|shorts\/).+|))/).source,
 		new RegExp(/(?<twitch>twitch\.tv\/.+)/).source,
 		new RegExp(/(?<tiktok>tiktok\.com\/@.+\/video\/.+|vm\.tiktok\.com\/.+)/).source
 	];
