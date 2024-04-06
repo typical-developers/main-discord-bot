@@ -1,4 +1,5 @@
 import nodeHtmlToImage from 'node-html-to-image';
+import chrome from 'chrome-aws-lambda';
 import { css, html } from '#lib/util/html';
 import { Readable } from 'stream';
 
@@ -35,11 +36,12 @@ export default class HTMLToImage {
 		return await nodeHtmlToImage({
 			puppeteerArgs: {
 				args: ['--no-sandbox', '--disable-setuid-sandbox'],
-				ignoreDefaultArgs: ['--disable-extensions']
+				ignoreDefaultArgs: ['--disable-extensions'],
+				executablePath: await chrome.executablePath
 			},
 			// output: 'image.png',
 			transparent: true,
-			html: this.page
+			html: this.page,
 		})
 			.then((image) => {
 				return Readable.from(image);
