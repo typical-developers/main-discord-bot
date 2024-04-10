@@ -2,7 +2,8 @@
   "name": "@typical-developers/main-discord-bot",
   "author": "typical-developers",
   "version": "2.0.0",
-  "description": "A typical Discord bot.",
+  "description": "The main Discord bot that is used in Typical Developers' servers.",
+  "license": "GPL-3.0",
   "main": "dist/index.js",
   "type": "module",
   "imports": {
@@ -15,8 +16,11 @@
     "build:watch": "pnpm run clean && tsc -w",
     "deploy": "pnpm run build && node dist/index.js"
   },
-  "license": "GPL-3.0",
+  "dependencies": {
+    "discord.js": "^14.14.1"
+  },
   "devDependencies": {
+    "@typical-developers/api-types": "^1.0.0",
     "prettier": "^3.2.5",
     "rimraf": "^5.0.5",
     "typescript": "^5.4.5"
