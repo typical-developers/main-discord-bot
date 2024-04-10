@@ -1,6 +1,7 @@
 {
-  "name": "typical",
-  "version": "1.0.0",
+  "name": "@typical-developers/main-discord-bot",
+  "author": "typical-developers",
+  "version": "2.0.0",
   "description": "A typical Discord bot.",
   "main": "dist/index.js",
   "type": "module",
@@ -8,34 +9,16 @@
     "#lib/*": "./dist/lib/*.js"
   },
   "scripts": {
-    "clean": "tsc -build -clean ./src/tsconfig.json src",
-    "build": "npm run clean && tsc -build ./src/tsconfig.json src",
-    "start": "node dist/index.js",
-    "deploy": "npm run build && npm run start",
-    "format": "prettier --write \"src/**/*.ts\""
+    "clean": "rimraf ./dist/",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "build": "pnpm run clean && pnpm run format && tsc",
+    "build:watch": "pnpm run clean && tsc -w",
+    "deploy": "pnpm run build && node dist/index.js"
   },
-  "author": "LuckFire",
   "license": "GPL-3.0",
-  "dependencies": {
-    "@sapphire/decorators": "^6.0.2",
-    "@sapphire/discord-utilities": "^3.0.4",
-    "@sapphire/framework": "^4.5.1",
-    "@sapphire/pieces": "^3.7.0",
-    "@sapphire/plugin-subcommands": "^4.0.2",
-    "@sapphire/ts-config": "^4.0.1",
-    "@supabase/supabase-js": "^2.31.0",
-    "discord.js": "^14.12.1",
-    "mongodb": "^5.7.0",
-    "noblox.js": "^4.14.1",
-    "node-cache": "^5.1.2",
-    "node-html-to-image": "^3.3.0",
-    "vm2": "^3.9.19"
-  },
   "devDependencies": {
-    "@sapphire/prettier-config": "^2.0.0",
-    "prettier": "^3.0.0",
-    "tslib": "^2.6.1",
-    "typescript": "^5.1.6"
-  },
-  "prettier": "@sapphire/prettier-config"
+    "prettier": "^3.2.5",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.4.5"
+  }
 }
