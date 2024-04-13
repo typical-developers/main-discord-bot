@@ -1,6 +1,12 @@
 {
     "compileOnSave": true,
     "compilerOptions": {
-        "outDir": "dist"
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "rootDir": "./src",
+        "outDir": "./dist",
+        "paths": {
+            "#lib/*": [ "./dist/lib" ]
+        }
     }
 }

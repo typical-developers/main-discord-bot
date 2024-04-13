@@ -1,11 +1,12 @@
 FROM node:latest
 
-RUN mkdir -p /usr/src/bot
-WORKDIR /usr/src/bot
+RUN mkdir -p /usr/src/main-discord-bot
+WORKDIR /usr/src/main-discord-bot
 
-COPY package.json /usr/src/bot
-RUN npm install
+COPY package.json /usr/src/main-discord-bot
+RUN npm i -g pnpm
+RUN pnpm i
 
-COPY . /usr/src/bot
+COPY . /usr/src/main-discord-bot
 
-CMD ["npm", "run", "deploy"]
+CMD ["pnpm", "run", "deploy"]
