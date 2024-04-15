@@ -32,7 +32,10 @@ export class ActivityDetails extends Subcommand {
         await interaction.deferReply({ fetchReply: true });
 
         const image = nodeHtmlToImage({
-            html: '<html><body>Hello world!</body></html>'
+            html: '<html><body>Hello world!</body></html>',
+            puppeteerArgs: {
+                executablePath: 'google-chrome-stable'
+            }
         }).then((o) => Readable.from(o));
 
         const attachment = new AttachmentBuilder(await image, { name: 'test.png' });
