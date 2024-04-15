@@ -12,9 +12,8 @@ RUN apt-get update && apt-get install curl gnupg -y \
 RUN mkdir -p /usr/src/bot
 WORKDIR /usr/src/bot
 
-COPY ./assets/fonts /usr/src/bot/assets/fonts
 RUN apt-get update && apt-get install -y fontconfig
-RUN chmod -R 755 /usr/src/bot/assets/fonts
+COPY ./assets/fonts /usr/local/share/fonts
 RUN fc-cache -f -v
 
 COPY package.json /usr/src/bot
