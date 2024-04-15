@@ -34,6 +34,7 @@ export default class HTMLToImage {
 	public async draw() {
 		return await nodeHtmlToImage({
 			puppeteerArgs: {
+				executablePath: 'google-chrome-stable',
 				args: ['--no-sandbox', '--disable-setuid-sandbox'],
 				ignoreDefaultArgs: ['--disable-extensions']
 			},
