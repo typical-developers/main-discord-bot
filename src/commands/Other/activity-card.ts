@@ -4,9 +4,12 @@ import {
 	type ApplicationCommandOptionData,
 	ApplicationCommandOptionType,
 	ContextMenuCommandInteraction,
-	GuildMember
+	GuildMember,
+	AttachmentBuilder,
+	ApplicationCommandType
 } from 'discord.js';
 import { getGuildSettings, getUserPoints } from '#lib/util/database';
+import ActivityCard from '#lib/htmltoimage/TypicalCard/ActivityCard';
 
 @ApplyOptions<ChatInputCommand.Options>({
 	description: 'Fetch an activity card.'
@@ -21,8 +24,6 @@ export class ActivtyCardCommand extends Command {
 		}
 	];
 
-	private notified: string[] = [];
-
 	public override registerApplicationCommands(registry: ChatInputCommand.Registry) {
 		registry
 			.registerChatInputCommand({
@@ -30,11 +31,11 @@ export class ActivtyCardCommand extends Command {
 				description: this.description,
 				options: this.commandOptions,
 				dmPermission: false
+			})
+			.registerContextMenuCommand({
+				name: 'Get Activity Card',
+				type: ApplicationCommandType.User
 			});
-			// .registerContextMenuCommand({
-			// 	name: 'Get Activity Card',
-			// 	type: ApplicationCommandType.User
-			// });
 	}
 
 	private async getRank(serverId: string, userId: string, range: number = 0): Promise<any> {
@@ -118,20 +119,28 @@ export class ActivtyCardCommand extends Command {
 			}
 		}
 
-		await interaction.editReply({
-			content: `Title: ${PROGRESS.title}\nRank: ${await this.getRank(interaction.guild.id, member.id)}\n\nTotal Points: ${USERPOINTS.amount}\nNext Progress: ${PROGRESS.progress}/${PROGRESS.required}`
+		const ACTIVITYCARD = await new ActivityCard(
+			{
+				name: member.user.username,
+				avatarURL: member.displayAvatarURL({ forceStatic: true, size: 512 }) || member.user.defaultAvatarURL,
+				status: member.presence?.status
+			},
+			{
+				title: PROGRESS.title, //PROGRESS.title,
+				rank: await this.getRank(interaction.guild.id, member.id),
+				points: {
+					total: USERPOINTS.amount,
+					currentProgress: PROGRESS.progress,
+					nextProgress: PROGRESS.required
+				}
+			}
+		).draw();
+		if (!ACTIVITYCARD) return;
+
+		const ATTACHMENT = new AttachmentBuilder(ACTIVITYCARD, { name: 'card.png' });
+		return interaction.editReply({
+			files: [ATTACHMENT]
 		});
-
-		if (!this.notified.includes(member.id)) {
-			interaction.followUp({
-				ephemeral: true,
-				content: 'Visual activity cards are currently unavailable! This will be resolved sometime in the future, thank you for your patience.'
-			});
-
-			this.notified.push(member.id);
-		}
-
-		return;
 	}
 
 	public override async chatInputRun(interaction: ChatInputCommand.Interaction) {
@@ -153,15 +162,15 @@ export class ActivtyCardCommand extends Command {
 		return this.activityCard(interaction, member);
 	}
 
-	// public override async contextMenuRun(interaction: ContextMenuCommandInteraction) {
-	// 	const MEMBER = await interaction.guild?.members.fetch(interaction.targetId).catch(() => null);
-	// 	if (!MEMBER) {
-	// 		return interaction.reply({
-	// 			ephemeral: true,
-	// 			content: `I was unable to fetch <@${interaction.targetId}>\'s activity card.`
-	// 		});
-	// 	}
+	public override async contextMenuRun(interaction: ContextMenuCommandInteraction) {
+		const MEMBER = await interaction.guild?.members.fetch(interaction.targetId).catch(() => null);
+		if (!MEMBER) {
+			return interaction.reply({
+				ephemeral: true,
+				content: `I was unable to fetch <@${interaction.targetId}>\'s activity card.`
+			});
+		}
 
-	// 	return this.activityCard(interaction, MEMBER);
-	// }
+		return this.activityCard(interaction, MEMBER);
+	}
 }
