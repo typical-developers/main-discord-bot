@@ -35,7 +35,9 @@ export class ActivityDetails extends Subcommand {
             const image = nodeHtmlToImage({
                 html: '<html><body>Hello world!</body></html>',
                 puppeteerArgs: {
-                    executablePath: 'google-chrome-stable'
+                    executablePath: 'google-chrome-stable',
+                    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+                    ignoreDefaultArgs: ['--disable-extensions']
                 }
             }).then((o) => Readable.from(o));
     
