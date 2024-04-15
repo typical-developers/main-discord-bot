@@ -31,18 +31,22 @@ export class ActivityDetails extends Subcommand {
     public async getActivityPoints(interaction: Subcommand.ChatInputCommandInteraction) {
         await interaction.deferReply({ fetchReply: true });
 
-        const image = nodeHtmlToImage({
-            html: '<html><body>Hello world!</body></html>',
-            puppeteerArgs: {
-                executablePath: 'google-chrome-stable'
-            }
-        }).then((o) => Readable.from(o));
-
-        const attachment = new AttachmentBuilder(await image, { name: 'test.png' });
-
-        return interaction.editReply({
-            files: [attachment]
-        });
+        try {
+            const image = nodeHtmlToImage({
+                html: '<html><body>Hello world!</body></html>',
+                puppeteerArgs: {
+                    executablePath: 'google-chrome-stable'
+                }
+            }).then((o) => Readable.from(o));
+    
+            const attachment = new AttachmentBuilder(await image, { name: 'test.png' });
+    
+            return interaction.editReply({
+                files: [attachment]
+            });
+        } catch (e) {
+            console.log(e);
+        }
     }
 
     /** Gets the guild's leaderboard and returns a paginated message for getting more leaderboard details. */
