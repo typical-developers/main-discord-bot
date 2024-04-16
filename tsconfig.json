@@ -1,6 +1,7 @@
 {
     "compileOnSave": true,
     "compilerOptions": {
+        "allowSyntheticDefaultImports": true,
         "experimentalDecorators": true,
         "module": "NodeNext",
         "moduleResolution": "NodeNext",
