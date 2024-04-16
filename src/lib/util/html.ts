@@ -1,3 +1,6 @@
+// Functionality is inspired from cook.js
+// https://cook.rajnathani.com
+
 export enum HTMLTags {
 	'span',
 	'div',
