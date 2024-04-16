@@ -40,7 +40,7 @@ export function html(tag: HTMLTag, attributes: Object, content: string[] = [''])
 		.map(([attribute, value]) => `${attribute}="${value}"`)
 		.join(' ');
 
-	const contentString = content.join('<br>');
+	const contentString = content.join('');
 
 	return `<${tag}${attributeString}>${contentString}</${tag}>`;
 }
