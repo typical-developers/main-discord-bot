@@ -1,5 +1,6 @@
 import { Readable } from 'stream';
 import nodeHtmlToImage from "node-html-to-image";
+import puppeteer from 'puppeteer';
 import { htmlFunctions } from "#lib/util/html";
 import { css } from "#lib/util/css";
 
@@ -42,6 +43,9 @@ export class HTMLToImage {
             waitUntil: 'load',
             transparent: true,
             puppeteerArgs: {
+                executablePath: process.env.DEV_DEPLOYMENT === 'true'
+                    ? puppeteer.executablePath()
+                    : 'google-chrome-stable',
                 args: [
                     '--no-sandbox',
                     '--disable-gpu',
