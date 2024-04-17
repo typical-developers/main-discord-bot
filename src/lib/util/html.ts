@@ -42,7 +42,7 @@ export function html(tag: HTMLTag, attributes: Object, content: string[] = [''])
 
 	const contentString = content.join('');
 
-	return `<${tag}${attributeString}>${contentString}</${tag}>`;
+	return `<${tag}${!attributeString.length ? '' : ' ' + attributeString}>${contentString}</${tag}>`;
 }
 
 /** All individual tag types so you dont have to keep providing them in the html function. */

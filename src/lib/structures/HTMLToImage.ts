@@ -11,25 +11,23 @@ export class HTMLToImage {
     public readonly htmlContent: object;
 
     constructor(page: { html: string, styling: string[] }, content: object) {
-        const styling = [
-            css('body', {
-                position: 'absolute',
-                margin: '0',
-                color: 'black',
-                font_family: 'Fixel Variable',
-                font_size: '12px',
-                background_color: 'transparent'
-            }),
-            ...page.styling
-        ];
-
         this.html = html({}, [
             head({}, [
                 script({
                     src: 'https://twemoji.maxcdn.com/v/latest/twemoji.min.js',
-					crossorigin: 'anonymous'
+                    crossorigin: 'anonymous'
                 }),
-                style({}, styling)
+                style({}, [
+                    css('body', {
+                        position: 'absolute',
+                        margin: '0',
+                        color: 'white',
+                        font_family: 'Fixel Variable',
+                        font_size: '12px',
+                        background_color: 'transparent'
+                    })
+                ]),
+                style({}, [...page.styling])
             ]),
             body({}, [page.html]),
             script({}, ['twemoji.parse(document.body)'])

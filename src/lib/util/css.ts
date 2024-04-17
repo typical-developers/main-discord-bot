@@ -38,7 +38,12 @@ export enum CSSDeclarations {
 	'opacity',
 	'max_width',
 	'flex_shrink',
-	'text_align'
+	'text_align',
+	'box_sizing',
+	'filter',
+	'text_shadow',
+	'z_index',
+	'top'
 }
 
 export type CSSDeclaration = {
