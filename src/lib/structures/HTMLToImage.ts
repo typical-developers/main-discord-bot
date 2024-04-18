@@ -1,8 +1,8 @@
 import { Readable } from 'stream';
-import nodeHtmlToImage from "node-html-to-image";
+import nodeHtmlToImage from 'node-html-to-image';
 import puppeteer from 'puppeteer';
-import { htmlFunctions } from "#lib/util/html";
-import { css } from "#lib/util/css";
+import { htmlFunctions } from '#lib/util/html';
+import { css } from '#lib/util/css';
 
 const { html, head, script, style, body } = htmlFunctions;
 
@@ -10,7 +10,7 @@ export class HTMLToImage {
     public readonly html: string;
     public readonly htmlContent: object;
 
-    constructor(page: { html: string, styling: string[] }, content: object) {
+    constructor(page: { html: string; styling: string[] }, content: object) {
         this.html = html({}, [
             head({}, [
                 script({
@@ -41,15 +41,8 @@ export class HTMLToImage {
             waitUntil: 'load',
             transparent: true,
             puppeteerArgs: {
-                executablePath: process.env.DEV_DEPLOYMENT === 'true'
-                    ? puppeteer.executablePath()
-                    : 'google-chrome-stable',
-                args: [
-                    '--no-sandbox',
-                    '--disable-gpu',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage'
-                ],
+                executablePath: process.env.DEV_DEPLOYMENT === 'true' ? puppeteer.executablePath() : 'google-chrome-stable',
+                args: ['--no-sandbox', '--disable-gpu', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
                 ignoreDefaultArgs: ['--disable-extensions']
             },
             html: this.html,
