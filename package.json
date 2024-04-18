@@ -12,21 +12,23 @@
   "scripts": {
     "clean": "rimraf ./dist/",
     "format": "prettier --write \"src/**/*.ts\"",
-    "build": "pnpm run clean && tsc",
+    "build": "tsc",
     "build:watch": "pnpm run clean && tsc -w",
     "deploy": "pnpm run build && node ./dist/index.js",
-    "deploy:dev": "set DEV_DEPLOYMENT=true&& pnpm run build && node ./dist/index.js"
+    "deploy:dev": "set DEV_DEPLOYMENT=true&&pnpm run clean && pnpm run build && node ./dist/index.js"
   },
   "dependencies": {
     "@sapphire/discord.js-utilities": "^7.2.0",
     "@sapphire/framework": "^5.1.0",
+    "@sapphire/pieces": "^4.2.2",
     "discord.js": "^14.14.1",
+    "node-cache": "^5.1.2",
     "node-html-to-image": "^4.0.0"
   },
   "devDependencies": {
     "@sapphire/decorators": "^6.1.0",
     "@sapphire/plugin-subcommands": "^6.0.3",
-    "@typical-developers/api-types": "^1.0.1",
+    "@typical-developers/api-types": "^1.1.3",
     "dotenv": "^16.4.5",
     "prettier": "^3.2.5",
     "puppeteer": "^22.6.5",
