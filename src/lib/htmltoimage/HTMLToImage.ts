@@ -24,7 +24,7 @@ export default class HTMLToImage {
 					src: 'https://twemoji.maxcdn.com/v/latest/twemoji.min.js',
 					crossorigin: 'anonymous'
 				}),
-				html('style', {}, this.style.join(''))
+				html('style', {}, this.style)
 			]),
 			html('body', {}, [page]),
 			html('script', {}, [`twemoji.parse(document.body)`])
