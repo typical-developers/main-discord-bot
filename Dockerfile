@@ -14,18 +14,19 @@ RUN apt-get update && apt-get install curl gnupg -y \
 RUN mkdir -p /usr/src/bot
 WORKDIR /usr/src/bot
 
+# Copy image assests
+COPY ./assets/images /user/src/bot
+
 # Install fonts
 RUN apt-get update && apt-get install -y fontconfig
 COPY ./assets/fonts /usr/local/share/fonts
 RUN fc-cache -f -v
 
-# Copy image assests
-COPY ./assets/images /user/src/bot
-
-# Install npm
+# Setup npm
 COPY package.json /usr/src/bot
-RUN npm install
+RUN npm i -g pnpm \
+  && pnpm i
 
 COPY . /usr/src/bot
 
-CMD ["npm", "run", "deploy"]
+CMD ["pnpm", "run", "deploy"]

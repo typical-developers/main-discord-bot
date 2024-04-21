@@ -2,7 +2,7 @@
   "name": "typical",
   "version": "1.0.0",
   "description": "A typical Discord bot.",
-  "main": "dist/index.js",
+  "main": "./dist/index.js",
   "type": "module",
   "imports": {
     "#lib/*": "./dist/lib/*.js"

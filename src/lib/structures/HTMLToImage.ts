@@ -40,14 +40,14 @@ export class HTMLToImage {
             waitUntil: 'load',
             transparent: true,
             puppeteerArgs: {
+                headless: 'new',
                 executablePath: process.env.DEV_DEPLOYMENT === 'true'
                     ? puppeteer.executablePath()
                     : 'google-chrome-stable',
                 args: [
                     '--no-sandbox',
                     '--disable-gpu',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage'
+                    '--disable-setuid-sandbox'
                 ],
                 ignoreDefaultArgs: ['--disable-extensions']
             },
