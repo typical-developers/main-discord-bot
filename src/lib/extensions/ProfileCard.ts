@@ -220,7 +220,7 @@ export class ProfileCard extends HTMLToImage {
                     ? `${details.stats.activityProgression.currentProgress} / ${details.stats.activityProgression.requiredProgress}`
                     : details.stats.activityProgression.totalPoints,
                 progressBarLength: details.stats.activityProgression.requiredProgress > details.stats.activityProgression.currentProgress
-                    ? Math.floor((100 * details.stats.activityProgression.currentProgress) / details.stats.activityProgression.requiredProgress)
+                    ? Math.ceil((100 * details.stats.activityProgression.currentProgress) / details.stats.activityProgression.requiredProgress)
                     : 100
             }
         );
