@@ -100,10 +100,10 @@ export default class ExperiencePage extends RobloxCard {
 			html('img', { class: 'icon', src: experience.thumbnail }),
 			html('div', { class: 'details' }, [
 				html('div', { class: 'name' }, [
-					html('div', { class: 'title' }, experience.name),
-					html('div', { class: 'creator' }, ['By', html('span', {}, experience.creator)])
+					html('div', { class: 'title' }, [experience.name]),
+					html('div', { class: 'creator' }, ['By', html('span', {}, [experience.creator])])
 				]),
-				experience.rating ? html('div', { class: 'chip outline' }, experience.rating) : '',
+				experience.rating ? html('div', { class: 'chip outline' }, [experience.rating]) : '',
 				html('div', { class: 'stats' }, [
 					html('div', { class: 'stats-item' }, [html('span', { class: 'number' }, abbreviate(experience.stats.active)), 'active']),
 					html('div', { class: 'stats-item' }, [html('span', { class: 'number' }, abbreviate(experience.stats.visits)), 'visits']),
@@ -113,19 +113,19 @@ export default class ExperiencePage extends RobloxCard {
 		]);
 
 		const DESCRIPTION = html('div', { class: 'paper-container' }, [
-			html('span', {}, 'Description'),
+			html('span', {}, ['Description']),
 			html(
 				'div',
 				{},
-				experience.description?.length
-					? html('div', { class: 'paper-content' }, experience.description.replaceAll('\n', '<br/>'))
-					: 'No description for experience.'
+				[experience.description?.length
+					? html('div', { class: 'paper-content' }, [experience.description.replaceAll('\n', '<br/>')])
+					: 'No description for experience.']
 			)
 		]);
 
 		const DATES = html('div', { class: 'dates' }, [
 			html('div', { class: 'paper-container details' }, [
-				html('span', {}, 'CREATED'),
+				html('span', {}, ['CREATED']),
 				Intl.DateTimeFormat('en-US', {
 					year: 'numeric',
 					month: '2-digit',
@@ -133,7 +133,7 @@ export default class ExperiencePage extends RobloxCard {
 				}).format(experience.dates.created)
 			]),
 			html('div', { class: 'paper-container details' }, [
-				html('span', {}, 'UPDATED'),
+				html('span', {}, ['UPDATED']),
 				Intl.DateTimeFormat('en-US', {
 					year: 'numeric',
 					month: '2-digit',

@@ -26,8 +26,8 @@ export default class HTMLToImage {
 				}),
 				html('style', {}, this.style.join(''))
 			]),
-			html('body', {}, page),
-			html('script', {}, `twemoji.parse(document.body)`)
+			html('body', {}, [page]),
+			html('script', {}, [`twemoji.parse(document.body)`])
 		]);
 	}
 

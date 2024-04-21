@@ -16,6 +16,8 @@ RUN apt-get update && apt-get install -y fontconfig
 COPY ./assets/fonts /usr/local/share/fonts
 RUN fc-cache -f -v
 
+COPY ./assets/images /user/src/bot
+
 COPY package.json /usr/src/bot
 RUN npm install
 

@@ -128,17 +128,24 @@ export enum HTMLTags {
 
 export type HTMLTag = keyof typeof HTMLTags;
 
-export function html(tag: HTMLTag, attributes: Object, content?: string | Array<Object>) {
-	attributes = Object.entries(attributes)
+export function html(tag: HTMLTag, attributes: Object, content: string[] = ['']) {
+	const attributeString = Object.entries(attributes)
 		.map(([attribute, value]) => `${attribute}="${value}"`)
 		.join(' ');
 
-	if (Array.isArray(content)) {
-		content = content.join('');
-	}
+	const contentString = content.join('');
 
-	return `<${tag}${attributes !== '' ? ' ' + attributes : ''}>${content || ''}</${tag}>`;
+	return `<${tag}${!attributeString.length ? '' : ' ' + attributeString}>${contentString}</${tag}>`;
 }
+
+/** All individual tag types so you dont have to keep providing them in the html function. */
+export const htmlFunctions = (Object.keys(HTMLTags) as HTMLTag[])
+	.reduce((obj, tag: HTMLTag) => (
+		{
+			...obj,
+			[tag]: (attributes: Object, content: string[] = ['']) => html(tag, attributes, content)
+		}
+	), {} as { [key in HTMLTag]: (attributes: Object, content?: string[]) => string });
 
 export function root(values: Object, override: string = ':root') {
 	values = Object.entries(values)
@@ -253,6 +260,7 @@ export enum CSSDeclarations {
     "font_style",
     "font_variant",
     "font_weight",
+    "gap",
     "grid",
     "grid_area",
     "grid_auto_columns",

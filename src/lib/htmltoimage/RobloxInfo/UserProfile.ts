@@ -99,8 +99,8 @@ export default class UserProfile extends RobloxCard {
 						`@${profile.username}`
 					]),
 					html('div', { class: 'flags' }, [
-						profile.flags.isAdmin ? html('div', { class: 'chip small outline grey' }, 'Administrator') : '',
-						profile.flags.isBanned ? html('div', { class: 'chip small outline red' }, 'Banned') : ''
+						profile.flags.isAdmin ? html('div', { class: 'chip small outline grey' }, ['Administrator']) : '',
+						profile.flags.isBanned ? html('div', { class: 'chip small outline red' }, ['Banned']) : ''
 					])
 				]),
 				html('div', { class: 'stats' }, [
@@ -112,19 +112,19 @@ export default class UserProfile extends RobloxCard {
 		]);
 
 		const ABOUT = html('div', { class: 'paper-container' }, [
-			html('span', {}, 'About'),
+			html('span', {}, ['About']),
 			html(
 				'div',
 				{},
-				profile.about.length ? html('div', { class: 'paper-content' }, profile.about.replaceAll('\n', '<br/>')) : 'No about found.'
+				[profile.about.length ? html('div', { class: 'paper-content' }, [profile.about.replaceAll('\n', '<br/>')]) : 'No about found.']
 			)
 		]);
 		const PASTUSERNAMES = html('div', { class: 'paper-container' }, [
-			html('span', {}, 'Previous Usernames'),
+			html('span', {}, ['Previous Usernames']),
 			profile.previousNames.length ? profile.previousNames.join(', ') : 'No previous names on record.'
 		]);
 		const CREATED = html('div', { class: 'paper-container details' }, [
-			html('span', {}, 'CREATED'),
+			html('span', {}, ['CREATED']),
 			Intl.DateTimeFormat('en-US', {
 				year: 'numeric',
 				month: '2-digit',

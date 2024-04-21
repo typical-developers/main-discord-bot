@@ -9,7 +9,7 @@ import {
 	ApplicationCommandType
 } from 'discord.js';
 import { getGuildSettings, getUserPoints } from '#lib/util/database';
-import ActivityCard from '#lib/htmltoimage/TypicalCard/ActivityCard';
+import { ProfileCard } from '#lib/extensions/ProfileCard';
 
 @ApplyOptions<ChatInputCommand.Options>({
 	description: 'Fetch an activity card.'
@@ -119,22 +119,41 @@ export class ActivtyCardCommand extends Command {
 			}
 		}
 
-		const ACTIVITYCARD = await new ActivityCard(
-			{
-				name: member.user.username,
-				avatarURL: member.displayAvatarURL({ forceStatic: true, size: 512 }) || member.user.defaultAvatarURL,
-				status: member.presence?.status
-			},
-			{
-				title: PROGRESS.title, //PROGRESS.title,
-				rank: await this.getRank(interaction.guild.id, member.id),
-				points: {
-					total: USERPOINTS.amount,
+		// const ACTIVITYCARD = await new ActivityCard(
+		// 	{
+		// 		name: member.user.username,
+		// 		avatarURL: member.displayAvatarURL({ forceStatic: true, size: 512 }) || member.user.defaultAvatarURL,
+		// 		status: member.presence?.status
+		// 	},
+		// 	{
+		// 		title: PROGRESS.title, //PROGRESS.title,
+		// 		rank: await this.getRank(interaction.guild.id, member.id),
+		// 		points: {
+		// 			total: USERPOINTS.amount,
+		// 			currentProgress: PROGRESS.progress,
+		// 			nextProgress: PROGRESS.required
+		// 		}
+		// 	}
+		// ).draw();
+		const ACTIVITYCARD = await new ProfileCard({
+			username: member.user.username,
+			displayName: member.user.displayName,
+			avatarUrl: member.displayAvatarURL({ forceStatic: true, size: 128 }) || member.user.defaultAvatarURL,
+			rank: await this.getRank(interaction.guild.id, member.id),
+			tags: PROGRESS.title
+				? [{
+					name: PROGRESS.title,
+					color: '255, 255, 255'
+				}]
+				: [],
+			stats: {
+				activityProgression: {
+					totalPoints: USERPOINTS.amount,
 					currentProgress: PROGRESS.progress,
-					nextProgress: PROGRESS.required
+					requiredProgress: PROGRESS.required
 				}
 			}
-		).draw();
+		}).draw();
 		if (!ACTIVITYCARD) return;
 
 		const ATTACHMENT = new AttachmentBuilder(ACTIVITYCARD, { name: 'card.png' });

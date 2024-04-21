@@ -32,18 +32,18 @@ export default class ActivityCard extends TypicalCard {
 	public constructor(user: UserDetails, ranking: RankingDetails) {
 		const USERPROFILE = html('div', { class: 'user-profile' }, [
 			html('div', { class: 'user-details' }, [
-				html('div', { class: 'user-name' }, user.name),
-				html('div', { class: 'user-title', style: `color: ${ranking.titleColor || 'var(--white); opacity: 0.5;'}` }, ranking.title)
+				html('div', { class: 'user-name' }, [user.name]),
+				html('div', { class: 'user-title', style: `color: ${ranking.titleColor || 'var(--white); opacity: 0.5;'}` }, [ranking.title])
 			]),
 			html('div', { class: 'user-stats' }, [
 				html('div', { class: 'stat-item' }, [
-					html('div', { class: 'stat-item-header' }, 'Points'),
-					html('div', { class: 'stat-item-content' }, ranking.points.total.toString())
+					html('div', { class: 'stat-item-header' }, ['Points']),
+					html('div', { class: 'stat-item-content' }, [ranking.points.total.toString()])
 				]),
 				ranking.rank
 					? html('div', { class: 'stat-item' }, [
-							html('div', { class: 'stat-item-header' }, 'Rank'),
-							html('div', { class: 'stat-item-content' }, `#` + ranking.rank.toString())
+							html('div', { class: 'stat-item-header' }, ['Rank']),
+							html('div', { class: 'stat-item-content' }, [`#` + ranking.rank.toString()])
 					  ])
 					: ''
 			])
@@ -59,9 +59,9 @@ export default class ActivityCard extends TypicalCard {
 			html(
 				'div',
 				{ class: 'activity-progress-text' },
-				ranking.points.currentProgress <= ranking.points.nextProgress
+				[ranking.points.currentProgress <= ranking.points.nextProgress
 					? `${ranking.points.currentProgress} / ${ranking.points.nextProgress}`
-					: ranking.points.total.toString()
+					: ranking.points.total.toString()]
 			)
 		]);
 
