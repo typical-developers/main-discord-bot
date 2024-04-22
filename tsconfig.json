@@ -5,8 +5,10 @@
         "experimentalDecorators": true,
         "module": "NodeNext",
         "moduleResolution": "NodeNext",
-        "rootDir": "./src",
+        "noUnusedLocals": true,
         "outDir": "./dist",
+        "rootDir": "./src",
+        "strictNullChecks": true,
         "paths": {
             "#lib/*": [ "./dist/lib" ]
         }

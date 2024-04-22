@@ -43,12 +43,22 @@ export enum CSSDeclarations {
     'filter',
     'text_shadow',
     'z_index',
-    'top'
+    'top',
+    '_webkit_background_clip',
+    '_webkit_text_fill_color'
 }
 
 export type CSSDeclaration = {
     [key in keyof typeof CSSDeclarations]?: string;
 };
+
+export function declarations(declarations: CSSDeclaration) {
+    const declarationsString = Object.entries(declarations)
+    .map(([property, value]) => `${property.replaceAll('_', '-')}:${value};`)
+    .join('');
+
+    return declarationsString;
+}
 
 export function css(className: string, declarations: CSSDeclaration) {
     const declarationsString = Object.entries(declarations)

@@ -1,12 +1,12 @@
 import { HTMLToImage } from '#lib/structures/HTMLToImage';
 import { htmlFunctions } from '#lib/util/html';
-import { css } from '#lib/util/css';
+import { css, declarations } from '#lib/util/css';
 import { imageToBase64 } from '#lib/util/files';
 import { abbreviateNumber } from '#lib/util/abbreviate';
 
 const { div, img } = htmlFunctions;
 
-interface ProfileCardDetails {
+export interface ProfileCardDetails {
     /** The @ username of the user. */
     username: string;
     /** The global display name of the user. */
@@ -51,20 +51,14 @@ export class ProfileCard extends HTMLToImage {
                         img({ class: 'avatar', src: '{{avatarUrl}}' }),
                         div({ class: 'details' }, [
                             div({}, [div({ class: 'username' }, ['{{displayName}}']), div({ class: 'displayname' }, ['@{{username}}'])]),
-                            div({ class: 'tags' }, [
-                                ...details.tags.map((tag) =>
-                                    div(
-                                        {
-                                            class: 'tag',
-                                            style: `color: rgba(${tag.color}); background: linear-gradient(rgba(0,0,0,0.8) 100%, rgba(0,0,0,0.8) 0%), rgba(${tag.color});`
-                                        },
-                                        [tag.name]
-                                    )
-                                )
-                            ])
+                            div({ class: 'tags' }, details.tags?.length
+                                ? details.tags?.map((tag: { name: string, color: string }) => (
+                                    div({ class: 'tag', style: `color: rgba(${tag.color}); background: linear-gradient(rgba(0,0,0,0.8) 100%, rgba(0,0,0,0.8) 0%), rgba(${tag.color});` }, [tag.name]))
+                                ) : []
+                            )
                         ])
                     ]),
-                    div({ class: 'profile-user-stats' }, [div({ class: 'rank' }, ['#{{rank}}']), div({ class: 'points' }, ['{{abbreviatedPoints}} points'])])
+                    div({ class: 'profile-user-stats' }, [div({ class: 'rank', style: '{{rankStyle}}' }, ['#{{rank}}']), div({ class: 'points' }, ['{{abbreviatedPoints}} points'])])
                 ]),
                 div({ class: 'profile-activity-progress' }, [
                     div({ class: 'progression' }, [div({ class: 'progress-bar' }, ['{{currentProgressBar}}']), div({ class: 'progress-fill-bar', style: 'width: {{progressBarLength}}%; background: linear-gradient(to right, #A44DFA, #FD9C66);' })]),
@@ -117,6 +111,7 @@ export class ProfileCard extends HTMLToImage {
                 overflow: 'hidden',
                 text_overflow: 'ellipsis',
                 max_width: '250px',
+                white_space: 'nowrap',
                 font_size: '24px',
                 font_weight: '700',
                 text_shadow: '1px 1px 7px rgba(0, 0, 0, 0.45)'
@@ -124,6 +119,7 @@ export class ProfileCard extends HTMLToImage {
             css('.profile-user-info .details .displayname', {
                 overflow: 'hidden',
                 text_overflow: 'ellipsis',
+                white_space: 'nowrap',
                 max_width: '250px',
                 font_size: '14px',
                 font_weight: '600',
@@ -148,7 +144,7 @@ export class ProfileCard extends HTMLToImage {
             css('.profile-user-stats .rank', {
                 font_size: '24px',
                 font_weight: '900',
-                text_shadow: '1px 1px 7px rgba(0, 0, 0, 0.45)'
+                filter: 'drop-shadow(1px 1px 7px rgba(0, 0, 0, 0.45))'
             }),
             css('.profile-user-stats .points', {
                 text_shadow: '1px 1px 7px rgba(0, 0, 0, 0.45)'
@@ -166,6 +162,7 @@ export class ProfileCard extends HTMLToImage {
                 text_shadow: '1px 1px 7px rgba(0, 0, 0, 0.45)'
             }),
             css('.profile-user-stats .points', {
+                font_weight: '500',
                 text_shadow: '1px 1px 7px rgba(0, 0, 0, 0.45)'
             }),
             css('.profile-activity-progress', {
@@ -179,7 +176,8 @@ export class ProfileCard extends HTMLToImage {
             css('.profile-activity-progress .progression', {
                 display: 'flex',
                 overflow: 'hidden',
-                border_radius: '5px'
+                border_radius: '5px',
+                font_weight: '500'
             }),
             css('.profile-activity-progress .progress-bar', {
                 z_index: '1',
@@ -216,10 +214,40 @@ export class ProfileCard extends HTMLToImage {
                 avatarUrl: details.avatarUrl,
                 backgroundImageUrl: details.backgroundImageUrl || `data:image/png;base64,${imageToBase64('/assets/images/profile-default.png')}`,
                 rank: details.rank,
+                rankStyle: () => {
+                    const background = {
+                        gradient1: '#FFF',
+                        gradient2: '#FFF'
+                    }
+
+                    switch (details.rank) {
+                        case 1:
+                            background.gradient1 = '#82F5FF',
+                            background.gradient2 = '#14AAB8';
+                            break;
+                        case 2:
+                            background.gradient1 = '#FFCC33',
+                            background.gradient2 = '#B87414';
+                            break;
+                        case 3:
+                            background.gradient1 = '#FF7733',
+                            background.gradient2 = '#A13F2B';
+                            break;
+                        default: return '';
+                    }
+
+                    return declarations({
+                        background: `linear-gradient(to bottom, ${background.gradient1}, ${background.gradient2})`,
+                        _webkit_background_clip: 'text',
+                        _webkit_text_fill_color: 'transparent'
+                    });
+                },
                 abbreviatedPoints: abbreviateNumber(activityProgression.totalPoints),
                 currentProgress: activityProgression.currentProgress,
                 nextProgress: activityProgression.requiredProgress,
-                progressBarLength: Math.ceil((100 * activityProgression.currentProgress) / activityProgression.requiredProgress),
+                progressBarLength: details.stats.activityProgression.requiredProgress > details.stats.activityProgression.currentProgress
+                    ? Math.ceil((100 * details.stats.activityProgression.currentProgress) / details.stats.activityProgression.requiredProgress)
+                    : 100,
                 currentProgressBar:
                     activityProgression.currentProgress > activityProgression.requiredProgress
                         ? activityProgression.totalPoints.toLocaleString()

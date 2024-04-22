@@ -10,7 +10,7 @@ export class HTMLToImage {
     public readonly html: string;
     public readonly htmlContent: object;
 
-    constructor(page: { html: string; styling: string[] }, content: object) {
+    constructor(page: { html: string; styling: string[] }, content: any) {
         this.html = html({}, [
             head({}, [
                 script({
@@ -24,7 +24,8 @@ export class HTMLToImage {
                         color: 'white',
                         font_family: 'Fixel Variable',
                         font_size: '12px',
-                        background_color: 'transparent'
+                        background_color: 'transparent',
+                        text_rendering: 'optimizeLegibility'
                     })
                 ]),
                 style({}, [...page.styling])
