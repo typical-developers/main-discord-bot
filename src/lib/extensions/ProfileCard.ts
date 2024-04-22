@@ -206,6 +206,8 @@ export class ProfileCard extends HTMLToImage {
             })
         ];
 
+        const { activityProgression } = details.stats;
+
         super(
             { html: html, styling: styling },
             {
@@ -214,14 +216,14 @@ export class ProfileCard extends HTMLToImage {
                 avatarUrl: details.avatarUrl,
                 backgroundImageUrl: details.backgroundImageUrl || `data:image/png;base64,${imageToBase64('/assets/images/profile-default.png')}`,
                 rank: details.rank,
-                abbreviatedPoints: abbreviateNumber(details.stats.activityProgression.totalPoints),
-                currentProgress: details.stats.activityProgression.currentProgress,
-                nextProgress: details.stats.activityProgression.requiredProgress,
-                progressBarLength: Math.floor((100 * details.stats.activityProgression.currentProgress) / details.stats.activityProgression.requiredProgress),
+                abbreviatedPoints: abbreviateNumber(activityProgression.totalPoints),
+                currentProgress: activityProgression.currentProgress,
+                nextProgress: activityProgression.requiredProgress,
+                progressBarLength: Math.ceil((100 * activityProgression.currentProgress) / activityProgression.requiredProgress),
                 currentProgressBar:
-                    details.stats.activityProgression.currentProgress > details.stats.activityProgression.requiredProgress
-                        ? details.stats.activityProgression.totalPoints.toLocaleString()
-                        : `${details.stats.activityProgression.currentProgress.toLocaleString()} / ${details.stats.activityProgression.requiredProgress.toLocaleString()}`
+                    activityProgression.currentProgress > activityProgression.requiredProgress
+                        ? activityProgression.totalPoints.toLocaleString()
+                        : `${activityProgression.currentProgress.toLocaleString()} / ${activityProgression.requiredProgress.toLocaleString()}`
             }
         );
     }
