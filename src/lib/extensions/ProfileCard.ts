@@ -278,8 +278,8 @@ export class ProfileCard extends HTMLToImage {
                         : 100,
                 currentProgressBar:
                     activityProgression.currentProgress > activityProgression.requiredProgress
-                        ? activityProgression.totalPoints.toLocaleString()
-                        : `${activityProgression.currentProgress.toLocaleString()} / ${activityProgression.requiredProgress.toLocaleString()}`
+                        ? activityProgression.totalPoints.toLocaleString('en-US')
+                        : `${activityProgression.currentProgress.toLocaleString('en-US')} / ${activityProgression.requiredProgress.toLocaleString('en-US')}`
             }
         );
     }
