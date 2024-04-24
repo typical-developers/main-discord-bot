@@ -13,8 +13,6 @@ export interface ProfileCardDetails {
     displayName: string;
     /** The user's avatar. */
     avatarUrl: string;
-    /** A custom background iamge to apply to the user. */
-    backgroundImageUrl?: string;
     /** The rank of the user. */
     rank: number;
     /** Tags that will appear on the user's profile. */
@@ -36,6 +34,13 @@ export interface ProfileCardDetails {
             requiredProgress: number;
         };
     };
+    /** A custom background image to apply to the card. */
+    backgroundImageUrl?: string | null;
+    /** A custom progress color to apply to the card. */
+    progressBar?: {
+        gradient1: `#${string}`;
+        gradient2: `#${string}`;
+    };
 }
 
 export class ProfileCard extends HTMLToImage {
@@ -51,17 +56,35 @@ export class ProfileCard extends HTMLToImage {
                         img({ class: 'avatar', src: '{{avatarUrl}}' }),
                         div({ class: 'details' }, [
                             div({}, [div({ class: 'username' }, ['{{displayName}}']), div({ class: 'displayname' }, ['@{{username}}'])]),
-                            div({ class: 'tags' }, details.tags?.length
-                                ? details.tags?.map((tag: { name: string, color: string }) => (
-                                    div({ class: 'tag', style: `color: rgba(${tag.color}); background: linear-gradient(rgba(0,0,0,0.8) 100%, rgba(0,0,0,0.8) 0%), rgba(${tag.color});` }, [tag.name]))
-                                ) : []
+                            div(
+                                { class: 'tags' },
+                                details.tags?.length
+                                    ? details.tags?.map((tag: { name: string; color: string }) =>
+                                          div(
+                                              {
+                                                  class: 'tag',
+                                                  style: `color: rgba(${tag.color}); background: linear-gradient(rgba(0,0,0,0.8) 100%, rgba(0,0,0,0.8) 0%), rgba(${tag.color});`
+                                              },
+                                              [tag.name]
+                                          )
+                                      )
+                                    : []
                             )
                         ])
                     ]),
-                    div({ class: 'profile-user-stats' }, [div({ class: 'rank', style: '{{rankStyle}}' }, ['#{{rank}}']), div({ class: 'points' }, ['{{abbreviatedPoints}} points'])])
+                    div({ class: 'profile-user-stats' }, [
+                        div({ class: 'rank', style: '{{rankStyle}}' }, ['#{{rank}}']),
+                        div({ class: 'points' }, ['{{abbreviatedPoints}} points'])
+                    ])
                 ]),
                 div({ class: 'profile-activity-progress' }, [
-                    div({ class: 'progression' }, [div({ class: 'progress-bar' }, ['{{currentProgressBar}}']), div({ class: 'progress-fill-bar', style: 'width: {{progressBarLength}}%; background: linear-gradient(to right, #A44DFA, #FD9C66);' })]),
+                    div({ class: 'progression' }, [
+                        div({ class: 'progress-bar' }, ['{{currentProgressBar}}']),
+                        div({
+                            class: 'progress-fill-bar',
+                            style: 'width: {{progressBarLength}}%; background: linear-gradient(to right, {{progressBarGradient1}}, {{progressBarGradient2}});'
+                        })
+                    ]),
                     div({ class: 'info-text' }, ['Activity Progression'])
                 ])
             ]
@@ -99,18 +122,19 @@ export class ProfileCard extends HTMLToImage {
                 border_radius: '15px',
                 width: '80px',
                 height: '80px',
-                filter: 'drop-shadow(1px 1px 7px rgba(0, 0, 0, 0.45))'
+                filter: 'drop-shadow(1px 1px 7px rgba(0, 0, 0, 0.45))',
+                background_color: 'rgba(229, 232, 255, 0.35)'
             }),
             css('.profile-user-info .details', {
                 display: 'flex',
                 flex_direction: 'column',
                 gap: '5px',
+                max_width: '300px',
                 overflow: 'hidden'
             }),
             css('.profile-user-info .details .username', {
                 overflow: 'hidden',
                 text_overflow: 'ellipsis',
-                max_width: '250px',
                 white_space: 'nowrap',
                 font_size: '24px',
                 font_weight: '700',
@@ -120,19 +144,22 @@ export class ProfileCard extends HTMLToImage {
                 overflow: 'hidden',
                 text_overflow: 'ellipsis',
                 white_space: 'nowrap',
-                max_width: '250px',
                 font_size: '14px',
                 font_weight: '600',
                 text_shadow: '1px 1px 7px rgba(0, 0, 0, 0.45)'
             }),
             css('.profile-user-info .details .tags', {
                 display: 'flex',
-                flex_direction: 'row'
+                flex_direction: 'row',
+                overflow: 'hidden',
+                gap: '5px',
+                _webkit_mask_image: 'linear-gradient(to right, rgba(0,0,0,1) 85%, rgba(0,0,0,0) 100%)'
             }),
             css('.profile-user-info .details .tags .tag', {
                 padding: '4px 8px',
                 border_radius: '25px',
-                font_weight: '600'
+                font_weight: '600',
+                white_space: 'nowrap',
             }),
             css('.profile-user-stats', {
                 display: 'flex',
@@ -218,22 +245,20 @@ export class ProfileCard extends HTMLToImage {
                     const background = {
                         gradient1: '#FFF',
                         gradient2: '#FFF'
-                    }
+                    };
 
                     switch (details.rank) {
                         case 1:
-                            background.gradient1 = '#82F5FF',
-                            background.gradient2 = '#14AAB8';
+                            (background.gradient1 = '#82F5FF'), (background.gradient2 = '#14AAB8');
                             break;
                         case 2:
-                            background.gradient1 = '#FFCC33',
-                            background.gradient2 = '#B87414';
+                            (background.gradient1 = '#FFCC33'), (background.gradient2 = '#B87414');
                             break;
                         case 3:
-                            background.gradient1 = '#FF7733',
-                            background.gradient2 = '#A13F2B';
+                            (background.gradient1 = '#FF7733'), (background.gradient2 = '#A13F2B');
                             break;
-                        default: return '';
+                        default:
+                            return '';
                     }
 
                     return declarations({
@@ -245,9 +270,12 @@ export class ProfileCard extends HTMLToImage {
                 abbreviatedPoints: abbreviateNumber(activityProgression.totalPoints),
                 currentProgress: activityProgression.currentProgress,
                 nextProgress: activityProgression.requiredProgress,
-                progressBarLength: details.stats.activityProgression.requiredProgress > details.stats.activityProgression.currentProgress
-                    ? Math.ceil((100 * details.stats.activityProgression.currentProgress) / details.stats.activityProgression.requiredProgress)
-                    : 100,
+                progressBarGradient1: details.progressBar?.gradient1 || '#A44DFA',
+                progressBarGradient2: details.progressBar?.gradient2 || '#FD9C66',
+                progressBarLength:
+                    details.stats.activityProgression.requiredProgress > details.stats.activityProgression.currentProgress
+                        ? Math.ceil((100 * details.stats.activityProgression.currentProgress) / details.stats.activityProgression.requiredProgress)
+                        : 100,
                 currentProgressBar:
                     activityProgression.currentProgress > activityProgression.requiredProgress
                         ? activityProgression.totalPoints.toLocaleString()

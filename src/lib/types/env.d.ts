@@ -7,5 +7,7 @@ declare namespace NodeJS {
         DISCORD_TOKEN: string;
         /** The API key for accessing the bot's backend. */
         BOT_ENDPOINT_API_KEY: string;
+        /** The webhook for logging errors. */
+        BOT_ERROR_WEBHOOK_URL: string,
     }
 }

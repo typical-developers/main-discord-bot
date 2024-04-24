@@ -45,7 +45,8 @@ export enum CSSDeclarations {
     'z_index',
     'top',
     '_webkit_background_clip',
-    '_webkit_text_fill_color'
+    '_webkit_text_fill_color',
+    '_webkit_mask_image'
 }
 
 export type CSSDeclaration = {
@@ -54,8 +55,8 @@ export type CSSDeclaration = {
 
 export function declarations(declarations: CSSDeclaration) {
     const declarationsString = Object.entries(declarations)
-    .map(([property, value]) => `${property.replaceAll('_', '-')}:${value};`)
-    .join('');
+        .map(([property, value]) => `${property.replaceAll('_', '-')}:${value};`)
+        .join('');
 
     return declarationsString;
 }

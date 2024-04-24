@@ -21,7 +21,7 @@
     "@sapphire/discord.js-utilities": "^7.2.0",
     "@sapphire/framework": "^5.1.0",
     "@sapphire/pieces": "^4.2.2",
-    "@typical-developers/api-types": "^1.1.4",
+    "@typical-developers/api-types": "^1.1.9",
     "discord.js": "^14.14.1",
     "gql-query-builder": "^3.8.0",
     "graphql": "^16.8.1",
@@ -33,7 +33,7 @@
     "@sapphire/plugin-subcommands": "^6.0.3",
     "dotenv": "^16.4.5",
     "prettier": "^3.2.5",
-    "puppeteer": "^22.6.5",
+    "puppeteer": "^22.7.0",
     "rimraf": "^5.0.5",
     "typescript": "^5.4.5"
   }

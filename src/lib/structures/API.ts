@@ -1,5 +1,5 @@
-import { GraphQLREsponseErrors } from '#lib/extensions/GraphQLResponseErrors';
 import type { MemberProfileDetails } from '@typical-developers/api-types/graphql';
+import { GraphQLResponseErrors } from '#lib/extensions/GraphQLResponseErrors';
 import gql from 'gql-query-builder';
 
 // TODO: Cache results and update them.
@@ -18,18 +18,26 @@ export class TypicalAPI {
 
     protected async query<Data extends Object>(query: string, variables?: object) {
         const response = await fetch(this.baseUrl, {
-            method: "POST",
+            method: 'POST',
             headers: {
-                'authorization': this.apiKey,
+                authorization: this.apiKey,
                 'content-type': 'application/json'
             },
             body: JSON.stringify({ query, variables })
-        });
+        }).catch(() => null);
+
+        if (!response) {
+            throw new Error('Fetch failed. API may be down.');
+        }
+
+        if (!response.ok) {
+            throw new Error(`Status code ${response.status}.`);
+        }
 
         // TODO: Typeset errors better.
-        const { errors, data }: { errors?: any[], data: Data } = await response.json();
+        const { errors, data }: { errors?: object[]; data: Data } = await response.json();
         if (errors?.length) {
-            throw new GraphQLREsponseErrors(errors);
+            throw new GraphQLResponseErrors(errors);
         }
 
         return data;
@@ -37,25 +45,21 @@ export class TypicalAPI {
 
     public async getMemberProfile(guildId: string, memberId: string) {
         const query = gql.query({
-            operation: 'member_profile',
-            variables: { guild_id: guildId, member_id: memberId },
+            operation: 'MemberProfile',
+            variables: { guild_id: { type: 'Snowflake', value: guildId }, member_id: { type: 'Snowflake', value: memberId } },
             fields: [
                 'rank',
-                'point_amount', {
-                current_activity_roles: [
-                    'role_id',
-                    'required_points'
-                ],
-                next_activity_role: [
-                    'required_points'
-                ],
-                previous_activity_role: [
-                    'required_points'
-                ]
-            }]
+                'point_amount',
+                'activity_card_style',
+                {
+                    current_activity_roles: ['role_id', 'required_points'],
+                    next_activity_role: ['required_points'],
+                    previous_activity_role: ['required_points']
+                }
+            ]
         });
 
-        const { member_profile } = await this.query<{ member_profile: MemberProfileDetails | null }>(query.query, query.variables);
-        return member_profile;
+        const { MemberProfile } = await this.query<{ MemberProfile: MemberProfileDetails | null }>(query.query, query.variables);
+        return MemberProfile;
     }
 }

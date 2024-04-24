@@ -1,9 +1,11 @@
 import '#lib/setup/initialize';
 
-import { ApplicationCommandRegistries, RegisterBehavior, SapphireClient } from '@sapphire/framework';
+import { ApplicationCommandRegistries, LogLevel, RegisterBehavior, SapphireClient } from '@sapphire/framework';
 import { GatewayIntentBits, Partials } from 'discord.js';
 
 const client = new SapphireClient({
+    logger: { level: LogLevel.Info },
+    loadDefaultErrorListeners: false,
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,

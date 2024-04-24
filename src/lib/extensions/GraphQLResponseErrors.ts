@@ -1,4 +1,4 @@
-export class GraphQLREsponseErrors extends Error {
+export class GraphQLResponseErrors extends Error {
     public readonly errors: any[];
 
     constructor(errors: any[]) {
