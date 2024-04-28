@@ -1,14 +1,15 @@
 import { Command, UserError } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { type ApplicationCommandOptionData, GuildMember, ApplicationCommandOptionType, AttachmentBuilder, ApplicationCommandType } from 'discord.js';
-import { ActivityCardStyles } from '@typical-developers/api-types/graphql';
-import { ProfileCard } from '#lib/extensions/ProfileCard';
+import { type ApplicationCommandOptionData, GuildMember, ApplicationCommandOptionType, ApplicationCommandType, AttachmentBuilder } from 'discord.js';
+import { ProfileCardStyles } from '@typical-developers/api-types/graphql';
+import { ProfileCard, ProfileCardCustomization } from '#lib/extensions/ProfileCard';
 import { hexToRGB } from '#lib/util/color';
+import { imageToBase64 } from '#lib/util/files';
 
 @ApplyOptions<Command.Options>({
     description: 'Get information on a server member!'
 })
-export class ActivityDetails extends Command {
+export class ServerProfile extends Command {
     readonly _options: ApplicationCommandOptionData[] = [
         {
             type: ApplicationCommandOptionType.User,
@@ -34,39 +35,61 @@ export class ActivityDetails extends Command {
     /**
      * Get the current card styling.
      * TODO: In the future, move this to a separate util function.
-     * @param style
+     * @param {ProfileCardStyles} style The style to apply to the card.
+     * @returns {Promise<ProfileCardCustomization>}
      */
-    private async getCardStyle(style: ActivityCardStyles, member: GuildMember) {
+    private async getCardStyle(style: ProfileCardStyles, member: GuildMember): Promise<ProfileCardCustomization> {
         switch (style) {
-            case ActivityCardStyles.Discord:
+            case ProfileCardStyles.Discord:
                 const user = await member.user.fetch(true);
 
                 return {
                     backgroundImageUrl: user.bannerURL({ forceStatic: true, size: 1024 })
                 };
-            // Basically ActivityCardStyles.Discord and anything not yet implemented.
+            // Basically ProfileCardStyles.Discord and anything not yet implemented.
+            case ProfileCardStyles.Galaxies:
+                return {
+                    backgroundImageUrl: `data:image/png;base64,${imageToBase64('/assets/images/profile-galaxies.png')}`,
+                    progressBar: {
+                        gradient1: `#4DBCFA`,
+                        gradient2: `#8466FD`
+                    }
+                }
             default:
                 return {};
         }
     }
 
     private async generateCard(interaction: Command.ContextMenuCommandInteraction | Command.ChatInputCommandInteraction, member: GuildMember | undefined) {
-        if (!interaction.guild) return;
         if (!member) return;
+        if (member.user.bot) return;
+        if (!interaction.guild) return;
+
+        const { activity_tracking } = await this.container.api.getGuildSettings(interaction.guild.id);
+        if (!activity_tracking) {
+            throw new UserError({
+                identifier: 'TRACKING_DISBALED',
+                message: 'Activity tracking is not enabled for this guild.'
+            });
+        }
 
         const points = await this.container.api.getMemberProfile(interaction.guild.id, member.id);
-
         if (!points) {
-            throw new UserError({ identifier: 'NO_POINTS', message: 'This user has no activity points in this guild.' })
+            throw new UserError({
+                identifier: 'NO_POINTS',
+                message: 'This user has no activity points in this guild.'
+            });
         }
 
         await interaction.deferReply({ fetchReply: true });
 
-        const { rank, point_amount, current_activity_roles, next_activity_role, activity_card_style } = points;
-        const cardStyle = await this.getCardStyle(activity_card_style, member);
+        const { card_style, activity_info } = points;
+        const { progression } = activity_info;
+
+        const cardStyle = await this.getCardStyle(card_style, member);
         const tags: { name: string; color: `${string}, ${string}, ${string}` }[] = [];
 
-        for (const activityRole of current_activity_roles) {
+        for (const activityRole of activity_info.progression.current_roles) {
             if (!activityRole.role_id) break; // This means there are no activity roles.
 
             const role = await interaction.guild.roles.fetch(activityRole.role_id, { force: true });
@@ -83,14 +106,18 @@ export class ActivityDetails extends Command {
             await new ProfileCard({
                 username: member.user.username,
                 displayName: member.displayName,
-                // Server Profile Avatar -> User Avatar -> Default User Avatar
+                // Server Avatar -> User Avatar -> Default Avatar
                 avatarUrl: member.avatarURL({ forceStatic: true, size: 128 }) || member.user.avatarURL({ forceStatic: true, size: 128 }) || member.user.defaultAvatarURL,
-                rank: rank,
+                rank: activity_info.rank,
                 stats: {
                     activityProgression: {
-                        totalPoints: point_amount,
-                        currentProgress: point_amount - current_activity_roles[0].required_points,
-                        requiredProgress: next_activity_role.required_points - current_activity_roles[0].required_points
+                        totalPoints: activity_info.points,
+                        currentProgress: progression.next_role?.required_points
+                            ? progression.next_role.required_points - activity_info.progression.remaining_progress - (progression.current_roles[0]?.required_points || 0)
+                            : 0,
+                        requiredProgress: progression.next_role?.required_points
+                            ? progression.next_role.required_points - (progression.current_roles[0]?.required_points || 0)
+                            : 0
                     }
                 },
                 tags: tags,

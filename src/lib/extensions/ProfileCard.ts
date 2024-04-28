@@ -34,6 +34,9 @@ export interface ProfileCardDetails {
             requiredProgress: number;
         };
     };
+}
+
+export interface ProfileCardCustomization {
     /** A custom background image to apply to the card. */
     backgroundImageUrl?: string | null;
     /** A custom progress color to apply to the card. */
@@ -44,7 +47,7 @@ export interface ProfileCardDetails {
 }
 
 export class ProfileCard extends HTMLToImage {
-    constructor(details: ProfileCardDetails) {
+    constructor(details: ProfileCardDetails & ProfileCardCustomization) {
         const html = div(
             {
                 class: 'profile-card',
@@ -152,6 +155,7 @@ export class ProfileCard extends HTMLToImage {
                 display: 'flex',
                 flex_direction: 'row',
                 overflow: 'hidden',
+                min_width: '300px',
                 gap: '5px',
                 _webkit_mask_image: 'linear-gradient(to right, rgba(0,0,0,1) 85%, rgba(0,0,0,0) 100%)'
             }),
@@ -159,7 +163,7 @@ export class ProfileCard extends HTMLToImage {
                 padding: '4px 8px',
                 border_radius: '25px',
                 font_weight: '600',
-                white_space: 'nowrap',
+                white_space: 'nowrap'
             }),
             css('.profile-user-stats', {
                 display: 'flex',
@@ -277,7 +281,7 @@ export class ProfileCard extends HTMLToImage {
                         ? Math.ceil((100 * details.stats.activityProgression.currentProgress) / details.stats.activityProgression.requiredProgress)
                         : 100,
                 currentProgressBar:
-                    activityProgression.currentProgress > activityProgression.requiredProgress
+                    activityProgression.currentProgress !<= activityProgression.requiredProgress
                         ? activityProgression.totalPoints.toLocaleString('en-US')
                         : `${activityProgression.currentProgress.toLocaleString('en-US')} / ${activityProgression.requiredProgress.toLocaleString('en-US')}`
             }
