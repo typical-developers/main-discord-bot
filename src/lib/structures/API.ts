@@ -65,7 +65,7 @@ export class TypicalAPI {
             const oldValue = data[key];
             const newValue = newData[key];
     
-            if (!oldValue || !newValue) continue;
+            if (oldValue === undefined || oldValue !== null || newValue === undefined || newValue !== null) continue;
 
             if (typeof oldValue === 'object' && typeof newValue === 'object') {
                 if (Array.isArray(oldValue) && JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
