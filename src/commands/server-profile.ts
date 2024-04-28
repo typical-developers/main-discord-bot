@@ -90,8 +90,6 @@ export class ServerProfile extends Command {
         const tags: { name: string; color: `${string}, ${string}, ${string}` }[] = [];
 
         for (const activityRole of activity_info.progression.current_roles) {
-            if (!activityRole.role_id) break; // This means there are no activity roles.
-
             const role = await interaction.guild.roles.fetch(activityRole.role_id, { force: true });
 
             if (role) {
@@ -112,12 +110,13 @@ export class ServerProfile extends Command {
                 stats: {
                     activityProgression: {
                         totalPoints: activity_info.points,
-                        currentProgress: progression.next_role?.required_points
-                            ? progression.next_role.required_points - activity_info.progression.remaining_progress - (progression.current_roles[0]?.required_points || 0)
-                            : 0,
-                        requiredProgress: progression.next_role?.required_points
-                            ? progression.next_role.required_points - (progression.current_roles[0]?.required_points || 0)
-                            : 0
+                        ...(progression.next_role?.required_points
+                            ? {
+                                currentProgress: progression.next_role.required_points - activity_info.progression.remaining_progress - (progression.current_roles[0]?.required_points || 0),
+                                requiredProgress: progression.next_role.required_points - (progression.current_roles[0]?.required_points || 0)
+                            }
+                            : { currentProgress: 0, requiredProgress: 0 }
+                        )
                     }
                 },
                 tags: tags,
