@@ -274,14 +274,14 @@ export class ProfileCard extends HTMLToImage {
                 abbreviatedPoints: abbreviateNumber(activityProgression.totalPoints),
                 currentProgress: activityProgression.currentProgress,
                 nextProgress: activityProgression.requiredProgress,
-                progressBarGradient1: details.progressBar?.gradient1 || '#A44DFA',
-                progressBarGradient2: details.progressBar?.gradient2 || '#FD9C66',
+                progressBarGradient1: details.progressBar?.gradient1 || '#4D5EFA',
+                progressBarGradient2: details.progressBar?.gradient2 || '#9F66FD',
                 progressBarLength:
                     details.stats.activityProgression.requiredProgress > details.stats.activityProgression.currentProgress
                         ? Math.ceil((100 * details.stats.activityProgression.currentProgress) / details.stats.activityProgression.requiredProgress)
                         : 100,
                 currentProgressBar:
-                    activityProgression.currentProgress !<= activityProgression.requiredProgress
+                    activityProgression.currentProgress >= activityProgression.requiredProgress
                         ? activityProgression.totalPoints.toLocaleString('en-US')
                         : `${activityProgression.currentProgress.toLocaleString('en-US')} / ${activityProgression.requiredProgress.toLocaleString('en-US')}`
             }
