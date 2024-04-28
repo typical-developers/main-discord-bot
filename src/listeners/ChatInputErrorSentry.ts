@@ -1,7 +1,7 @@
-import { ChatInputCommandErrorPayload, Events, Listener, UserError } from "@sapphire/framework";
-import { ApplyOptions } from "@sapphire/decorators";
-import { AttachmentBuilder, ChatInputCommandInteraction, InteractionReplyOptions, inlineCode } from "discord.js";
-import { GraphQLResponseErrors } from "#lib/extensions/GraphQLResponseErrors";
+import { ChatInputCommandErrorPayload, Events, Listener, UserError } from '@sapphire/framework';
+import { ApplyOptions } from '@sapphire/decorators';
+import { AttachmentBuilder, ChatInputCommandInteraction, InteractionReplyOptions, inlineCode } from 'discord.js';
+import { GraphQLResponseErrors } from '#lib/extensions/GraphQLResponseErrors';
 
 @ApplyOptions<Listener.Options>({
     event: Events.ChatInputCommandError,
@@ -20,21 +20,23 @@ export class ChatInputErrorSentry extends Listener {
     }
 
     private async sendWebhook(info: string, details: any) {
-        const timestamp = new Date().toLocaleTimeString('en-us' , {
+        const timestamp = new Date().toLocaleTimeString('en-us', {
             hour12: false,
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit"
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
         });
 
         const errorDetails = new AttachmentBuilder(Buffer.from(details), { name: 'details.js' });
 
-        await this.container.sentry.errors.send({
-            username: this.container.client.user?.username,
-            avatarURL: this.container.client.user?.avatarURL() || this.container.client.user?.defaultAvatarURL,
-            content: `[${inlineCode(timestamp)}]: ${info}`,
-            files: [errorDetails]
-        }).catch((err) => console.log(err));
+        await this.container.sentry.errors
+            .send({
+                username: this.container.client.user?.username,
+                avatarURL: this.container.client.user?.avatarURL() || this.container.client.user?.defaultAvatarURL,
+                content: `[${inlineCode(timestamp)}]: ${info}`,
+                files: [errorDetails]
+            })
+            .catch((err) => console.log(err));
     }
 
     public override async run(error: Error | UserError | GraphQLResponseErrors, { interaction }: ChatInputCommandErrorPayload) {

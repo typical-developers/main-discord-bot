@@ -46,7 +46,8 @@ export enum CSSDeclarations {
     'top',
     '_webkit_background_clip',
     '_webkit_text_fill_color',
-    '_webkit_mask_image'
+    '_webkit_mask_image',
+    'min_width'
 }
 
 export type CSSDeclaration = {

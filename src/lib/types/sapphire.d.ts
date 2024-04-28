@@ -8,7 +8,7 @@ declare module '@sapphire/pieces' {
         /** Webhooks for logging stuff that happens on the client. */
         sentry: {
             /** Errors that happen. */
-            errors: WebhookClient
-        }
+            errors: WebhookClient;
+        };
     }
 }
