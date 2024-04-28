@@ -30,10 +30,10 @@
   "devDependencies": {
     "@sapphire/decorators": "^6.1.0",
     "@sapphire/plugin-subcommands": "^6.0.3",
-    "@typical-developers/api-types": "^0.1.3",
+    "@typical-developers/api-types": "^0.1.4",
     "dotenv": "^16.4.5",
     "prettier": "^3.2.5",
-    "puppeteer": "^22.7.0",
+    "puppeteer": "^22.7.1",
     "rimraf": "^5.0.5",
     "typescript": "^5.4.5"
   }
