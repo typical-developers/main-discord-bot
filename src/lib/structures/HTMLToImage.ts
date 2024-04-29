@@ -26,6 +26,10 @@ export class HTMLToImage {
                         font_size: '12px',
                         background_color: 'transparent',
                         text_rendering: 'optimizeLegibility'
+                    }),
+                    css('img.emoji', {
+                        width: '12px',
+                        height: '12px'
                     })
                 ]),
                 style({}, [...page.styling])

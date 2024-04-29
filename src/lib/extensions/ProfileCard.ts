@@ -143,6 +143,10 @@ export class ProfileCard extends HTMLToImage {
                 font_weight: '700',
                 text_shadow: '1px 1px 7px rgba(0, 0, 0, 0.45)'
             }),
+            css('.profile-user-info .details .username img.emoji', {
+                width: '24px',
+                height: '24px'
+            }),
             css('.profile-user-info .details .displayname', {
                 overflow: 'hidden',
                 text_overflow: 'ellipsis',
@@ -150,6 +154,10 @@ export class ProfileCard extends HTMLToImage {
                 font_size: '14px',
                 font_weight: '600',
                 text_shadow: '1px 1px 7px rgba(0, 0, 0, 0.45)'
+            }),
+            css('.profile-user-info .details .displayname img.emoji', {
+                width: '14px',
+                height: '14px'
             }),
             css('.profile-user-info .details .tags', {
                 display: 'flex',
