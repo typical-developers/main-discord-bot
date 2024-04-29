@@ -186,21 +186,6 @@ export class ProfileCard extends HTMLToImage {
                 filter: 'drop-shadow(1px 1px 7px rgba(0, 0, 0, 0.45))'
             }),
             css('.profile-user-stats .points', {
-                text_shadow: '1px 1px 7px rgba(0, 0, 0, 0.45)'
-            }),
-            css('.profile-user-stats', {
-                display: 'flex',
-                flex_direction: 'column',
-                align_items: 'flex-end',
-                justify_content: 'flex-end',
-                width: '100%'
-            }),
-            css('.profile-user-stats .rank', {
-                font_size: '24px',
-                font_weight: '900',
-                text_shadow: '1px 1px 7px rgba(0, 0, 0, 0.45)'
-            }),
-            css('.profile-user-stats .points', {
                 font_weight: '500',
                 text_shadow: '1px 1px 7px rgba(0, 0, 0, 0.45)'
             }),
