@@ -22,9 +22,9 @@ export class HTMLToImage {
                         position: 'absolute',
                         margin: '0',
                         color: 'white',
+                        background_color: 'transparent',
                         font_family: 'Fixel Variable',
                         font_size: '12px',
-                        background_color: 'transparent',
                         text_rendering: 'optimizeLegibility'
                     }),
                     css('img.emoji', {

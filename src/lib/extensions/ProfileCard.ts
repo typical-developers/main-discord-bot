@@ -49,49 +49,47 @@ export interface ProfileCardCustomization {
 export class ProfileCard extends HTMLToImage {
     constructor(details: ProfileCardDetails & ProfileCardCustomization) {
         const html = div(
-            {
-                class: 'profile-card',
-                style: "background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.25) 20%, rgba(0,0,0,0.75) 100%), url('{{backgroundImageUrl}}') center/cover  no-repeat, #0E0911;"
-            },
-            [
-                div({ class: 'profile-details' }, [
-                    div({ class: 'profile-user-info' }, [
-                        img({ class: 'avatar', src: '{{avatarUrl}}' }),
-                        div({ class: 'details' }, [
-                            div({}, [div({ class: 'username' }, ['{{displayName}}']), div({ class: 'displayname' }, ['@{{username}}'])]),
-                            div(
-                                { class: 'tags' },
-                                details.tags?.length
-                                    ? details.tags?.map((tag: { name: string; color: string }) =>
-                                          div(
-                                              {
-                                                  class: 'tag',
-                                                  style: `color: rgba(${tag.color}); background: linear-gradient(rgba(0,0,0,0.8) 100%, rgba(0,0,0,0.8) 0%), rgba(${tag.color});`
-                                              },
-                                              [tag.name]
-                                          )
-                                      )
-                                    : []
-                            )
-                        ])
-                    ]),
-                    div({ class: 'profile-user-stats' }, [
-                        div({ class: 'rank', style: '{{rankStyle}}' }, ['#{{rank}}']),
-                        div({ class: 'points' }, ['{{abbreviatedPoints}} points'])
+        {
+            class: 'profile-card',
+            style: "background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.25) 20%, rgba(0,0,0,0.75) 100%), url('{{backgroundImageUrl}}') center/cover  no-repeat, #0E0911;"
+        }, [
+            div({ class: 'profile-details' }, [
+                div({ class: 'profile-user-info' }, [
+                    img({ class: 'avatar', src: '{{avatarUrl}}' }),
+                    div({ class: 'details' }, [
+                        div({}, [div({ class: 'username' }, ['{{displayName}}']), div({ class: 'displayname' }, ['@{{username}}'])]),
+                        div(
+                            { class: 'tags' },
+                            details.tags?.length
+                                ? details.tags?.map((tag: { name: string; color: string }) =>
+                                        div(
+                                            {
+                                                class: 'tag',
+                                                style: `color: rgba(${tag.color}); background: linear-gradient(rgba(0,0,0,0.8) 100%, rgba(0,0,0,0.8) 0%), rgba(${tag.color});`
+                                            },
+                                            [tag.name]
+                                        )
+                                    )
+                                : []
+                        )
                     ])
                 ]),
-                div({ class: 'profile-activity-progress' }, [
-                    div({ class: 'progression' }, [
-                        div({ class: 'progress-bar' }, ['{{currentProgressBar}}']),
-                        div({
-                            class: 'progress-fill-bar',
-                            style: 'width: {{progressBarLength}}%; background: linear-gradient(to right, {{progressBarGradient1}}, {{progressBarGradient2}});'
-                        })
-                    ]),
-                    div({ class: 'info-text' }, ['Activity Progression'])
+                div({ class: 'profile-user-stats' }, [
+                    div({ class: 'rank', style: '{{rankStyle}}' }, ['#{{rank}}']),
+                    div({ class: 'points' }, ['{{abbreviatedPoints}} points'])
                 ])
-            ]
-        );
+            ]),
+            div({ class: 'profile-activity-progress' }, [
+                div({ class: 'progression' }, [
+                    div({ class: 'progress-bar' }, ['{{currentProgressBar}}']),
+                    div({
+                        class: 'progress-fill-bar',
+                        style: 'width: {{progressBarLength}}%; background: linear-gradient(to right, {{progressBarGradient1}}, {{progressBarGradient2}});'
+                    })
+                ]),
+                div({ class: 'info-text' }, ['Activity Progression'])
+            ])
+        ]);
 
         const styling = [
             css('.profile-card', {
