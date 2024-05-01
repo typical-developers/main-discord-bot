@@ -46,7 +46,6 @@ export class ServerProfile extends Command {
                 return {
                     backgroundImageUrl: user.bannerURL({ forceStatic: true, size: 1024 })
                 };
-            // Basically ProfileCardStyles.Discord and anything not yet implemented.
             case ProfileCardStyles.Galaxies:
                 return {
                     backgroundImageUrl: `data:image/png;base64,${imageToBase64('/assets/images/profile-galaxies.png')}`,
@@ -55,6 +54,15 @@ export class ServerProfile extends Command {
                         gradient2: `#8466FD`
                     }
                 }
+            case ProfileCardStyles.Topography:
+                return {
+                    backgroundImageUrl: `data:image/png;base64,${imageToBase64('/assets/images/profile-topography.png')}`,
+                    progressBar: {
+                        gradient1: `#DB0000`,
+                        gradient2: `#DB0035`
+                    }
+                }
+            // ProfileCardStyles.Discord and anything not yet implemented.
             default:
                 return {};
         }
@@ -83,12 +91,10 @@ export class ServerProfile extends Command {
 
         await interaction.deferReply({ fetchReply: true });
 
-        const { card_style, activity_info } = points;
+        const { activity_info } = points;
         const { progression } = activity_info;
 
-        const cardStyle = await this.getCardStyle(card_style, member);
         const tags: { name: string; color: `${string}, ${string}, ${string}` }[] = [];
-
         for (const activityRole of activity_info.progression.current_roles) {
             const role = await interaction.guild.roles.fetch(activityRole.role_id, { force: true });
 
@@ -120,7 +126,7 @@ export class ServerProfile extends Command {
                     }
                 },
                 tags: tags,
-                ...cardStyle
+                ...await this.getCardStyle(Math.floor(Math.random() * Object.entries(ProfileCardStyles).length), member)
             }).draw(),
             { name: 'card.png' }
         );
