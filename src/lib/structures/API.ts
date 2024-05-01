@@ -1,4 +1,4 @@
-import type { GuildSettings, GuildSettingsInput, IncrementActivityPoints, MemberProfileInfo, UpdateGuildSettings, GuildSettingsInfo } from '@typical-developers/api-types/graphql';
+import type { GuildSettings, MemberProfile, IncrementActivityPoints, MemberProfileInfo, UpdateGuildSettings, GuildSettingsInfo, GuildActivityLeaderboard } from '@typical-developers/api-types/graphql';
 import NodeCache from 'node-cache';
 import gql from 'gql-query-builder';
 import { GraphQLResponseErrors } from '#lib/extensions/GraphQLResponseErrors';
@@ -87,9 +87,9 @@ export class TypicalAPI {
      * @param settings The settings to update.
      * @returns {Promise<UpdateGuildSettings>} The settings for the guild.
      */
-    public async updateGuildSettings(guildId: string, settings: Partial<GuildSettingsInput>): Promise<UpdateGuildSettings> {
+    public async updateGuildSettings(guildId: string, settings: Partial<GuildSettings>): Promise<UpdateGuildSettings> {
         // Force cache incase they have yet to be cached.
-        if (!this.cache.guildSettings.get<GuildSettingsInput>(guildId)) await this.getGuildSettings(guildId);
+        if (!this.cache.guildSettings.get<GuildSettings>(guildId)) await this.getGuildSettings(guildId);
 
         const mutation = gql.mutation({
             operation: 'UpdateGuildSettings',
@@ -107,8 +107,8 @@ export class TypicalAPI {
         const { UpdateGuildSettings } = await this.gql<{ UpdateGuildSettings: UpdateGuildSettings }>(mutation.query, mutation.variables);
 
         if (UpdateGuildSettings) {
-            const current = this.cache.guildSettings.get<GuildSettings>(guildId) || await this.getGuildSettings(guildId);
-            const updated = this.deepReplace<GuildSettings>(current, UpdateGuildSettings);
+            const current = this.cache.guildSettings.get<GuildSettings>(guildId);
+            const updated = this.deepReplace<GuildSettings>(current!, UpdateGuildSettings);
 
             this.cache.guildSettings.set<GuildSettings>(`${guildId}`, updated);
         }
@@ -125,6 +125,8 @@ export class TypicalAPI {
      * @returns {Promise<IncrementActivityPoints>}
      */
     public async incrementActivityPoints(guildId: string, memberId: string, amount: number, cooldown: number): Promise<IncrementActivityPoints> {
+        if (!this.cache.memberProfiles.get<MemberProfileInfo>((`${guildId}_${memberId}`))) await this.getMemberProfile(guildId, memberId);
+
         const mutation = gql.mutation({
             operation: 'IncrementActivityPoints',
             variables: {
@@ -156,7 +158,7 @@ export class TypicalAPI {
         const { IncrementActivityPoints } = await this.gql<{ IncrementActivityPoints: IncrementActivityPoints }>(mutation.query, mutation.variables);
 
         if (IncrementActivityPoints) {
-            const current = this.cache.memberProfiles.get<MemberProfileInfo>(`${guildId}_${memberId}`) || await this.getMemberProfile(guildId, memberId);
+            const current = this.cache.memberProfiles.get<MemberProfileInfo>(`${guildId}_${memberId}`);
             const updated = this.deepReplace<MemberProfileInfo>(current, IncrementActivityPoints);
 
             this.cache.memberProfiles.set<MemberProfileInfo>(`${guildId}_${memberId}`, updated);
@@ -200,13 +202,38 @@ export class TypicalAPI {
     }
 
     /**
+     * 
+     * @param guildId 
+     * @param cursor 
+     * @param type 
+     * @returns {Promise<GuildActivityLeaderboard>}
+     */
+    public async getActivityLeaderboard(guildId: string, cursor: string = '', type: string = 'all'): Promise<GuildActivityLeaderboard> {
+        const query = gql.query({
+            operation: 'GuildActivityLeaderboard',
+            variables: {
+                guild_id: { type: 'Snowflake!', value: guildId },
+                leaderboard_type: { type: 'String', value: type }
+            },
+            fields: [
+                'member_id',
+                'rank',
+                'value'
+            ]
+        });
+
+        const { GuildActivityLeaderboard } = await this.gql<{ GuildActivityLeaderboard: GuildActivityLeaderboard }>(query.query, query.variables);
+        return GuildActivityLeaderboard;
+    }
+
+    /**
      * Get the profile of a guild member.
      * @param guildId
      * @param memberId
-     * @returns {Promise<MemberProfileInfo | null>}
+     * @returns {Promise<MemberProfile>}
      */
-    public async getMemberProfile(guildId: string, memberId: string): Promise<MemberProfileInfo | null> {
-        const cached = this.cache.memberProfiles.get<MemberProfileInfo>(`${guildId}_${memberId}`);
+    public async getMemberProfile(guildId: string, memberId: string): Promise<MemberProfileInfo> {
+        const cached = this.cache.memberProfiles.get<MemberProfile>(`${guildId}_${memberId}`);
         if (cached) return cached;
 
         const query = gql.query({
