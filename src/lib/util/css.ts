@@ -1,5 +1,7 @@
 export enum CSSDeclarations {
     'display',
+    'grid_template_columns',
+    'grid_template_areas',
     'position',
     'margin',
     'padding',
@@ -8,6 +10,10 @@ export enum CSSDeclarations {
     'flex_wrap',
     'gap',
     'border',
+    'border_top',
+    'border_bottom',
+    'border_right',
+    'border_left',
     'border_color',
     'border_radius',
     'text_overflow',
@@ -39,6 +45,7 @@ export enum CSSDeclarations {
     'max_width',
     'flex_shrink',
     'text_align',
+    'flex_grow',
     'box_sizing',
     'filter',
     'text_shadow',
@@ -47,7 +54,7 @@ export enum CSSDeclarations {
     '_webkit_background_clip',
     '_webkit_text_fill_color',
     '_webkit_mask_image',
-    'min_width'
+    'min_width',
 }
 
 export type CSSDeclaration = {
