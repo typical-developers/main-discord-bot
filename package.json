@@ -18,6 +18,7 @@
     "deploy:dev": "set DEV_DEPLOYMENT=true&&pnpm run clean && pnpm run build && node ./dist/index.js"
   },
   "dependencies": {
+    "@sapphire/discord-utilities": "^3.2.3",
     "@sapphire/discord.js-utilities": "^7.2.0",
     "@sapphire/framework": "^5.1.0",
     "@sapphire/pieces": "^4.2.2",
@@ -25,15 +26,16 @@
     "gql-query-builder": "^3.8.0",
     "graphql": "^16.8.1",
     "node-cache": "^5.1.2",
-    "node-html-to-image": "^4.0.0"
+    "node-html-to-image": "^4.0.0",
+    "puppeteer": "^22.7.1"
   },
   "devDependencies": {
     "@sapphire/decorators": "^6.1.0",
     "@sapphire/plugin-subcommands": "^6.0.3",
+    "@types/node": "^20.12.7",
     "@typical-developers/api-types": "^0.1.4",
     "dotenv": "^16.4.5",
     "prettier": "^3.2.5",
-    "puppeteer": "^22.7.1",
     "rimraf": "^5.0.5",
     "typescript": "^5.4.5"
   }
