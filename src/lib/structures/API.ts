@@ -1,4 +1,26 @@
-import type { GuildSettings, MemberProfile, IncrementActivityPoints, MemberProfileInfo, UpdateGuildSettings, GuildSettingsInfo, GuildActivityLeaderboard } from '@typical-developers/api-types/graphql';
+/**
+ * TODO: This caching is stupid. Move it to the Redis cache.
+ * It makes no sense to do caching this way. Just cache all of the data? It expires anyways, like wtf?
+ * It also makes types very uncertain of themselves.
+ */
+
+import type {
+    GuildSettings,
+    MemberProfile,
+    IncrementActivityPoints,
+    MemberProfileInfo,
+    UpdateGuildSettings,
+    GuildSettingsInfo,
+    GuildActivityLeaderboard,
+    CreateGuildVoiceRoom,
+    DeleteGuildVoiceRoom,
+    ActiveVoiceRoomInfo,
+    VoiceRoomDetails,
+    VoiceRoomSettingsInput,
+    ModifyGuildVoiceRoom,
+    ActivityRolesInput,
+    UpdateGuildActivityRoles
+} from '@typical-developers/api-types/graphql';
 import NodeCache from 'node-cache';
 import gql from 'gql-query-builder';
 import { GraphQLResponseErrors } from '#lib/extensions/GraphQLResponseErrors';
@@ -9,7 +31,8 @@ export class TypicalAPI {
     protected readonly baseUrl: URL;
     public readonly cache: { [key: string]: NodeCache } = {
         guildSettings: new NodeCache(),
-        memberProfiles: new NodeCache({ stdTTL: 600 })
+        memberProfiles: new NodeCache({ stdTTL: 600 }),
+        voiceRooms: new NodeCache()
     };
 
     /**
@@ -17,7 +40,7 @@ export class TypicalAPI {
      */
     constructor(key: string) {
         this.apiKey = key;
-        this.baseUrl = new URL('/graphql', 'http://127.0.0.1:3000');
+        this.baseUrl = new URL('/bot/graphql', 'http://127.0.0.1:3000');
     }
 
     /**
@@ -70,10 +93,12 @@ export class TypicalAPI {
             if (typeof oldValue === 'object' && typeof newValue === 'object') {
                 if (Array.isArray(oldValue) && JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
                     data[key] = newValue;
-                } else {
+                }
+                else {
                     data[key] = this.deepReplace(oldValue, newValue);
                 }
-            } else if (oldValue !== newValue) {
+            } 
+            else if (oldValue !== newValue) {
                 data[key] = newValue;
             }
         }
@@ -81,6 +106,168 @@ export class TypicalAPI {
         return data;
     }
     
+    private deepKeys<T = object>(data: DeepPartial<T>): Array<string | { [key: string]: string[] }> {
+        const allKeys = Object.keys(data).reduce((acc, curr) => {
+            if (typeof data[curr] === 'object') {
+                if (acc[curr]) return acc; // We already have these keys.
+
+                return [ ...acc, ...this.deepKeys(data[curr]) ];
+            }
+
+            if (acc?.includes(curr)) {
+                return acc;
+            }
+
+            return [ ...acc, curr ];
+        }, [] as Array<string | { [key: string]: string[] }>);
+
+        return allKeys;
+    }
+
+    /**
+     * Get an active voice room.
+     * @param guildId The guild to fetch a room for.
+     * @param channelId The channel in the guild.
+     */
+    public async getVoiceRoom(guildId: string, channelId: string) {
+        const cached = this.cache.voiceRooms.get<VoiceRoomDetails>(channelId);
+        if (cached) return cached;
+
+        const query = gql.query({
+            operation: 'ActiveVoiceRoomInfo',
+            variables: {
+                guild_id: { type: 'Snowflake!', value: guildId },
+                channel_id: { type: 'Snowflake!', value: channelId }
+            },
+            fields: [
+                'origin_channel_id',
+                'channel_id',
+                'created_by_user_id',
+                'is_locked'
+            ]
+        });
+
+        const { ActiveVoiceRoomInfo } = await this.gql<{ ActiveVoiceRoomInfo: ActiveVoiceRoomInfo }>(query.query, query.variables);
+
+        if (ActiveVoiceRoomInfo) {
+            this.cache.voiceRooms.set<VoiceRoomDetails>(channelId, ActiveVoiceRoomInfo);
+        }
+
+        return ActiveVoiceRoomInfo;
+    }
+
+    /**
+     * Create a custom voice room in a guild.
+     * @param guildId The guild to create a channel for.
+     * @param originId The channel where the voice room creation originated from.
+     * @param channelId The channel that was created.
+     * @param creatorId The user that created the room.
+     * @returns 
+     */
+    public async createVoiceRoom(guildId: string, originId: string, channelId: string, creatorId: string) {
+        const mutation = gql.mutation({
+            operation: 'CreateGuildVoiceRoom',
+            variables: {
+                guild_id: { type: 'Snowflake!', value: guildId },
+                origin_channel_id: { type: 'Snowflake!', value: originId },
+                channel_id: { type: 'Snowflake!', value: channelId },
+                created_by_user_id: { type: 'Snowflake!', value: creatorId }
+            },
+            fields: [
+                'origin_channel_id',
+                'channel_id',
+                'created_by_user_id',
+                'is_locked'
+            ]
+        });
+
+        const { CreateGuildVoiceRoom } = await this.gql<{ CreateGuildVoiceRoom: CreateGuildVoiceRoom }>(mutation.query, mutation.variables);
+
+        if (CreateGuildVoiceRoom) {
+            this.cache.voiceRooms.set<VoiceRoomDetails>(channelId, CreateGuildVoiceRoom);
+        }
+
+        return CreateGuildVoiceRoom;
+    }
+
+    public async updateVoiceRoom(guildId: string, channelId: string, settings: VoiceRoomSettingsInput) {
+        if (!this.cache.voiceRooms.get<VoiceRoomDetails>(channelId)) await this.getVoiceRoom(guildId, channelId);
+
+        const mutation = gql.mutation({
+            operation: 'ModifyGuildVoiceRoom',
+            variables: {
+                guild_id: { type: 'Snowflake!', value: guildId },
+                channel_id: { type: 'Snowflake!', value: channelId },
+                settings: { type: 'VoiceRoomSettings!', value: settings }
+            },
+            /**
+             * We return the fields we update so we can recache them.
+             * A function will be added whenever stacking is done.
+             */
+            fields: Object.keys(settings)
+        });
+
+        const { ModifyGuildVoiceRoom } = await this.gql<{ ModifyGuildVoiceRoom: ModifyGuildVoiceRoom }>(mutation.query, mutation.variables);
+
+        if (ModifyGuildVoiceRoom) {
+            const current = this.cache.voiceRooms.get<VoiceRoomDetails>(channelId);
+            const updated = this.deepReplace<VoiceRoomDetails>(current!, ModifyGuildVoiceRoom);
+
+            this.cache.voiceRooms.set<VoiceRoomDetails>(`${channelId}`, updated);
+        }
+
+        return ModifyGuildVoiceRoom;
+    }
+
+    public async deleteVoiceRoom(guildId: string, channelId: string) {
+        const mutation = gql.mutation({
+            operation: 'DeleteGuildVoiceRoom',
+            variables: {
+                guild_id: { type: 'Snowflake!', value: guildId },
+                channel_id: { type: 'Snowflake!', value: channelId },
+            },
+            fields: [
+                'origin_channel_id',
+                'channel_id',
+                'created_by_user_id',
+                'is_locked'
+            ]
+        });
+
+        const { DeleteGuildVoiceRoom } = await this.gql<{ DeleteGuildVoiceRoom: DeleteGuildVoiceRoom }>(mutation.query, mutation.variables);
+
+        this.cache.voiceRooms.del(channelId);
+
+        return DeleteGuildVoiceRoom;
+    }
+
+    public async updateGuildActivityRoles(guildId: string, roles: Partial<ActivityRolesInput>) {
+        if (!this.cache.guildSettings.get<GuildSettings>(guildId)) await this.getGuildSettings(guildId);
+
+        const mutation = gql.mutation({
+            operation: 'UpdateGuildActivityRoles',
+            variables: {
+                guild_id: { type: 'Snowflake!', value: guildId },
+                roles: { type: 'ActivityRolesInput!', value: roles }
+            },
+            fields: [
+                'role_id',
+                'required_points'
+            ]
+        });
+
+        const { UpdateGuildActivityRoles } = await this.gql<{ UpdateGuildActivityRoles: UpdateGuildActivityRoles }>(mutation.query, mutation.variables);
+
+        if (UpdateGuildActivityRoles) {
+            const current = this.cache.guildSettings.get<GuildSettings>(guildId);
+            const updated = this.deepReplace<GuildSettings>(current!, { activity_roles: UpdateGuildActivityRoles });
+
+            this.cache.guildSettings.set<GuildSettings>(`${guildId}`, updated);
+        }
+
+        return UpdateGuildActivityRoles;
+    }
+
     /**
      * Update settings for a guild.
      * @param guildId The guild to update settings for.
@@ -97,10 +284,6 @@ export class TypicalAPI {
                 guild_id: { type: 'Snowflake!', value: guildId },
                 settings: { type: 'GuildSettingsInput!', value: settings }
             },
-            /**
-             * We return the fields we update so we can recache them.
-             * A function will be added whenever stacking is done.
-             */
             fields: Object.keys(settings)
         });
 
@@ -179,7 +362,21 @@ export class TypicalAPI {
         const query = gql.query({
             operation: 'GuildSettingsInfo',
             variables: { guild_id: { type: 'Snowflake!', value: guildId } },
-            fields: ['activity_tracking', 'activity_tracking_grant', 'activity_tracking_cooldown']
+            fields: [
+                'activity_tracking',
+                'activity_tracking_grant',
+                'activity_tracking_cooldown',
+                {
+                    activity_roles: [
+                        'role_id',
+                        'required_points'
+                    ],
+                    voice_rooms: [
+                        'voice_channel_id',
+                        'user_limit'
+                    ]
+                },
+            ]
         });
 
         const { GuildSettingsInfo } = await this.gql<{ GuildSettingsInfo: GuildSettingsInfo }>(query.query, query.variables);
@@ -193,7 +390,8 @@ export class TypicalAPI {
                 activity_tracking: false,
                 activity_tracking_grant: 1,
                 activity_tracking_cooldown: 10,
-                activity_roles: []
+                activity_roles: [],
+                voice_rooms: []
             } as GuildSettings;
         }
 
@@ -223,6 +421,7 @@ export class TypicalAPI {
         });
 
         const { GuildActivityLeaderboard } = await this.gql<{ GuildActivityLeaderboard: GuildActivityLeaderboard }>(query.query, query.variables);
+
         return GuildActivityLeaderboard;
     }
 
@@ -265,7 +464,6 @@ export class TypicalAPI {
 
         const { MemberProfileInfo } = await this.gql<{ MemberProfileInfo: MemberProfileInfo }>(query.query, query.variables);
 
-        // Caches the member profile if it exists.
         if (MemberProfileInfo) {
             this.cache.memberProfiles.set<MemberProfileInfo>(`${guildId}_${memberId}`, MemberProfileInfo);
         }
