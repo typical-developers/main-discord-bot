@@ -17,7 +17,7 @@ const client = new SapphireClient({
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildVoiceStates
     ],
-    partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.User]
+    partials: [ Partials.Message, Partials.Channel, Partials.Reaction, Partials.User ]
 });
 
 await client.login();

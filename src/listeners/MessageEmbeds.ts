@@ -43,7 +43,7 @@ export class MessageEmbeds extends Listener {
                 embeds: embed,
                 components: [jumpToButton],
                 allowedMentions: { repliedUser: false }
-            });
+            }).catch(() => null);
         }
         else {
             const options: SelectMenuComponentOptionData[] = messageLinks
@@ -62,11 +62,11 @@ export class MessageEmbeds extends Listener {
                     }
                 ));
 
-            return message.reply({
+            return await message.reply({
                 embeds: embed,
                 components: [jumpToButton, otherMessages],
                 allowedMentions: { repliedUser: false }
-            });
+            }).catch(() => null);
         }
     }
 }
