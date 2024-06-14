@@ -25,7 +25,11 @@ export class MessageEmbedSelector extends InteractionHandler {
         }
 
         const message = await getMessageContent(member, messageLink);
-        if (!message) return;
+        if (!message) {
+            return interaction.editReply({
+                content: 'Sorry, but this message no longer exists.'
+            });
+        };
 
         const embed = await createMessageEmbed(message);
         const jumpToButton = new ActionRowBuilder<ButtonBuilder>()

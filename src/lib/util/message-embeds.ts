@@ -37,7 +37,7 @@ export async function getMessageContent(memberInfo: GuildMember, messageDetails:
     if (!channel.isTextBased() && !channel.isThread()) return null;
     if (!canViewChannel(memberInfo, channel)) return null;
 
-    const message = await channel.messages.fetch(messageDetails.messageId);
+    const message = await channel.messages.fetch(messageDetails.messageId).catch(() => null);
     if (!message) return null;
 
     return message;
