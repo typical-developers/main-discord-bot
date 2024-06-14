@@ -62,7 +62,7 @@ export class ServerProfile extends Command {
                         gradient2: `#DB0035`
                     }
                 }
-            // ProfileCardStyles.Discord and anything not yet implemented.
+            // Anything not yet implemented.
             default:
                 return {};
         }
@@ -109,7 +109,8 @@ export class ServerProfile extends Command {
         const card = new AttachmentBuilder(
             await new ProfileCard({
                 username: member.user.username,
-                displayName: member.displayName,
+                // Server Nickanme -> User Display Name
+                displayName: member.nickname || member.displayName,
                 // Server Avatar -> User Avatar -> Default Avatar
                 avatarUrl: member.avatarURL({ forceStatic: true, size: 128 }) || member.user.avatarURL({ forceStatic: true, size: 128 }) || member.user.defaultAvatarURL,
                 rank: activity_info.rank,
