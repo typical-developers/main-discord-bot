@@ -64,7 +64,7 @@ export class MessageEmbeds extends Listener {
 
             return message.reply({
                 embeds: embed,
-                components: [otherMessages, jumpToButton],
+                components: [jumpToButton, otherMessages],
                 allowedMentions: { repliedUser: false }
             });
         }
