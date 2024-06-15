@@ -1,7 +1,7 @@
 import { InteractionHandler, InteractionHandlerTypes, } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { ButtonInteraction } from 'discord.js';
-import { isOwner } from '#lib/util/voice-rooms';
+import { isOwner, voiceRoomInfoEmbed } from '#lib/util/voice-rooms';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button
@@ -45,7 +45,8 @@ export class RenameVoiceRoom extends InteractionHandler {
                 await channel.setUserLimit(settings.user_limit);
             })();
 
-        interaction.reply({
+        await interaction.message.edit(voiceRoomInfoEmbed(updatedInfo));
+        await interaction.reply({
             content: 'Successfully updated channel state.',
             ephemeral: true
         });

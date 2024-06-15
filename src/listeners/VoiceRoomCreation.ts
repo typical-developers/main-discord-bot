@@ -1,7 +1,8 @@
 import { VoiceRoomSettingsDetails } from '@typical-developers/api-types/graphql';
 import { Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ComponentType, EmbedBuilder, Events, VoiceBasedChannel, VoiceChannel, VoiceState } from 'discord.js';
+import { ChannelType, Events, VoiceBasedChannel, VoiceState } from 'discord.js';
+import { voiceRoomInfoEmbed } from '#lib/util/voice-rooms';
 
 @ApplyOptions<Listener.Options>({
     event: Events.VoiceStateUpdate,
@@ -10,34 +11,6 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ComponentTyp
 export class VoiceRoomCreation extends Listener {
     public cooldown: string[] = [];
     public api = this.container.api;
-
-    private async sendCreationManagement(channel: VoiceChannel) {
-        const embed = new EmbedBuilder({
-            title: 'Manage Voice Room'
-        });
-
-        const components = [
-            new ActionRowBuilder<ButtonBuilder>().addComponents(
-                new ButtonBuilder({
-                    type: ComponentType.Button,
-                    style: ButtonStyle.Secondary,
-                    custom_id: 'voice_room.rename',
-                    label: 'Rename Room'
-                }),
-                new ButtonBuilder({
-                    type: ComponentType.Button,
-                    style: ButtonStyle.Secondary,
-                    custom_id: 'voice_room.toggle_lock',
-                    label: 'Toggle Locked'
-                })
-            )
-        ];
-
-        await channel.send({
-            embeds: [embed],
-            components: components
-        });
-    }
 
     private async createNewVoiceRoom(state: VoiceState, settings: VoiceRoomSettingsDetails) {
         if (this.cooldown.includes(state.member!.id)) {
@@ -64,7 +37,7 @@ export class VoiceRoomCreation extends Listener {
         };
 
         await state.member!.voice.setChannel(room);
-        await this.sendCreationManagement(room);
+        await room.send(voiceRoomInfoEmbed(data!)); // fix this type later.
 
         setTimeout(() => {
             const index = this.cooldown.findIndex((id) => id === state.member!.id);
