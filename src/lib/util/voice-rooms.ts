@@ -40,3 +40,10 @@ export function voiceRoomInfoEmbed(settings: VoiceRoomDetails) {
 
     return { embeds: [embed], components };
 }
+
+export async function voiceRoomSettingsFromOrigin(guildId: string, originId: string) {
+    const rooms = (await container.api.getGuildSettings(guildId)).voice_rooms;
+    const index = rooms.findIndex(({ voice_channel_id }) => voice_channel_id === originId);
+
+    return rooms[index];
+}

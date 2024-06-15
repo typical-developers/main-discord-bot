@@ -1,7 +1,7 @@
 import { InteractionHandler, InteractionHandlerTypes, } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { ButtonInteraction } from 'discord.js';
-import { isOwner, voiceRoomInfoEmbed } from '#lib/util/voice-rooms';
+import { isOwner, voiceRoomInfoEmbed, voiceRoomSettingsFromOrigin } from '#lib/util/voice-rooms';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button
@@ -36,10 +36,7 @@ export class RenameVoiceRoom extends InteractionHandler {
             ? await channel.setUserLimit(1)
             // this is so ugly. but it works.
             : await (async () => {
-                const rooms = (await this.container.api.getGuildSettings(interaction.guildId!)).voice_rooms;
-                const settingsIndex = rooms.findIndex(({ voice_channel_id }) => voice_channel_id === info.origin_channel_id);
-                const settings  = rooms[settingsIndex];
-
+                const settings = await voiceRoomSettingsFromOrigin(interaction.guildId!, updatedInfo.created_channel_id);
                 if (!settings) throw new Error('Unable to get settings.');
                 
                 await channel.setUserLimit(settings.user_limit);
