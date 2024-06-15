@@ -1,5 +1,5 @@
 import TypicalClient from './lib/extensions/TypicalClient.js';
-import config from './env.json' assert { type: 'json' };
+import config from './env.json' with { type: 'json' };
 import { ApplicationCommandRegistries, RegisterBehavior } from '@sapphire/framework';
 
 const CLIENT = new TypicalClient();
