@@ -7,9 +7,16 @@ import { css } from '#lib/util/css';
 const { html, head, script, style, body } = htmlFunctions;
 
 export class HTMLToImage {
+    /** The raw HTML. */
     public readonly html: string;
+    /** Content that gets injected into the HTML. */
     public readonly htmlContent: object;
 
+    /**
+     * A base class for generating HTML images. Extending off of this class makes it easier to generate images from HTML.
+     * @param page The HTML/Styling information.
+     * @param content Content that will get injected into the HTML.
+     */
     constructor(page: { html: string; styling: string[] }, content: any) {
         this.html = html({}, [
             head({}, [
@@ -41,7 +48,11 @@ export class HTMLToImage {
         this.htmlContent = content;
     }
 
-    public async draw() {
+    /**
+     * Draw the image with the html and styling provided.
+     * @returns {Promise<Readable>}
+     */
+    public async draw(): Promise<Readable> {
         const image = await nodeHtmlToImage({
             waitUntil: 'load',
             transparent: true,
