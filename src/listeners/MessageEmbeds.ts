@@ -5,7 +5,8 @@ import { getMessageContent, parseMessageLinks, createMessageEmbed } from '#lib/u
 
 @ApplyOptions<Listener.Options>({
     event: Events.MessageCreate,
-    once: false
+    once: false,
+    enabled: false
 })
 export class MessageEmbeds extends Listener {
     public override async run(message: Message) {

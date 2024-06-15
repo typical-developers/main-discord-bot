@@ -1,13 +1,24 @@
 import { InteractionHandler, InteractionHandlerTypes, } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { ActionRowBuilder, ButtonInteraction, ComponentType, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
+import { isOwner } from '#lib/util/voice-rooms';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button
 })
 export class RenameVoiceRoom extends InteractionHandler {
-    public override async parse({ customId }: ButtonInteraction) {
-        if (customId !== 'voice_room.rename') return this.none();
+    public override async parse(interaction: ButtonInteraction) {
+        if (!interaction.guildId) return this.none();
+        if (interaction.customId !== 'voice_room.rename') return this.none();
+
+        if (!(await isOwner(interaction.guildId, interaction.channelId, interaction.user.id))) {
+            interaction.reply({
+                content: 'You are not the owner of this voice room!',
+                ephemeral: true
+            });
+
+            return this.none();
+        };
 
         return this.some();
     }

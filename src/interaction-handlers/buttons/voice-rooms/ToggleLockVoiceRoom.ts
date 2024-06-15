@@ -1,14 +1,24 @@
 import { InteractionHandler, InteractionHandlerTypes, } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { ButtonInteraction } from 'discord.js';
+import { isOwner } from '#lib/util/voice-rooms';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button
 })
 export class RenameVoiceRoom extends InteractionHandler {
     public override async parse(interaction: ButtonInteraction) {
-        if (!interaction.guildId || !interaction.channelId) return this.none();
+        if (!interaction.guildId) return this.none();
         if (interaction.customId !== 'voice_room.toggle_lock') return this.none();
+
+        if (!(await isOwner(interaction.guildId, interaction.channelId, interaction.user.id))) {
+            interaction.reply({
+                content: 'You are not the owner of this voice room!',
+                ephemeral: true
+            });
+
+            return this.none();
+        };
 
         return this.some();
     }
@@ -16,11 +26,28 @@ export class RenameVoiceRoom extends InteractionHandler {
     public async run(interaction: ButtonInteraction) {
         const info = await this.container.api.getVoiceRoom(interaction.guildId!, interaction.channelId!);
         const channel = interaction.guild?.channels.cache.get(interaction.channelId!);
-        if (!info || !channel) return;
+        if (!info || !channel || !interaction.guildId) return;
+        if (!channel.isVoiceBased()) return; // makes typescript shut up
 
         const updatedInfo = await this.container.api.updateVoiceRoom(interaction.guildId!, interaction.channelId!, { is_locked: !info.is_locked });
         if (!updatedInfo) return;
 
-        interaction.editReply({ content: 'Successfully updated channel state.' });
+        updatedInfo.is_locked
+            ? await channel.setUserLimit(1)
+            // this is so ugly. but it works.
+            : await (async () => {
+                const rooms = (await this.container.api.getGuildSettings(interaction.guildId!)).voice_rooms;
+                const settingsIndex = rooms.findIndex(({ voice_channel_id }) => voice_channel_id === info.origin_channel_id);
+                const settings  = rooms[settingsIndex];
+
+                if (!settings) throw new Error('Unable to get settings.');
+                
+                await channel.setUserLimit(settings.user_limit);
+            })();
+
+        interaction.reply({
+            content: 'Successfully updated channel state.',
+            ephemeral: true
+        });
     }
 }
