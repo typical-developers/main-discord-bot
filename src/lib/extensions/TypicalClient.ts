@@ -2,7 +2,7 @@ import { SapphireClient, container } from '@sapphire/framework';
 import { GatewayIntentBits, Partials, Options } from 'discord.js';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { getRootData } from '@sapphire/pieces';
-import config from '../../env.json' assert { type: 'json' };
+import config from '../../env.json' with { type: 'json' };
 import NodeCache from 'node-cache';
 
 export default class TypicalClient extends SapphireClient {
