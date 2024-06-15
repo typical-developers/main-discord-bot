@@ -216,7 +216,7 @@ export class TypicalAPI {
             this.cache.voiceRooms.set<VoiceRoomDetails>(`${channelId}`, updated);
         }
 
-        return ModifyGuildVoiceRoom;
+        return await this.getVoiceRoom(guildId, channelId);
     }
 
     public async deleteVoiceRoom(guildId: string, channelId: string) {
