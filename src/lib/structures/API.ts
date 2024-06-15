@@ -67,7 +67,7 @@ export class TypicalAPI {
             throw new Error(`Status code ${response.status}.`);
         }
 
-        const { errors, data }: { errors?: object[]; data: Data } = await response.json();
+        const { errors, data }: { errors?: any[]; data: Data } = await response.json();
         if (errors?.length) {
             throw new GraphQLResponseErrors(errors);
         }
