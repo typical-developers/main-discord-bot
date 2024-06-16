@@ -103,6 +103,10 @@ export class LeaderboardStats extends HTMLToImage {
                 font_size: '20px',
                 font_weight: '700'
             }),
+            css('.leaderboard-info .details .main-header img.emoji', {
+                width: '20px',
+                height: '20px'
+            }),
             css('.leaderboard-info .details .details-header', {
                 font_size: '14px',
                 font_weight: '700'
