@@ -1,39 +1,29 @@
-/**
- * TODO: This caching is stupid. Move it to the Redis cache.
- * It makes no sense to do caching this way. Just cache all of the data? It expires anyways, like wtf?
- * It also makes types very uncertain of themselves.
- */
-
 import type {
     GuildSettings,
-    MemberProfile,
-    IncrementActivityPoints,
-    MemberProfileInfo,
+    GuildSettingsInput,
     UpdateGuildSettings,
     GuildSettingsInfo,
-    GuildActivityLeaderboard,
+    ActivityRolesInput,
+    UpdateGuildActivityRoles,
     CreateGuildVoiceRoom,
+    ModifyGuildVoiceRoom,
     DeleteGuildVoiceRoom,
     ActiveVoiceRoomInfo,
     VoiceRoomDetails,
     VoiceRoomSettingsInput,
-    ModifyGuildVoiceRoom,
-    ActivityRolesInput,
-    UpdateGuildActivityRoles
+    MemberProfile,
+    MemberProfileInfo,
+    IncrementActivityPoints,
+    GuildActivityLeaderboard
 } from '@typical-developers/api-types/graphql';
-import NodeCache from 'node-cache';
+import type { DeepPartial } from '#lib/types/global';
 import gql from 'gql-query-builder';
-import { GraphQLResponseErrors } from '#lib/extensions/GraphQLResponseErrors';
-import { DeepPartial } from '#lib/types/global';
+import { container } from '@sapphire/pieces';
+import { GraphQLResponseErrors, type GraphQLErrorStructure } from '#lib/extensions/GraphQLResponseErrors';
 
 export class TypicalAPI {
     protected readonly apiKey: string;
     protected readonly baseUrl: URL;
-    public readonly cache: { [key: string]: NodeCache } = {
-        guildSettings: new NodeCache(),
-        memberProfiles: new NodeCache({ stdTTL: 600 }),
-        voiceRooms: new NodeCache()
-    };
 
     /**
      * @param key Your API access key.
@@ -44,44 +34,12 @@ export class TypicalAPI {
     }
 
     /**
-     * Run a query in the graphql api.
-     * @param query The query to run
-     * @param variables Any variables for the query.
-     * @returns {Promise<Data>}
-     */
-    public async gql<Data>(query: string, variables?: object): Promise<Data> {
-        const response = await fetch(this.baseUrl, {
-            method: 'POST',
-            headers: {
-                authorization: this.apiKey,
-                'content-type': 'application/json'
-            },
-            body: JSON.stringify({ query, variables })
-        }).catch(() => null);
-
-        if (!response) {
-            throw new Error('Fetch failed. API may be down.');
-        }
-
-        if (!response.ok) {
-            throw new Error(`Status code ${response.status}.`);
-        }
-
-        const { errors, data }: { errors?: any[]; data: Data } = await response.json();
-        if (errors?.length) {
-            throw new GraphQLResponseErrors(errors);
-        }
-
-        return data;
-    }
-
-    /**
      * Deep replace content from data.
      * @param data The current data.
      * @param newData The new data.
      * @returns {T} The updated data.
      */
-    private deepReplace<T = object>(data: T, newData: DeepPartial<T>): T {
+    private deepReplace<Data = object>(data: Data, newData: DeepPartial<Data>): Data {
         const newKeys = Object.keys(newData);
 
         for (const key of newKeys) {
@@ -105,249 +63,69 @@ export class TypicalAPI {
 
         return data;
     }
-    
-    private deepKeys<T = object>(data: DeepPartial<T>): Array<string | { [key: string]: string[] }> {
-        const allKeys = Object.keys(data).reduce((acc, curr) => {
-            if (typeof data[curr] === 'object') {
-                if (acc[curr]) return acc; // We already have these keys.
 
-                return [ ...acc, ...this.deepKeys(data[curr]) ];
-            }
-
-            if (acc?.includes(curr)) {
-                return acc;
-            }
-
-            return [ ...acc, curr ];
-        }, [] as Array<string | { [key: string]: string[] }>);
-
-        return allKeys;
+    /**
+     * Add a value into the Redis cache.
+     * @param key The key to add.
+     * @param value The value to assign to the key.
+     * @param ttl How long the data should remained cached.
+     */
+    private async updateCache<Data>(key: string, value: Data, ttl?: number) {
+        container.cache.set(key, JSON.stringify(value),
+            ttl ? { EX: ttl } : {}
+        );
     }
 
     /**
-     * Get an active voice room.
-     * @param guildId The guild to fetch a room for.
-     * @param channelId The channel in the guild.
+     * Check if a key is in the Redis cache.
+     * @param key The key to fetch.
+     * @returns {Promise<boolean>}
      */
-    public async getVoiceRoom(guildId: string, channelId: string) {
-        const cached = this.cache.voiceRooms.get<VoiceRoomDetails>(channelId);
-        if (cached) return cached;
-
-        const query = gql.query({
-            operation: 'ActiveVoiceRoomInfo',
-            variables: {
-                guild_id: { type: 'Snowflake!', value: guildId },
-                channel_id: { type: 'Snowflake!', value: channelId }
-            },
-            fields: [
-                'origin_channel_id',
-                'channel_id',
-                'created_by_user_id',
-                'is_locked'
-            ]
-        });
-
-        const { ActiveVoiceRoomInfo } = await this.gql<{ ActiveVoiceRoomInfo: ActiveVoiceRoomInfo }>(query.query, query.variables);
-
-        if (ActiveVoiceRoomInfo) {
-            this.cache.voiceRooms.set<VoiceRoomDetails>(channelId, ActiveVoiceRoomInfo);
-        }
-
-        return ActiveVoiceRoomInfo;
+    private async isCached(key: string): Promise<boolean> {
+        return await container.cache.exists(key).catch(() => 0) === 1
+            ? true
+            : false;
     }
 
     /**
-     * Create a custom voice room in a guild.
-     * @param guildId The guild to create a channel for.
-     * @param originId The channel where the voice room creation originated from.
-     * @param channelId The channel that was created.
-     * @param creatorId The user that created the room.
-     * @returns 
+     * Fetch content from the Redis cache.
+     * @param key The key to fetch.
+     * @returns {Promise<Data>}
      */
-    public async createVoiceRoom(guildId: string, originId: string, channelId: string, creatorId: string) {
-        const mutation = gql.mutation({
-            operation: 'CreateGuildVoiceRoom',
-            variables: {
-                guild_id: { type: 'Snowflake!', value: guildId },
-                origin_channel_id: { type: 'Snowflake!', value: originId },
-                channel_id: { type: 'Snowflake!', value: channelId },
-                created_by_user_id: { type: 'Snowflake!', value: creatorId }
-            },
-            fields: [
-                'origin_channel_id',
-                'channel_id',
-                'created_by_user_id',
-                'is_locked'
-            ]
-        });
+    private async fetchFromCache<Data>(key: string): Promise<Data> {
+        const cached = await container.cache.get(key);
 
-        const { CreateGuildVoiceRoom } = await this.gql<{ CreateGuildVoiceRoom: CreateGuildVoiceRoom }>(mutation.query, mutation.variables);
-
-        if (CreateGuildVoiceRoom) {
-            this.cache.voiceRooms.set<VoiceRoomDetails>(channelId, CreateGuildVoiceRoom);
-        }
-
-        return CreateGuildVoiceRoom;
-    }
-
-    public async updateVoiceRoom(guildId: string, channelId: string, settings: VoiceRoomSettingsInput) {
-        if (!this.cache.voiceRooms.get<VoiceRoomDetails>(channelId)) await this.getVoiceRoom(guildId, channelId);
-
-        const mutation = gql.mutation({
-            operation: 'ModifyGuildVoiceRoom',
-            variables: {
-                guild_id: { type: 'Snowflake!', value: guildId },
-                channel_id: { type: 'Snowflake!', value: channelId },
-                settings: { type: 'VoiceRoomSettings!', value: settings }
-            },
-            /**
-             * We return the fields we update so we can recache them.
-             * A function will be added whenever stacking is done.
-             */
-            fields: Object.keys(settings)
-        });
-
-        const { ModifyGuildVoiceRoom } = await this.gql<{ ModifyGuildVoiceRoom: ModifyGuildVoiceRoom }>(mutation.query, mutation.variables);
-
-        if (ModifyGuildVoiceRoom) {
-            const current = this.cache.voiceRooms.get<VoiceRoomDetails>(channelId);
-            const updated = this.deepReplace<VoiceRoomDetails>(current!, ModifyGuildVoiceRoom);
-
-            this.cache.voiceRooms.set<VoiceRoomDetails>(`${channelId}`, updated);
-        }
-
-        return await this.getVoiceRoom(guildId, channelId);
-    }
-
-    public async deleteVoiceRoom(guildId: string, channelId: string) {
-        const mutation = gql.mutation({
-            operation: 'DeleteGuildVoiceRoom',
-            variables: {
-                guild_id: { type: 'Snowflake!', value: guildId },
-                channel_id: { type: 'Snowflake!', value: channelId },
-            },
-            fields: [
-                'origin_channel_id',
-                'channel_id',
-                'created_by_user_id',
-                'is_locked'
-            ]
-        });
-
-        const { DeleteGuildVoiceRoom } = await this.gql<{ DeleteGuildVoiceRoom: DeleteGuildVoiceRoom }>(mutation.query, mutation.variables);
-
-        this.cache.voiceRooms.del(channelId);
-
-        return DeleteGuildVoiceRoom;
-    }
-
-    public async updateGuildActivityRoles(guildId: string, roles: Partial<ActivityRolesInput>) {
-        if (!this.cache.guildSettings.get<GuildSettings>(guildId)) await this.getGuildSettings(guildId);
-
-        const mutation = gql.mutation({
-            operation: 'UpdateGuildActivityRoles',
-            variables: {
-                guild_id: { type: 'Snowflake!', value: guildId },
-                roles: { type: 'ActivityRolesInput!', value: roles }
-            },
-            fields: [
-                'role_id',
-                'required_points'
-            ]
-        });
-
-        const { UpdateGuildActivityRoles } = await this.gql<{ UpdateGuildActivityRoles: UpdateGuildActivityRoles }>(mutation.query, mutation.variables);
-
-        if (UpdateGuildActivityRoles) {
-            const current = this.cache.guildSettings.get<GuildSettings>(guildId);
-            const updated = this.deepReplace<GuildSettings>(current!, { activity_roles: UpdateGuildActivityRoles });
-
-            this.cache.guildSettings.set<GuildSettings>(`${guildId}`, updated);
-        }
-
-        return UpdateGuildActivityRoles;
+        /**
+         * the null check here is overridden.
+         * ideally you should be running isCache() to make sure it exists before fetching the data.
+         * may refactor this to do it differently, it is technically another resource operation but it isn't a heavy one.
+         */
+        return JSON.parse(cached!) as Data;
     }
 
     /**
-     * Update settings for a guild.
-     * @param guildId The guild to update settings for.
-     * @param settings The settings to update.
-     * @returns {Promise<UpdateGuildSettings>} The settings for the guild.
+     * Run a query in the graphql api.
+     * @param query The query to run
+     * @param variables Any variables for the query.
+     * @returns {Promise<Data>}
      */
-    public async updateGuildSettings(guildId: string, settings: Partial<GuildSettings>): Promise<UpdateGuildSettings> {
-        // Force cache incase they have yet to be cached.
-        if (!this.cache.guildSettings.get<GuildSettings>(guildId)) await this.getGuildSettings(guildId);
-
-        const mutation = gql.mutation({
-            operation: 'UpdateGuildSettings',
-            variables: {
-                guild_id: { type: 'Snowflake!', value: guildId },
-                settings: { type: 'GuildSettingsInput!', value: settings }
+    private async gql<Data>(query: string, variables?: { [k: string]: any }): Promise<Data> {
+        const response = await fetch(this.baseUrl, {
+            method: 'POST',
+            headers: {
+                authorization: this.apiKey,
+                'content-type': 'application/json'
             },
-            fields: Object.keys(settings)
-        });
+            body: JSON.stringify({ query, variables })
+        }).catch(() => null);
 
-        const { UpdateGuildSettings } = await this.gql<{ UpdateGuildSettings: UpdateGuildSettings }>(mutation.query, mutation.variables);
+        if (!response) throw new Error('Fetch failed, the API may be down.');
+        if (!response.ok) throw new Error(`Status code ${response.status}`);
 
-        if (UpdateGuildSettings) {
-            const current = this.cache.guildSettings.get<GuildSettings>(guildId);
-            const updated = this.deepReplace<GuildSettings>(current!, UpdateGuildSettings);
+        const { errors, data }: { errors?: GraphQLErrorStructure[]; data: Data } = await response.json();
+        if (errors?.length) throw new GraphQLResponseErrors(errors);
 
-            this.cache.guildSettings.set<GuildSettings>(`${guildId}`, updated);
-        }
-
-        return UpdateGuildSettings;
-    }
-
-    /**
-     * Increment the points of a member.
-     * @param guildId The id of the guild.
-     * @param memberId The member in the guild.
-     * @param amount The amount of points to add.
-     * @param cooldown The cooldown for granting points.
-     * @returns {Promise<IncrementActivityPoints>}
-     */
-    public async incrementActivityPoints(guildId: string, memberId: string, amount: number, cooldown: number): Promise<IncrementActivityPoints> {
-        if (!this.cache.memberProfiles.get<MemberProfileInfo>((`${guildId}_${memberId}`))) await this.getMemberProfile(guildId, memberId);
-
-        const mutation = gql.mutation({
-            operation: 'IncrementActivityPoints',
-            variables: {
-                guild_id: { type: 'Snowflake!', value: guildId },
-                member_id: { type: 'Snowflake!', value: memberId },
-                points: { type: 'Int!', value: amount },
-                cooldown: { type: 'Int!', value: cooldown }
-            },
-            fields: [{
-                activity_info: [
-                    'rank',
-                    'points',
-                    'last_grant_epoch', {
-                    progression: [
-                        'remaining_progress', {
-                        current_roles: [
-                            'role_id',
-                            'required_points'
-                        ],
-                        next_role: [
-                            'role_id',
-                            'required_points'
-                        ]}
-                    ]}
-                ]}
-            ]
-        });
-
-        const { IncrementActivityPoints } = await this.gql<{ IncrementActivityPoints: IncrementActivityPoints }>(mutation.query, mutation.variables);
-
-        if (IncrementActivityPoints) {
-            const current = this.cache.memberProfiles.get<MemberProfileInfo>(`${guildId}_${memberId}`);
-            const updated = this.deepReplace<MemberProfileInfo>(current, IncrementActivityPoints);
-
-            this.cache.memberProfiles.set<MemberProfileInfo>(`${guildId}_${memberId}`, updated);
-        }
-
-        return IncrementActivityPoints;
+        return data;
     }
 
     /**
@@ -356,8 +134,9 @@ export class TypicalAPI {
      * @returns {Promise<GuildSettings>}
      */
     public async getGuildSettings(guildId: string): Promise<GuildSettings> {
-        const cached = this.cache.guildSettings.get<GuildSettings>(guildId);
-        if (cached) return cached;
+        const key = `${guildId}`;
+        if (await this.isCached(key))
+            return await this.fetchFromCache<GuildSettings>(key);
 
         const query = gql.query({
             operation: 'GuildSettingsInfo',
@@ -395,45 +174,213 @@ export class TypicalAPI {
             } as GuildSettings;
         }
 
-        this.cache.guildSettings.set<GuildSettings>(`${guildId}`, GuildSettingsInfo);
+        await this.updateCache<GuildSettingsInfo>(key, GuildSettingsInfo);
         return GuildSettingsInfo;
     }
 
     /**
-     * 
-     * @param guildId 
-     * @param cursor 
-     * @param type 
-     * @returns {Promise<GuildActivityLeaderboard>}
+     * Update guild activity roles.
+     * @param guildId The id of the guild.
+     * @param roles The roles to modify.
+     * @returns {Promise<GuildSettings>}
      */
-    public async getActivityLeaderboard(guildId: string, cursor: string = '', type: string = 'all'): Promise<GuildActivityLeaderboard> {
-        const query = gql.query({
-            operation: 'GuildActivityLeaderboard',
+    public async updateGuildActivityRoles(guildId: string, roles: Partial<ActivityRolesInput>): Promise<GuildSettings> {
+        const key = `${guildId}`;
+        const currentSettings = await this.getGuildSettings(guildId);
+
+        const mutation = gql.mutation({
+            operation: 'UpdateGuildActivityRoles',
             variables: {
                 guild_id: { type: 'Snowflake!', value: guildId },
-                leaderboard_type: { type: 'String', value: type }
+                roles: { type: 'ActivityRolesInput!', value: roles }
             },
             fields: [
-                'member_id',
-                'rank',
-                'value'
+                'role_id',
+                'required_points'
             ]
         });
 
-        const { GuildActivityLeaderboard } = await this.gql<{ GuildActivityLeaderboard: GuildActivityLeaderboard }>(query.query, query.variables);
+        const { UpdateGuildActivityRoles } = await this.gql<{ UpdateGuildActivityRoles: UpdateGuildActivityRoles }>(mutation.query, mutation.variables);
 
-        return GuildActivityLeaderboard;
+        if (UpdateGuildActivityRoles) {
+            const updatedSettings = this.deepReplace<GuildSettings>(currentSettings, { activity_roles: UpdateGuildActivityRoles });
+            await this.updateCache<GuildSettings>(key, updatedSettings);
+            
+            return updatedSettings;
+        }
+
+        return currentSettings;
+    }
+
+    /**
+     * Update settings for a guild.
+     * @param guildId The guild to update settings for.
+     * @param settings The settings to update.
+     * @returns {Promise<UpdateGuildSettings>} The settings for the guild.
+     */
+    public async updateGuildSettings(guildId: string, settings: Partial<GuildSettingsInput>): Promise<UpdateGuildSettings> {
+        const key = `${guildId}`;
+        const currentSettings = await this.getGuildSettings(guildId);
+
+        const mutation = gql.mutation({
+            operation: 'UpdateGuildSettings',
+            variables: {
+                guild_id: { type: 'Snowflake!', value: guildId },
+                settings: { type: 'GuildSettingsInput!', value: settings }
+            },
+            fields: Object.keys(settings)
+        });
+
+        const { UpdateGuildSettings } = await this.gql<{ UpdateGuildSettings: UpdateGuildSettings }>(mutation.query, mutation.variables);
+
+        if (UpdateGuildSettings) {
+            const updatedSettings = this.deepReplace<GuildSettings>(currentSettings, UpdateGuildSettings);
+            await this.updateCache<GuildSettings>(key, updatedSettings);
+        }
+
+        return UpdateGuildSettings;
+    }
+
+    /**
+     * Get an active voice room.
+     * @param guildId The guild to fetch a room for.
+     * @param channelId The channel in the guild.
+     * @returns {Promise<ActiveVoiceRoomInfo>} The current voice room information.
+     */
+    public async getVoiceRoom(guildId: string, channelId: string): Promise<ActiveVoiceRoomInfo> {
+        const key = `${guildId}:${channelId}`;
+        if (await this.isCached(key))
+            return await this.fetchFromCache<VoiceRoomDetails>(key);
+
+        const query = gql.query({
+            operation: 'ActiveVoiceRoomInfo',
+            variables: {
+                guild_id: { type: 'Snowflake!', value: guildId },
+                channel_id: { type: 'Snowflake!', value: channelId }
+            },
+            fields: [
+                'insert_epoch',
+                'origin_channel_id',
+                'channel_id',
+                'created_by_user_id',
+                'is_locked'
+            ]
+        });
+
+        const { ActiveVoiceRoomInfo } = await this.gql<{ ActiveVoiceRoomInfo: ActiveVoiceRoomInfo }>(query.query, query.variables);
+
+        if (ActiveVoiceRoomInfo) {
+            await this.updateCache<VoiceRoomDetails>(key, ActiveVoiceRoomInfo);
+        }
+
+        return ActiveVoiceRoomInfo;
+    }
+
+    /**
+     * Create a custom voice room in a guild.
+     * @param guildId The guild to create a channel for.
+     * @param originId The channel where the voice room creation originated from.
+     * @param channelId The channel that was created.
+     * @param creatorId The user that created the room.
+     * @returns {Promise<CreateGuildVoiceRoom>} The original voice room details.
+     */
+    public async createVoiceRoom(guildId: string, originId: string, channelId: string, creatorId: string): Promise<CreateGuildVoiceRoom> {
+        const mutation = gql.mutation({
+            operation: 'CreateGuildVoiceRoom',
+            variables: {
+                guild_id: { type: 'Snowflake!', value: guildId },
+                origin_channel_id: { type: 'Snowflake!', value: originId },
+                channel_id: { type: 'Snowflake!', value: channelId },
+                created_by_user_id: { type: 'Snowflake!', value: creatorId }
+            },
+            fields: [
+                'insert_epoch',
+                'origin_channel_id',
+                'channel_id',
+                'created_by_user_id',
+                'is_locked'
+            ]
+        });
+
+        const { CreateGuildVoiceRoom } = await this.gql<{ CreateGuildVoiceRoom: CreateGuildVoiceRoom }>(mutation.query, mutation.variables);
+
+        if (CreateGuildVoiceRoom)
+            await this.updateCache<VoiceRoomDetails>(`${guildId}:${channelId}`, CreateGuildVoiceRoom);
+
+        return CreateGuildVoiceRoom;
+    }
+
+    /**
+     * Update settings for a voice room.
+     * @param guildId The 
+     * @param channelId 
+     * @param settings 
+     * @returns {Promise<ModifyGuildVoiceRoom>} The original voice room details.
+     */
+    public async updateVoiceRoom(guildId: string, channelId: string, settings: VoiceRoomSettingsInput): Promise<ModifyGuildVoiceRoom> {
+        const mutation = gql.mutation({
+            operation: 'ModifyGuildVoiceRoom',
+            variables: {
+                guild_id: { type: 'Snowflake!', value: guildId },
+                channel_id: { type: 'Snowflake!', value: channelId },
+                settings: { type: 'VoiceRoomSettings!', value: settings }
+            },
+            fields: [
+                'insert_epoch',
+                'origin_channel_id',
+                'channel_id',
+                'created_by_user_id',
+                'is_locked'
+            ]
+        });
+
+        const { ModifyGuildVoiceRoom } = await this.gql<{ ModifyGuildVoiceRoom: ModifyGuildVoiceRoom }>(mutation.query, mutation.variables);
+
+        if (ModifyGuildVoiceRoom)
+            await this.updateCache<VoiceRoomDetails>(`${guildId}:${channelId}`, ModifyGuildVoiceRoom);
+
+        return ModifyGuildVoiceRoom;
+    }
+
+    /**
+     * Delete a voice room.
+     * @param guildId The id of the guild.
+     * @param channelId The id of the channel.
+     * @returns {Promise<DeleteGuildVoiceRoom>} The original voice room details.
+     */
+    public async deleteVoiceRoom(guildId: string, channelId: string): Promise<DeleteGuildVoiceRoom> {
+        const mutation = gql.mutation({
+            operation: 'DeleteGuildVoiceRoom',
+            variables: {
+                guild_id: { type: 'Snowflake!', value: guildId },
+                channel_id: { type: 'Snowflake!', value: channelId },
+            },
+            fields: [
+                'origin_channel_id',
+                'channel_id',
+                'created_by_user_id',
+                'is_locked'
+            ]
+        });
+
+        const { DeleteGuildVoiceRoom } = await this.gql<{ DeleteGuildVoiceRoom: DeleteGuildVoiceRoom }>(mutation.query, mutation.variables);
+
+        if (DeleteGuildVoiceRoom)
+            await container.cache.del(`${guildId}:${channelId}`);
+
+        return DeleteGuildVoiceRoom;
     }
 
     /**
      * Get the profile of a guild member.
-     * @param guildId
-     * @param memberId
-     * @returns {Promise<MemberProfile>}
+     * @param guildId The id of the guild.
+     * @param memberId The id of the member.
+     * @returns {Promise<MemberProfile | null>} The member's profile.
      */
-    public async getMemberProfile(guildId: string, memberId: string): Promise<MemberProfileInfo> {
-        const cached = this.cache.memberProfiles.get<MemberProfile>(`${guildId}_${memberId}`);
-        if (cached) return cached;
+    public async getMemberProfile(guildId: string, memberId: string): Promise<MemberProfile | null> {
+        const key = `${guildId}:${memberId}`;
+        if (await this.isCached(key))
+            return this.fetchFromCache<MemberProfile>(key);
 
         const query = gql.query({
             operation: 'MemberProfileInfo',
@@ -464,10 +411,84 @@ export class TypicalAPI {
 
         const { MemberProfileInfo } = await this.gql<{ MemberProfileInfo: MemberProfileInfo }>(query.query, query.variables);
 
-        if (MemberProfileInfo) {
-            this.cache.memberProfiles.set<MemberProfileInfo>(`${guildId}_${memberId}`, MemberProfileInfo);
-        }
+        if (MemberProfileInfo) 
+            await this.updateCache<MemberProfile>(key, MemberProfileInfo, 30 * 60);
 
-        return MemberProfileInfo;
+        return MemberProfileInfo || null;
+    }
+
+    /**
+     * Increment the points of a member.
+     * @param guildId The id of the guild.
+     * @param memberId The member in the guild.
+     * @param amount The amount of points to add.
+     * @param cooldown The cooldown for granting points.
+     * @returns {Promise<IncrementActivityPoints>} The member's updated profile.
+     */
+    public async incrementActivityPoints(guildId: string, memberId: string, amount: number, cooldown: number): Promise<IncrementActivityPoints> {
+        if (!this.isCached(`${guildId}:${memberId}`))
+            await this.getMemberProfile(guildId, memberId);
+
+        const mutation = gql.mutation({
+            operation: 'IncrementActivityPoints',
+            variables: {
+                guild_id: { type: 'Snowflake!', value: guildId },
+                member_id: { type: 'Snowflake!', value: memberId },
+                points: { type: 'Int!', value: amount },
+                cooldown: { type: 'Int!', value: cooldown }
+            },
+            fields: [
+                'card_style', {
+                activity_info: [
+                    'rank',
+                    'points',
+                    'last_grant_epoch', {
+                    progression: [
+                        'remaining_progress', {
+                        current_roles: [
+                            'role_id',
+                            'required_points'
+                        ],
+                        next_role: [
+                            'role_id',
+                            'required_points'
+                        ]}
+                    ]}
+                ]}
+            ]
+        });
+
+        const { IncrementActivityPoints } = await this.gql<{ IncrementActivityPoints: IncrementActivityPoints }>(mutation.query, mutation.variables);
+
+        if (IncrementActivityPoints) 
+            await this.updateCache<MemberProfile>(`${guildId}:${memberId}`, IncrementActivityPoints, 30 * 60);
+
+        return IncrementActivityPoints;
+    }
+
+    /**
+     * Fetch the activity leaderboard of a guild.
+     * @param guildId The id of the guild.
+     * @param cursor The page cursor (TODO: API does not support page cursors yet).
+     * @param type The type of leaderboard to fetch.
+     * @returns {Promise<GuildActivityLeaderboard>} The guild activity leaderboard information.
+     */
+    public async getActivityLeaderboard(guildId: string, cursor: string = '', type: string = 'all'): Promise<GuildActivityLeaderboard> {
+        const query = gql.query({
+            operation: 'GuildActivityLeaderboard',
+            variables: {
+                guild_id: { type: 'Snowflake!', value: guildId },
+                leaderboard_type: { type: 'String', value: type }
+            },
+            fields: [
+                'member_id',
+                'rank',
+                'value'
+            ]
+        });
+
+        const { GuildActivityLeaderboard } = await this.gql<{ GuildActivityLeaderboard: GuildActivityLeaderboard }>(query.query, query.variables);
+
+        return GuildActivityLeaderboard;
     }
 }
