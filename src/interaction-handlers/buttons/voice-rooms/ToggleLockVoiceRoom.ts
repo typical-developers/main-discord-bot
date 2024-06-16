@@ -36,7 +36,7 @@ export class RenameVoiceRoom extends InteractionHandler {
             ? await channel.setUserLimit(1)
             // this is so ugly. but it works.
             : await (async () => {
-                const settings = await voiceRoomSettingsFromOrigin(interaction.guildId!, updatedInfo.created_channel_id);
+                const settings = await voiceRoomSettingsFromOrigin(interaction.guildId!, updatedInfo.origin_channel_id);
                 if (!settings) throw new Error('Unable to get settings.');
                 
                 await channel.setUserLimit(settings.user_limit);
