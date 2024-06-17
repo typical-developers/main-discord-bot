@@ -10,11 +10,14 @@ import type {
     DeleteGuildVoiceRoom,
     ActiveVoiceRoomInfo,
     VoiceRoomDetails,
+    ActiveVoiceRoomSettingsInput,
     VoiceRoomSettingsInput,
     MemberProfile,
     MemberProfileInfo,
     IncrementActivityPoints,
-    GuildActivityLeaderboard
+    GuildActivityLeaderboard,
+    AddGuildVoiceRoomSettings,
+    RemoveGuildVoiceRoomSettings
 } from '@typical-developers/api-types/graphql';
 import type { DeepPartial } from '#lib/types/global';
 import gql from 'gql-query-builder';
@@ -123,7 +126,9 @@ export class TypicalAPI {
         if (!response.ok) throw new Error(`Status code ${response.status}`);
 
         const { errors, data }: { errors?: GraphQLErrorStructure[]; data: Data } = await response.json();
-        if (errors?.length) throw new GraphQLResponseErrors(errors);
+        if (errors?.length) {
+            throw new GraphQLResponseErrors(errors);
+        };
 
         return data;
     }
@@ -219,9 +224,6 @@ export class TypicalAPI {
      * @returns {Promise<UpdateGuildSettings>} The settings for the guild.
      */
     public async updateGuildSettings(guildId: string, settings: Partial<GuildSettingsInput>): Promise<UpdateGuildSettings> {
-        const key = `${guildId}`;
-        const currentSettings = await this.getGuildSettings(guildId);
-
         const mutation = gql.mutation({
             operation: 'UpdateGuildSettings',
             variables: {
@@ -234,11 +236,62 @@ export class TypicalAPI {
         const { UpdateGuildSettings } = await this.gql<{ UpdateGuildSettings: UpdateGuildSettings }>(mutation.query, mutation.variables);
 
         if (UpdateGuildSettings) {
-            const updatedSettings = this.deepReplace<GuildSettings>(currentSettings, UpdateGuildSettings);
-            await this.updateCache<GuildSettings>(key, updatedSettings);
+            await container.cache.del(`${guildId}`);
+            await this.getGuildSettings(guildId);
         }
 
         return UpdateGuildSettings;
+    }
+
+    public async addVoiceRoom(guildId: string, channelId: string, settings: VoiceRoomSettingsInput) {
+        const mutation = gql.mutation({
+            operation: 'AddGuildVoiceRoomSettings',
+            variables: {
+                guild_id: { type: 'Snowflake!', value: guildId },
+                channel_id: { type: 'Snowflake!', value: channelId },
+                settings: { type: 'VoiceRoomSettingsInput!', value: settings }
+            },
+            fields: [
+                'insert_epoch',
+                'guild_id',
+                'voice_channel_id',
+                'user_limit'
+            ]
+        });
+
+        const { AddGuildVoiceRoomSettings } = await this.gql<{ AddGuildVoiceRoomSettings: AddGuildVoiceRoomSettings }>(mutation.query, mutation.variables);
+
+        if (AddGuildVoiceRoomSettings) {
+            await container.cache.del(`${guildId}`);
+            await this.getGuildSettings(guildId);
+        }
+
+        return AddGuildVoiceRoomSettings;
+    }
+
+    public async removeVoiceRoom(guildId: string, channelId: string) {
+        const mutation = gql.mutation({
+            operation: 'RemoveGuildVoiceRoomSettings',
+            variables: {
+                guild_id: { type: 'Snowflake!', value: guildId },
+                channel_id: { type: 'Snowflake!', value: channelId }
+            },
+            fields: [
+                'insert_epoch',
+                'guild_id',
+                'voice_channel_id',
+                'user_limit'
+            ]
+        });
+
+        const { RemoveGuildVoiceRoomSettings } = await this.gql<{ RemoveGuildVoiceRoomSettings: RemoveGuildVoiceRoomSettings }>(mutation.query, mutation.variables);
+
+        if (RemoveGuildVoiceRoomSettings) {
+            await container.cache.del(`${guildId}`);
+            await this.getGuildSettings(guildId);
+        }
+
+        return RemoveGuildVoiceRoomSettings;
     }
 
     /**
@@ -317,13 +370,13 @@ export class TypicalAPI {
      * @param settings 
      * @returns {Promise<ModifyGuildVoiceRoom>} The original voice room details.
      */
-    public async updateVoiceRoom(guildId: string, channelId: string, settings: VoiceRoomSettingsInput): Promise<ModifyGuildVoiceRoom> {
+    public async updateVoiceRoom(guildId: string, channelId: string, settings: ActiveVoiceRoomSettingsInput): Promise<ModifyGuildVoiceRoom> {
         const mutation = gql.mutation({
             operation: 'ModifyGuildVoiceRoom',
             variables: {
                 guild_id: { type: 'Snowflake!', value: guildId },
                 channel_id: { type: 'Snowflake!', value: channelId },
-                settings: { type: 'VoiceRoomSettings!', value: settings }
+                settings: { type: 'ActiveVoiceRoomSettingsInput!', value: settings }
             },
             fields: [
                 'insert_epoch',

@@ -1,4 +1,4 @@
-import type { GuildSettingsInput, RoleAddInput } from '@typical-developers/api-types/graphql';
+import type { GuildSettingsInput } from '@typical-developers/api-types/graphql';
 import { ApplicationCommandOptionType, PermissionFlagsBits, type ApplicationCommandSubCommandData } from 'discord.js';
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { ApplyOptions } from '@sapphire/decorators';
@@ -10,6 +10,8 @@ import { UserError } from '@sapphire/framework';
         { name: 'activity-defaults', chatInputRun: 'updateActivityDefaults' },
         { name: 'activity-role-add', chatInputRun: 'addActivityRole' },
         { name: 'activity-role-remove', chatInputRun: 'removeActivityRole' },
+        { name: 'voice-room-add', chatInputRun: 'addVoiceRoom' },
+        { name: 'voice-room-remove', chatInputRun: 'removeVoiceRoom' }
     ]
 })
 export class Settings extends Subcommand {
@@ -67,6 +69,37 @@ export class Settings extends Subcommand {
                     required: true
                 }
             ]
+        },
+        {
+            type: ApplicationCommandOptionType.Subcommand,
+            name: 'voice-room-add',
+            description: 'Adds a guild voice room.',
+            options: [
+                {
+                    type: ApplicationCommandOptionType.String,
+                    name: 'channel',
+                    description: 'The channel id to add as a voice room.',
+                    required: true
+                },
+                {
+                    type: ApplicationCommandOptionType.Number,
+                    name: 'limit',
+                    description: 'The amount of people that can join a created voice room from this channel.',
+                },
+            ]
+        },
+        {
+            type: ApplicationCommandOptionType.Subcommand,
+            name: 'voice-room-remove',
+            description: 'Removes a guild voice room.',
+            options: [
+                {
+                    type: ApplicationCommandOptionType.String,
+                    name: 'channel',
+                    description: 'The channel id to add as a voice room.',
+                    required: true
+                }
+            ]
         }
     ];
 
@@ -108,13 +141,11 @@ export class Settings extends Subcommand {
     public async updateActivityDefaults(interaction: Subcommand.ChatInputCommandInteraction) {
         if (!interaction.guild) return;
 
-        const options = this.removeNullSettingOptions({
+        const settings = await this.container.api.updateGuildSettings(interaction.guildId!, this.removeNullSettingOptions({
             activity_tracking: interaction.options.getBoolean('toggle'),
             activity_tracking_cooldown: interaction.options.getNumber('set-cooldown'),
             activity_tracking_grant: interaction.options.getNumber('set-amount')
-        });
-
-        const settings = await this.container.api.updateGuildSettings(interaction.guildId!, options);
+        }));
 
         if (!settings) {
             throw new Error('Unable to update guild activity settings.');
@@ -135,12 +166,11 @@ export class Settings extends Subcommand {
     public async addActivityRole(interaction: Subcommand.ChatInputCommandInteraction) {
         if (!interaction.guildId) return;
 
-        const role: RoleAddInput = {
+        const response = await this.container.api.updateGuildActivityRoles(interaction.guildId, { add: [{
             role_id: interaction.options.getRole('role', true).id,
             required_points: interaction.options.getNumber('required-points', true)
-        }
+        }]});
 
-        const response = await this.container.api.updateGuildActivityRoles(interaction.guildId, { add: [role] });
         if (!response) {
             throw new Error(`Failed to add role for ${interaction.guildId}.`);
         }
@@ -163,6 +193,56 @@ export class Settings extends Subcommand {
 
         return interaction.reply({
             content: 'Successfully remove the activity role!',
+            ephemeral: true
+        });
+    }
+
+    //--
+
+    public async addVoiceRoom(interaction: Subcommand.ChatInputCommandInteraction) {
+        if (!interaction.guildId) return;
+
+        const roomId = interaction.options.getString('channel', true);
+
+        if (!(await interaction.guild?.channels.fetch(roomId, { force: true }))?.isVoiceBased()) {
+            throw new UserError({ identifier: 'IS_NOT_A_VOICE_CHANNEL', message: 'Please provide a valid voice channel id.' });
+        }
+
+        // makes sure the room isn't an active voice room
+        if (await this.container.api.getVoiceRoom(interaction.guildId, roomId)) {
+            throw new UserError({ identifier: 'IS_ACTIVE_VOICE_ROOM', message: 'The channel id provided is an active voice room channel.' });
+        }
+
+        const response = await this.container.api.addVoiceRoom(interaction.guildId, roomId, {
+            user_limit: interaction.options.getNumber('limit') || 0
+        });
+
+        if (!response) {
+            throw new Error(`Failed to add voice room for ${interaction.guildId}.`);
+        }
+
+        return interaction.reply({
+            content: 'Successfully added new voice room!',
+            ephemeral: true
+        });
+    }
+
+    public async removeVoiceRoom(interaction: Subcommand.ChatInputCommandInteraction) {
+        if (!interaction.guildId) return;
+
+        const roomId = interaction.options.getString('channel', true);
+        
+        if (!(await interaction.guild?.channels.fetch(roomId, { force: true }))?.isVoiceBased()) {
+            throw new UserError({ identifier: 'IS_NOT_A_VOICE_CHANNEL', message: 'Please provide a valid voice channel id.' });
+        }
+
+        const response = await this.container.api.removeVoiceRoom(interaction.guildId, roomId);
+        if (!response) {
+            throw new Error(`Failed to remove voice room for ${interaction.guildId}.`);
+        }
+
+        return interaction.reply({
+            content: 'Successfully remove voice room!',
             ephemeral: true
         });
     }
