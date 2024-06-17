@@ -204,7 +204,7 @@ export class Settings extends Subcommand {
 
         const roomId = interaction.options.getString('channel', true);
 
-        if (!(await interaction.guild?.channels.fetch(roomId, { force: true }))?.isVoiceBased()) {
+        if ( interaction.guild?.channels.cache.get(roomId)?.isVoiceBased()) {
             throw new UserError({ identifier: 'IS_NOT_A_VOICE_CHANNEL', message: 'Please provide a valid voice channel id.' });
         }
 
