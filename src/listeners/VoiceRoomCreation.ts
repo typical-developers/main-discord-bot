@@ -14,7 +14,7 @@ export class VoiceRoomCreation extends Listener {
 
     private async createNewVoiceRoom(state: VoiceState, settings: VoiceRoomSettingsDetails) {
         if (this.cooldown.includes(state.member!.id)) {
-            state.channel?.send(`<@${state.member!.id}> you're creating voice rooms too quickly!`);
+            state.channel?.send(`<@${state.member!.id}> you're creating voice rooms too quickly!`).catch(() => null);
             return await state.member?.voice.disconnect();
         }
 
@@ -29,11 +29,11 @@ export class VoiceRoomCreation extends Listener {
 
         const data = await this.api.createVoiceRoom(state.guild.id, settings.voice_channel_id, room.id, state.member!.id).catch(() => null);
         if (!data) {
-            await room.delete();
-            await state.member?.voice.disconnect();
+            await room.delete().catch(() => null);
+            await state.member?.voice.disconnect().catch(() => null);
             await state.channel?.send({
                 content: `<@${state.member!.id}> there was an issue creating your channel. This has been forwarded to the developers.`
-            });
+            }).catch(() => null);
         };
 
         await state.member!.voice.setChannel(room);
