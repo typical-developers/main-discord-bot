@@ -59,7 +59,6 @@ export class VoiceRoomCreation extends Listener {
         if (!previous.guild.id && !current.guild.id) return;
 
         const settings = await this.api.getGuildSettings(current.guild.id);
-        console.log(settings);
         if (!settings.voice_rooms.length) return;
 
         const { voice_rooms } = settings;

@@ -35,12 +35,12 @@ export function voiceRoomInfoEmbed(settings: VoiceRoomDetails): { embeds: EmbedB
 
     const components = [
         new ActionRowBuilder<ButtonBuilder>().addComponents(
-            new ButtonBuilder({
-                type: ComponentType.Button,
-                style: ButtonStyle.Secondary,
-                custom_id: 'voice_room.rename',
-                label: 'Rename Room'
-            }),
+            // new ButtonBuilder({
+            //     type: ComponentType.Button,
+            //     style: ButtonStyle.Secondary,
+            //     custom_id: 'voice_room.rename',
+            //     label: 'Rename Room'
+            // }),
             new ButtonBuilder({
                 type: ComponentType.Button,
                 style: ButtonStyle.Secondary,
