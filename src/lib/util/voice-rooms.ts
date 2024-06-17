@@ -1,5 +1,5 @@
+import type { VoiceRoomDetails, VoiceRoomSettingsDetails } from "@typical-developers/api-types/graphql";
 import { container } from "@sapphire/pieces";
-import { VoiceRoomDetails } from "@typical-developers/api-types/graphql";
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Colors, ComponentType, EmbedBuilder, inlineCode } from "discord.js";
 
 /**
@@ -53,7 +53,13 @@ export function voiceRoomInfoEmbed(settings: VoiceRoomDetails): { embeds: EmbedB
     return { embeds: [embed], components };
 }
 
-export async function voiceRoomSettingsFromOrigin(guildId: string, originId: string) {
+/**
+ * Get the settings for a voice room.
+ * @param guildId The id of the guild.
+ * @param originId The id of the channel that initated the creation.
+ * @returns {Promise<VoiceRoomSettingsDetails>}
+ */
+export async function voiceRoomSettingsFromOrigin(guildId: string, originId: string): Promise<VoiceRoomSettingsDetails> {
     const rooms = (await container.api.getGuildSettings(guildId)).voice_rooms;
     const index = rooms.findIndex(({ voice_channel_id }) => voice_channel_id === originId);
 
