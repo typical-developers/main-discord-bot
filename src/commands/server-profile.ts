@@ -81,17 +81,17 @@ export class ServerProfile extends Command {
             });
         }
 
-        const points = await this.container.api.getMemberProfile(interaction.guild.id, member.id);
-        if (!points) {
+        const profile = await this.container.api.getMemberProfile(interaction.guild.id, member.id);
+        if (!profile) {
             throw new UserError({
-                identifier: 'NO_POINTS',
-                message: 'This user has no activity points in this guild.'
+                identifier: 'NO_PROFILE',
+                message: 'This user has no profile in this guild. This is likely because they have never talked here.'
             });
         }
 
         await interaction.deferReply({ fetchReply: true });
 
-        const { activity_info } = points;
+        const { activity_info } = profile;
         const { progression } = activity_info;
 
         const tags: { name: string; color: `${string}, ${string}, ${string}` }[] = [];
@@ -127,7 +127,8 @@ export class ServerProfile extends Command {
                     }
                 },
                 tags: tags,
-                ...await this.getCardStyle(Math.floor(Math.random() * Object.entries(ProfileCardStyles).length), member)
+                ...await this.getCardStyle(profile.card_style, member)
+                // ...await this.getCardStyle(Math.floor(Math.random() * Object.entries(ProfileCardStyles).length), member)
             }).draw(),
             { name: 'card.png' }
         );
