@@ -316,6 +316,7 @@ export class TypicalAPI {
                 'origin_channel_id',
                 'channel_id',
                 'created_by_user_id',
+                'current_owner_id',
                 'is_locked'
             ]
         });
@@ -351,6 +352,7 @@ export class TypicalAPI {
                 'origin_channel_id',
                 'channel_id',
                 'created_by_user_id',
+                'current_owner_id',
                 'is_locked'
             ]
         });
@@ -383,6 +385,7 @@ export class TypicalAPI {
                 'origin_channel_id',
                 'channel_id',
                 'created_by_user_id',
+                'current_owner_id',
                 'is_locked'
             ]
         });
@@ -409,9 +412,11 @@ export class TypicalAPI {
                 channel_id: { type: 'Snowflake!', value: channelId },
             },
             fields: [
+                'insert_epoch',
                 'origin_channel_id',
                 'channel_id',
                 'created_by_user_id',
+                'current_owner_id',
                 'is_locked'
             ]
         });

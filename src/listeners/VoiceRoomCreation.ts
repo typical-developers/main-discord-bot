@@ -54,6 +54,14 @@ export class VoiceRoomCreation extends Listener {
         await this.api.deleteVoiceRoom(channel.guildId, channel.id);
     }
 
+    private async transferOwnership(channel: VoiceBasedChannel, userId: string) {
+        const settings = await this.api.updateVoiceRoom(channel.guild.id, channel.id, { current_owner_id: userId });
+        
+        if (settings) {
+            return channel.send({ content: `The new owner of this voice chat is <@${userId}>` }).catch(() => null);
+        }
+    }
+
     public override async run(previous: VoiceState, current: VoiceState) {
         if (!current.member) return;
         if (!previous.guild.id && !current.guild.id) return;
@@ -75,9 +83,9 @@ export class VoiceRoomCreation extends Listener {
                 const info = await this.api.getVoiceRoom(current.guild.id, current.channelId);
                 if (!info) return;
 
-                if (info.is_locked) {
-                    return await current.member.voice.disconnect();
-                }
+                // if (info.is_locked) {
+                //     return await current.member.voice.disconnect();
+                // }
             }
         }
         
@@ -85,8 +93,16 @@ export class VoiceRoomCreation extends Listener {
             const info = await this.api.getVoiceRoom(previous.guild.id, previous.channelId);
             if (!info) return;
 
-            if (previous.channel && !previous.channel?.members.size) {
+            const memberIds = previous.channel?.members.map(({ id }) => id) || [];
+            if (previous.channel && !memberIds?.length) {
                 await this.removeOldVoiceRoom(previous.channel);
+            }
+
+            if (previous.channel && memberIds?.length || 0 >= 1) {
+                if (memberIds.includes(info.current_owner_id)) return;
+
+                const firstMemberId = memberIds[0];
+                await this.transferOwnership(previous.channel!, firstMemberId);
             }
         }
     }
