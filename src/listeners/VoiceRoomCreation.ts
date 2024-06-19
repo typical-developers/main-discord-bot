@@ -28,20 +28,14 @@ export class VoiceRoomCreation extends Listener {
         try {
             if (!room) {
                 await state.member?.voice.disconnect();
-                await state.channel?.send({
-                    content: `<@${state.member!.id}> there was an issue creating your channel. This has been forwarded to the developers.`
-                });
-
                 return;
             }
 
             const data = await this.api.createVoiceRoom(state.guild.id, settings.voice_channel_id, room.id, state.member!.id);
             if (!data) {
-                await room.delete();
+                await this.removeOldVoiceRoom(room);
                 await state.member?.voice.disconnect();
-                await state.channel?.send({
-                    content: `<@${state.member!.id}> there was an issue creating your channel. This has been forwarded to the developers.`
-                });
+                return;
             };
 
             this.cooldown.push(state.member!.id);
@@ -57,14 +51,14 @@ export class VoiceRoomCreation extends Listener {
         catch {
             // just to make sure the remove is removed.
             if (!room) return;
-            await room.delete().catch(() => null);
+            await this.removeOldVoiceRoom(room);
         }
     }
 
     private async removeOldVoiceRoom(channel: VoiceBasedChannel) {
         if (!channel.deletable) return;
 
-        const isDeleted = await channel.delete();
+        const isDeleted = await channel.delete().catch(() => true);
         if (!isDeleted) return;
 
         await this.api.deleteVoiceRoom(channel.guildId, channel.id);
