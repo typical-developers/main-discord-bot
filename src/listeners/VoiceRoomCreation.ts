@@ -18,31 +18,42 @@ export class VoiceRoomCreation extends Listener {
             return await state.member?.voice.disconnect();
         }
 
-        this.cooldown.push(state.member!.id);
-
         const room = await state.guild.channels.create({
             type: ChannelType.GuildVoice,
             parent: state.channel?.parent,
             name: `@${state.member?.user.displayName}\'s Channel`,
             userLimit: settings.user_limit
-        });
+        }).catch(() => null);
 
-        const data = await this.api.createVoiceRoom(state.guild.id, settings.voice_channel_id, room.id, state.member!.id).catch(() => null);
-        if (!data) {
-            await room.delete().catch(() => null);
-            await state.member?.voice.disconnect().catch(() => null);
-            await state.channel?.send({
-                content: `<@${state.member!.id}> there was an issue creating your channel. This has been forwarded to the developers.`
-            }).catch(() => null);
-        };
+        try {
+            if (!room) {
+                await state.member?.voice.disconnect();
+                await state.channel?.send({
+                    content: `<@${state.member!.id}> there was an issue creating your channel. This has been forwarded to the developers.`
+                });
 
-        await state.member!.voice.setChannel(room);
-        await room.send(voiceRoomInfoEmbed(data!)); // fix this type later.
+                return;
+            }
 
-        setTimeout(() => {
-            const index = this.cooldown.findIndex((id) => id === state.member!.id);
-            this.cooldown.splice(index, 1);
-        }, 1000 * 15);
+            const data = await this.api.createVoiceRoom(state.guild.id, settings.voice_channel_id, room.id, state.member!.id);
+            if (!data) {
+                await room.delete();
+                await state.member?.voice.disconnect();
+                await state.channel?.send({
+                    content: `<@${state.member!.id}> there was an issue creating your channel. This has been forwarded to the developers.`
+                });
+            };
+
+            this.cooldown.push(state.member!.id);
+
+            await state.member!.voice.setChannel(room);
+            await room.send(voiceRoomInfoEmbed(data!)); // fix this type later.
+
+            setTimeout(() => {
+                const index = this.cooldown.findIndex((id) => id === state.member!.id);
+                this.cooldown.splice(index, 1);
+            }, 1000 * 15);
+        } catch (e) { }
     }
 
     private async removeOldVoiceRoom(channel: VoiceBasedChannel) {
