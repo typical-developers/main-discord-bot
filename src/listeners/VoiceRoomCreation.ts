@@ -33,7 +33,7 @@ export class VoiceRoomCreation extends Listener {
 
             const data = await this.api.createVoiceRoom(state.guild.id, settings.voice_channel_id, room.id, state.member!.id);
             if (!data) {
-                await this.removeOldVoiceRoom(room);
+                await room.delete();
                 await state.member?.voice.disconnect();
                 return;
             };
