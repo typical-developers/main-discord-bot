@@ -53,7 +53,12 @@ export class VoiceRoomCreation extends Listener {
                 const index = this.cooldown.findIndex((id) => id === state.member!.id);
                 this.cooldown.splice(index, 1);
             }, 1000 * 15);
-        } catch (e) { }
+        }
+        catch {
+            // just to make sure the remove is removed.
+            if (!room) return;
+            await room.delete().catch(() => null);
+        }
     }
 
     private async removeOldVoiceRoom(channel: VoiceBasedChannel) {
