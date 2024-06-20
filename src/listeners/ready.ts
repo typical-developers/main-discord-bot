@@ -7,7 +7,8 @@ interface CountdownDetails { value: number | null, string: string | null, remain
 
 @ApplyOptions<Listener.Options>({
 	event: Events.ClientReady,
-	once: true
+	once: true,
+	enabled: false
 })
 export class ReadyListener extends Listener {
 	private statusUpdate: number = 10;
