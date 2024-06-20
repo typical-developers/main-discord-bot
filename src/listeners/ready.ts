@@ -66,7 +66,7 @@ export class ReadyListener extends Listener {
 		const game = (await noblox.getUniverseInfo(universe).catch(() => null)) as unknown as UniverseInformation[];
 		if (!game) return oldPlaying;
 
-		let playing = game[0].playing;
+		let playing = game[0]?.playing;
 		if (typeof playing !== 'number' || playing === oldPlaying) {
 			return oldPlaying;
 		}
