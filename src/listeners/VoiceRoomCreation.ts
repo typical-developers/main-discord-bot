@@ -48,7 +48,7 @@ export class VoiceRoomCreation extends Listener {
                 this.cooldown.splice(index, 1);
             }, 1000 * 15);
         }
-        catch {
+        catch (e) {
             // just to make sure the remove is removed.
             if (!room) return;
             await this.removeOldVoiceRoom(room);
@@ -82,21 +82,11 @@ export class VoiceRoomCreation extends Listener {
         const { voice_rooms } = settings;
         const ids = voice_rooms.map((v) => v.voice_channel_id);
 
-        if (current.channelId !== null) {
-            if (ids.includes(current.channelId)) {
-                const settings = voice_rooms.find(({ voice_channel_id }) => voice_channel_id === current.channelId);
-                if (!settings) return;
+        if (current.channelId !== null && ids.includes(current.channelId)) {
+            const settings = voice_rooms.find(({ voice_channel_id }) => voice_channel_id === current.channelId);
+            if (!settings) return;
 
-                await this.createNewVoiceRoom(current, settings);
-            }
-            else {
-                const info = await this.api.getVoiceRoom(current.guild.id, current.channelId);
-                if (!info) return;
-
-                // if (info.is_locked) {
-                //     return await current.member.voice.disconnect();
-                // }
-            }
+            await this.createNewVoiceRoom(current, settings);
         }
         
         if (previous.channelId !== null) {
