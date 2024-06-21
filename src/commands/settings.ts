@@ -86,6 +86,21 @@ export class Settings extends Subcommand {
                     name: 'limit',
                     description: 'The amount of people that can join a created voice room from this channel.',
                 },
+                {
+                    type: ApplicationCommandOptionType.Boolean,
+                    name: 'renaming',
+                    description: 'Allow the owner to rename the channel.',
+                },
+                {
+                    type: ApplicationCommandOptionType.Boolean,
+                    name: 'locking',
+                    description: 'Allow the owner to lock the channel.',
+                },
+                {
+                    type: ApplicationCommandOptionType.Boolean,
+                    name: 'adjust-limit',
+                    description: 'Allow the owner to adjust the user limit for the channel.',
+                },
             ]
         },
         {
@@ -214,7 +229,10 @@ export class Settings extends Subcommand {
         }
 
         const response = await this.container.api.addVoiceRoom(interaction.guildId, roomId, {
-            user_limit: interaction.options.getNumber('limit') || 0
+            user_limit: interaction.options.getNumber('limit') || 0,
+            can_rename: interaction.options.getBoolean('renaming') || false,
+            can_lock: interaction.options.getBoolean('locking')|| false,
+            can_adjust_limit: interaction.options.getBoolean('adjust-limit') || false
         });
 
         if (!response) {
@@ -237,6 +255,7 @@ export class Settings extends Subcommand {
         }
 
         const response = await this.container.api.removeVoiceRoom(interaction.guildId, roomId);
+        console.log(response);
         if (!response) {
             throw new Error(`Failed to remove voice room for ${interaction.guildId}.`);
         }

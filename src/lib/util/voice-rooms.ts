@@ -23,7 +23,7 @@ export async function isOwner(guildId: string, channelId: string, userId: string
  * @param settings The settings for the voice room.
  * @returns {{ embeds: EmbedBuilder[]; components: ActionRowBuilder<ButtonBuilder>[]; }}}
  */
-export function voiceRoomInfoEmbed(settings: VoiceRoomDetails): { embeds: EmbedBuilder[]; components: ActionRowBuilder<ButtonBuilder>[]; } {
+export function voiceRoomInfoEmbed(settings: VoiceRoomDetails, originSettings: VoiceRoomSettingsDetails): { embeds: EmbedBuilder[]; components: ActionRowBuilder<ButtonBuilder>[]; } {
     const embed = new EmbedBuilder({
         color: Colors.Red,
         title: '🔊 Voice Room Management',
@@ -35,17 +35,26 @@ export function voiceRoomInfoEmbed(settings: VoiceRoomDetails): { embeds: EmbedB
 
     const components = [
         new ActionRowBuilder<ButtonBuilder>().addComponents(
-            // new ButtonBuilder({
-            //     type: ComponentType.Button,
-            //     style: ButtonStyle.Secondary,
-            //     custom_id: 'voice_room.rename',
-            //     label: 'Rename Room'
-            // }),
+            new ButtonBuilder({
+                type: ComponentType.Button,
+                style: ButtonStyle.Secondary,
+                custom_id: 'voice_room.rename',
+                label: 'Rename Room',
+                disabled: !originSettings.can_rename
+            }),
             new ButtonBuilder({
                 type: ComponentType.Button,
                 style: ButtonStyle.Secondary,
                 custom_id: 'voice_room.toggle_lock',
-                label: 'Toggle Locked'
+                label: 'Toggle Locked',
+                disabled: !originSettings.can_lock
+            }),
+            new ButtonBuilder({
+                type: ComponentType.Button,
+                style: ButtonStyle.Secondary,
+                custom_id: 'voice_room.adjust_limit',
+                label: 'Adjust Limit',
+                disabled: !originSettings.can_adjust_limit
             })
         )
     ];

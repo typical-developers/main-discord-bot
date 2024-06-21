@@ -157,7 +157,10 @@ export class TypicalAPI {
                     ],
                     voice_rooms: [
                         'voice_channel_id',
-                        'user_limit'
+                        'user_limit',
+                        'can_lock',
+                        'can_rename',
+                        'can_adjust_limit'
                     ]
                 },
             ]
@@ -255,7 +258,10 @@ export class TypicalAPI {
                 'insert_epoch',
                 'guild_id',
                 'voice_channel_id',
-                'user_limit'
+                'user_limit',
+                'can_lock',
+                'can_rename',
+                'can_adjust_limit'
             ]
         });
 
@@ -280,7 +286,10 @@ export class TypicalAPI {
                 'insert_epoch',
                 'guild_id',
                 'voice_channel_id',
-                'user_limit'
+                'user_limit',
+                'can_lock',
+                'can_rename',
+                'can_adjust_limit'
             ]
         });
 

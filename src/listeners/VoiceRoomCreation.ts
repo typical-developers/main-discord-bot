@@ -41,7 +41,7 @@ export class VoiceRoomCreation extends Listener {
             this.cooldown.push(state.member!.id);
 
             await state.member?.voice.setChannel(room);
-            await room.send(voiceRoomInfoEmbed(data));
+            await room.send(voiceRoomInfoEmbed(data, settings));
 
             setTimeout(() => {
                 const index = this.cooldown.findIndex((id) => id === state.member!.id);

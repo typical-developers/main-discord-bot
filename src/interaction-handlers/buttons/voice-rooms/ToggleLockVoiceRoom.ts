@@ -32,17 +32,18 @@ export class RenameVoiceRoom extends InteractionHandler {
         const updatedInfo = await this.container.api.updateVoiceRoom(interaction.guildId!, interaction.channelId!, { is_locked: !info.is_locked });
         if (!updatedInfo) return;
 
+        const settings = await voiceRoomSettingsFromOrigin(interaction.guildId!, updatedInfo.origin_channel_id);
+        if (!settings) throw new Error('Unable to get settings.');
+
         updatedInfo.is_locked
             ? await channel.setUserLimit(1)
             // this is so ugly. but it works.
             : await (async () => {
-                const settings = await voiceRoomSettingsFromOrigin(interaction.guildId!, updatedInfo.origin_channel_id);
-                if (!settings) throw new Error('Unable to get settings.');
                 
                 await channel.setUserLimit(settings.user_limit);
             })();
 
-        await interaction.message.edit(voiceRoomInfoEmbed(updatedInfo));
+        await interaction.message.edit(voiceRoomInfoEmbed(updatedInfo, settings));
         await interaction.reply({
             content: 'Successfully updated channel state.',
             ephemeral: true
