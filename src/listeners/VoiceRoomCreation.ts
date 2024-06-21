@@ -1,7 +1,7 @@
 import { VoiceRoomSettingsDetails } from '@typical-developers/api-types/graphql';
 import { Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { ChannelType, Events, VoiceBasedChannel, VoiceState } from 'discord.js';
+import { ChannelType, DiscordAPIError, Events, VoiceBasedChannel, VoiceState, type DiscordErrorData } from 'discord.js';
 import { voiceRoomInfoEmbed } from '#lib/util/voice-rooms';
 
 @ApplyOptions<Listener.Options>({
@@ -39,7 +39,6 @@ export class VoiceRoomCreation extends Listener {
             };
 
             this.cooldown.push(state.member!.id);
-
             await state.member?.voice.setChannel(room);
             await room.send(voiceRoomInfoEmbed(data, settings));
 
@@ -58,7 +57,17 @@ export class VoiceRoomCreation extends Listener {
     private async removeOldVoiceRoom(channel: VoiceBasedChannel) {
         if (!channel.deletable) return;
 
-        const isDeleted = await channel.delete().catch(() => true);
+        const isDeleted = await channel.delete().catch((err) => {
+            if (err instanceof DiscordAPIError) {
+                // this means the channel does not exist to begin with.
+                if ((err.rawError as DiscordErrorData).code === 10003) return true;
+                
+                return false;
+            };
+
+            return true;
+        });
+
         if (!isDeleted) return;
 
         await this.api.deleteVoiceRoom(channel.guildId, channel.id);
