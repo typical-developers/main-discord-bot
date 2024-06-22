@@ -8,9 +8,9 @@ import { container } from "@sapphire/pieces";
  */
 export async function respond(interaction: CommandInteraction, options: InteractionReplyOptions) {
     if (interaction.deferred) {
-        interaction.editReply(options).catch(() => null);
+        await interaction.editReply(options).catch(() => null);
     } else {
-        interaction.reply({
+        await interaction.reply({
             ...options,
             ephemeral: true
         }).catch(() => null);

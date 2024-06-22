@@ -25,6 +25,6 @@ export class RenameVoiceRoom extends InteractionHandler {
 
         await channel.setName(name);
 
-        interaction.editReply({ content: `Renamed voice room to ${inlineCode(name)}.` });
+        await interaction.editReply({ content: `Renamed voice room to ${inlineCode(name)}.` });
     }
 }

@@ -133,9 +133,7 @@ export class ServerProfile extends Command {
             { name: 'card.png' }
         );
 
-        return interaction.editReply({
-            files: [card]
-        });
+        return await interaction.editReply({ files: [card] });
     }
 
     public override async contextMenuRun(interaction: Command.ContextMenuCommandInteraction) {

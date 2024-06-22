@@ -26,7 +26,7 @@ export class MessageEmbedSelector extends InteractionHandler {
 
         const message = await getMessageContent(member, messageLink);
         if (!message) {
-            return interaction.editReply({
+            return await interaction.editReply({
                 content: 'Sorry, but this message no longer exists.'
             });
         };
@@ -41,7 +41,7 @@ export class MessageEmbedSelector extends InteractionHandler {
                 })
             );
 
-        return interaction.editReply({
+        return await interaction.editReply({
             embeds: embed,
             components: [jumpToButton]
         });

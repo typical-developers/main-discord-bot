@@ -166,7 +166,7 @@ export class Settings extends Subcommand {
             throw new Error('Unable to update guild activity settings.');
         }
 
-        return interaction.reply({
+        return await interaction.reply({
             content: 'Successfully updated activity settings.',
             ephemeral: true
         });
@@ -190,7 +190,7 @@ export class Settings extends Subcommand {
             throw new Error(`Failed to add role for ${interaction.guildId}.`);
         }
 
-        return interaction.reply({
+        return await interaction.reply({
             content: 'Successfully added new activity role!',
             ephemeral: true
         });
@@ -206,7 +206,7 @@ export class Settings extends Subcommand {
             throw new Error(`Failed to remove role for ${interaction.guildId}.`);
         }
 
-        return interaction.reply({
+        return await interaction.reply({
             content: 'Successfully remove the activity role!',
             ephemeral: true
         });
@@ -239,7 +239,7 @@ export class Settings extends Subcommand {
             throw new Error(`Failed to add voice room for ${interaction.guildId}.`);
         }
 
-        return interaction.reply({
+        return await interaction.reply({
             content: 'Successfully added new voice room!',
             ephemeral: true
         });
@@ -260,7 +260,7 @@ export class Settings extends Subcommand {
             throw new Error(`Failed to remove voice room for ${interaction.guildId}.`);
         }
 
-        return interaction.reply({
+        return await interaction.reply({
             content: 'Successfully remove voice room!',
             ephemeral: true
         });

@@ -12,7 +12,7 @@ export class RenameVoiceRoom extends InteractionHandler {
         if (interaction.customId !== 'voice_room.adjust_limit') return this.none();
 
         if (!(await isOwner(interaction.guildId, interaction.channelId, interaction.user.id))) {
-            interaction.reply({
+            await interaction.reply({
                 content: 'You are not the owner of this voice room!',
                 ephemeral: true
             });

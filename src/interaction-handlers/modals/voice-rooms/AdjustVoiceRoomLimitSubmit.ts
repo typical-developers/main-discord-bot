@@ -44,6 +44,6 @@ export class RenameVoiceRoom extends InteractionHandler {
         await interaction.deferReply({ ephemeral: true, fetchReply: true });
         await channel.setUserLimit(limit);
 
-        interaction.editReply({ content: `Updated join limit to ${inlineCode(limit.toString())}.` });
+        await interaction.editReply({ content: `Updated join limit to ${inlineCode(limit.toString())}.` });
     }
 }

@@ -99,8 +99,6 @@ export class RarityGrinder extends Subcommand {
             { name: 'leaderboard.png' }
         );
 
-        interaction.editReply({
-            files: [leaderboard]
-        });
+        await interaction.editReply({ files: [leaderboard] });
     }
 }
