@@ -21,7 +21,7 @@ export class VoiceRoomCreation extends Listener {
         const room = await state.guild.channels.create({
             type: ChannelType.GuildVoice,
             parent: state.channel?.parent,
-            name: `@${state.member?.user.displayName}\'s Channel`,
+            name: `@${state.member?.user.username}\'s Channel`,
             userLimit: settings.user_limit
         }).catch(() => null);
 
