@@ -255,7 +255,6 @@ export class Settings extends Subcommand {
         }
 
         const response = await this.container.api.removeVoiceRoom(interaction.guildId, roomId);
-        console.log(response);
         if (!response) {
             throw new Error(`Failed to remove voice room for ${interaction.guildId}.`);
         }
