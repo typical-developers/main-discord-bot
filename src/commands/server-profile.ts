@@ -153,7 +153,8 @@ export class ServerProfile extends Command {
          */
         if (user) {
             member = await interaction.guild?.members.fetch(user.id);
-        } else {
+        }
+        else {
             if (!interaction.member) return;
             member = await interaction.guild?.members.fetch(interaction.member.user.id);
         }
