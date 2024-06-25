@@ -26,7 +26,8 @@ export class RarityGrinder extends Subcommand {
                     description: 'The leaderboard type. Default is all time.',
                     choices: [
                         { name: 'All Time', value: 'all' },
-                        { name: 'This Month', value: 'monthly' }
+                        { name: 'This Month', value: 'monthly' },
+                        { name: 'This Week', value: 'weekly' }
                     ]
                 }
             ]
@@ -54,7 +55,7 @@ export class RarityGrinder extends Subcommand {
             });
         }
 
-        const leaderboardStats = await this.container.api.getActivityLeaderboard(interaction.guildId!, '', type);
+        const leaderboardStats = await this.container.api.getActivityLeaderboard(interaction.guild.id, '', type);
         if (!leaderboardStats) {
             throw new UserError({
                 identifier: 'NO_LEADEARBOARD',
@@ -64,22 +65,39 @@ export class RarityGrinder extends Subcommand {
 
         await interaction.deferReply({ fetchReply: true });
 
+        // I absolutely fucking hate how time works in JavaScript. Why cant it be like in PostgreSQL?
+        // Why cant I easily tell it that I want it to be midnight in UTC.
         const today = new Date();
-        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1);
-        
+        const weekLastDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay() + 6, 20);
+        const monthLastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0, 20);
+
         const leaderboard = new AttachmentBuilder(
             await new LeaderboardStats({
                 headerImage: interaction.guild.iconURL({ forceStatic: true, size: 64 }) || '',
                 mainHeader: interaction.guild.name,
-                ...(type === 'all'
-                    ? {
-                        describeHeader: 'Top Activity Leaderboard',
+                // This is awful. Truly awful.
+                ...(() => {
+                    switch (type) {
+                        case 'weekly':
+                                return {
+                                describeHeader: 'Weekly Activity Leaderboard',
+                                otherHeader:  `Resets on ` +
+                                    new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(weekLastDay) +
+                                    ` @ ` +
+                                    new Intl.DateTimeFormat('en-US', { timeStyle: 'long' }).format(weekLastDay)
+                            }
+                        case 'monthly': return {
+                            describeHeader: 'Monthly Activity Leaderboard',
+                            otherHeader:  `Resets on `
+                                + new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(monthLastDay) +
+                                ` @ ` +
+                                new Intl.DateTimeFormat('en-US', { timeStyle: 'long' }).format(monthLastDay)
+                        }
+                        default: return {
+                            describeHeader: 'Top Activity Leaderboard',
+                        }
                     }
-                    : {
-                        describeHeader: 'Monthly Activity Leaderboard',
-                        otherHeader:  `Resets on ` + new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(lastDay) + ` @ ` + new Intl.DateTimeFormat('en-US', { timeStyle: 'long' }).format(lastDay)
-                    }
-                ),
+                })(),
                 fields: {
                     holder: 'Member',
                     value: 'Activity Points'
