@@ -13,7 +13,7 @@ import { LeaderboardStats } from '#lib/extensions/LeaderboardStats';
         }
     ]
 })
-export class RarityGrinder extends Subcommand {
+export class ServerLeaderboard extends Subcommand {
     private readonly _groupOptions: ApplicationCommandSubCommandData[] = [
         {
             type: ApplicationCommandOptionType.Subcommand,
