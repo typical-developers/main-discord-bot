@@ -16,7 +16,7 @@ async function canViewChannel(memberInfo: GuildMember, channel: GuildBasedChanne
         .permissionsFor(memberInfo)
         .has([ PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory ]);
 
-    if (hasPermission) return false;
+    if (!hasPermission) return false;
 
     return true;
 }
