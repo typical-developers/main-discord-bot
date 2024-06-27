@@ -119,8 +119,8 @@ export class ServerProfile extends Command {
                         totalPoints: activity_info.points,
                         ...(progression.next_role?.required_points
                             ? {
-                                currentProgress: progression.next_role.required_points - activity_info.progression.remaining_progress - (progression.current_roles[0]?.required_points || 0),
-                                requiredProgress: progression.next_role.required_points - (progression.current_roles[0]?.required_points || 0)
+                                currentProgress: progression.next_role.required_points - activity_info.progression.remaining_progress - (progression.current_roles.reverse()[0]?.required_points || 0),
+                                requiredProgress: progression.next_role.required_points - (progression.current_roles.reverse()[0]?.required_points || 0)
                             }
                             : { currentProgress: 0, requiredProgress: 0 }
                         )
