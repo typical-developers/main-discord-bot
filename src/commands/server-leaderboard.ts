@@ -82,16 +82,16 @@ export class ServerLeaderboard extends Subcommand {
                                 return {
                                 describeHeader: 'Weekly Activity Leaderboard',
                                 otherHeader:  `Resets on ` +
-                                    new Intl.DateTimeFormat('en-US', { dateStyle: 'short', timeZone: "EST" }).format(weekLastDay) +
+                                    new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(weekLastDay) +
                                     ` @ ` +
-                                    new Intl.DateTimeFormat('en-US', { timeStyle: 'long', timeZone: "EST" }).format(weekLastDay)
+                                    new Intl.DateTimeFormat('en-US', { timeStyle: 'long' }).format(weekLastDay)
                             }
                         case 'monthly': return {
                             describeHeader: 'Monthly Activity Leaderboard',
                             otherHeader:  `Resets on `
-                                + new Intl.DateTimeFormat('en-US', { dateStyle: 'short', timeZone: "EST" }).format(monthLastDay) +
+                                + new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(monthLastDay) +
                                 ` @ ` +
-                                new Intl.DateTimeFormat('en-US', { timeStyle: 'long', timeZone: "EST" }).format(monthLastDay)
+                                new Intl.DateTimeFormat('en-US', { timeStyle: 'long' }).format(monthLastDay)
                         }
                         default: return {
                             describeHeader: 'Top Activity Leaderboard',
