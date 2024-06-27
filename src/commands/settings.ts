@@ -158,8 +158,8 @@ export class Settings extends Subcommand {
 
         const settings = await this.container.api.updateGuildSettings(interaction.guildId!, this.removeNullSettingOptions({
             activity_tracking: interaction.options.getBoolean('toggle'),
-            activity_tracking_cooldown: interaction.options.getNumber('set-cooldown'),
-            activity_tracking_grant: interaction.options.getNumber('set-amount')
+            activity_tracking_cooldown: interaction.options.getNumber('cooldown'),
+            activity_tracking_grant: interaction.options.getNumber('amount')
         }));
 
         if (!settings) {
