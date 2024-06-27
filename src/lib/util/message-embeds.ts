@@ -9,9 +9,9 @@ const { client } = container;
  * Whether or not the member can access a specific channel.
  * @param memberInfo Information about the member.
  * @param channelId The id for the channel to check access for.
- * @returns {Promise<boolean>} If the member can access the channel.
+ * @returns {boolean} If the member can access the channel.
  */
-async function canViewChannel(memberInfo: GuildMember, channel: GuildBasedChannel): Promise<boolean> {
+function canViewChannel(memberInfo: GuildMember, channel: GuildBasedChannel): boolean {
     const hasPermission = channel
         .permissionsFor(memberInfo)
         .has([ PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory ]);
