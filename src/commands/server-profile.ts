@@ -107,8 +107,6 @@ export class ServerProfile extends Command {
             }
         }
 
-        tags.reverse();
-
         const card = new AttachmentBuilder(
             await new ProfileCard({
                 username: member.user.username,
