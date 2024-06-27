@@ -93,6 +93,7 @@ export class ServerProfile extends Command {
 
         const { activity_info } = profile;
         const { progression } = activity_info;
+        progression.current_roles.reverse();
 
         const tags: { name: string; color: `${string}, ${string}, ${string}` }[] = [];
         for (const activityRole of activity_info.progression.current_roles) {
@@ -105,6 +106,8 @@ export class ServerProfile extends Command {
                 });
             }
         }
+
+        tags.reverse();
 
         const card = new AttachmentBuilder(
             await new ProfileCard({
@@ -119,14 +122,14 @@ export class ServerProfile extends Command {
                         totalPoints: activity_info.points,
                         ...(progression.next_role?.required_points
                             ? {
-                                currentProgress: progression.next_role.required_points - activity_info.progression.remaining_progress - (progression.current_roles[0]?.required_points || 0),
+                                currentProgress: progression.next_role.required_points - (progression.current_roles[0]?.required_points || 0) - progression.remaining_progress,
                                 requiredProgress: progression.next_role.required_points - (progression.current_roles[0]?.required_points || 0)
                             }
                             : { currentProgress: 0, requiredProgress: 0 }
                         )
                     }
                 },
-                tags: tags.reverse(),
+                tags: tags,
                 ...await this.getCardStyle(profile.card_style, member)
                 // ...await this.getCardStyle(Math.floor(Math.random() * Object.entries(ProfileCardStyles).length), member)
             }).draw(),
