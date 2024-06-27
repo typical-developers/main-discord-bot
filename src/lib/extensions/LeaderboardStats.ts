@@ -194,7 +194,9 @@ export class LeaderboardStats extends HTMLToImage {
             statNameOne: details.fields.holder,
             statNameTwo: details.fields.value,
             page: details.pageNumber,
-            updated: new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(details.lastUpdated) + ` @ ` + new Intl.DateTimeFormat('en-US', { timeStyle: 'long' }).format(details.lastUpdated)
+            updated: new Intl.DateTimeFormat('en-US', { dateStyle: 'short', timeZone: "EST" }).format(details.lastUpdated) +
+                ` @ ` +
+                new Intl.DateTimeFormat('en-US', { timeStyle: 'long', timeZone: "EST" }).format(details.lastUpdated)
         });
     }
 }
