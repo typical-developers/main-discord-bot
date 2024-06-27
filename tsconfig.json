@@ -1,7 +1,6 @@
 {
     "compileOnSave": true,
     "compilerOptions": {
-        "skipLibCheck": true,
         "allowSyntheticDefaultImports": true,
         "experimentalDecorators": true,
         "module": "NodeNext",
