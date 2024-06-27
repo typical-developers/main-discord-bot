@@ -106,11 +106,6 @@ export class ServerProfile extends Command {
             }
         }
 
-        console.log({
-            currentProgress: activity_info.points - (progression.current_roles.reverse()[0]?.required_points || 0),
-            requiredProgress: progression?.next_role?.required_points || 0 - (progression.current_roles.reverse()[0]?.required_points || 0)
-        })
-
         const card = new AttachmentBuilder(
             await new ProfileCard({
                 username: member.user.username,
@@ -124,7 +119,7 @@ export class ServerProfile extends Command {
                         totalPoints: activity_info.points,
                         ...(progression.next_role?.required_points
                             ? {
-                                currentProgress: activity_info.points - (progression.current_roles.reverse()[0]?.required_points || 0),
+                                currentProgress: progression.next_role.required_points - activity_info.progression.remaining_progress - (progression.current_roles.reverse()[0]?.required_points || 0),
                                 requiredProgress: progression.next_role.required_points - (progression.current_roles.reverse()[0]?.required_points || 0)
                             }
                             : { currentProgress: 0, requiredProgress: 0 }
