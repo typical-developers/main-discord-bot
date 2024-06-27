@@ -112,7 +112,8 @@ export class LeaderboardStats extends HTMLToImage {
                 font_weight: '700'
             }),
             css('.leaderboard-info .details .optional-header', {
-                font_size: '12px'
+                font_size: '12px',
+                font_weight: '700'
             }),
             css('.leaderboard-info img', {
                 width: '60px',
