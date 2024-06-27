@@ -33,7 +33,10 @@ export class TypicalAPI {
      */
     constructor(key: string) {
         this.apiKey = key;
-        this.baseUrl = new URL('/bot/graphql', 'http://127.0.0.1:3000');
+        this.baseUrl = new URL('/bot/graphql', process.env.DEV_DEPLOYMENT === 'true'
+            ? 'http://127.0.0.1:3000'
+            : 'https://api.typicaldevelopers.com'
+        );
     }
 
     /**
