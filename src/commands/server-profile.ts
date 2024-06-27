@@ -126,7 +126,7 @@ export class ServerProfile extends Command {
                         )
                     }
                 },
-                tags: tags,
+                tags: tags.reverse(),
                 ...await this.getCardStyle(profile.card_style, member)
                 // ...await this.getCardStyle(Math.floor(Math.random() * Object.entries(ProfileCardStyles).length), member)
             }).draw(),
