@@ -1,16 +1,25 @@
-import TypicalClient from './lib/extensions/TypicalClient.js';
-import config from './env.json' with { type: 'json' };
-import { ApplicationCommandRegistries, RegisterBehavior } from '@sapphire/framework';
+import '#lib/setup/initialize';
 
-const CLIENT = new TypicalClient();
+import { ApplicationCommandRegistries, LogLevel, RegisterBehavior, SapphireClient } from '@sapphire/framework';
+import { GatewayIntentBits, Partials } from 'discord.js';
 
-try {
-	CLIENT.logger.info('Logging into client.');
-	await CLIENT.login(config.token);
-	CLIENT.logger.info('Logged into client.');
+const client = new SapphireClient({
+    logger: { level: LogLevel.Info },
+    loadDefaultErrorListeners: false,
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildMessageReactions,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildModeration,
+        GatewayIntentBits.GuildPresences,
+        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildVoiceStates
+    ],
+    partials: [ Partials.Message, Partials.Channel, Partials.Reaction, Partials.User ]
+});
 
-	ApplicationCommandRegistries.setDefaultBehaviorWhenNotIdentical(RegisterBehavior.BulkOverwrite);
-} catch (err) {
-	CLIENT.logger.fatal(err);
-	CLIENT.destroy();
-}
+await client.login();
+
+ApplicationCommandRegistries.setDefaultBehaviorWhenNotIdentical(RegisterBehavior.BulkOverwrite);

@@ -1,0 +1,16 @@
+{
+    "compileOnSave": true,
+    "compilerOptions": {
+        "allowSyntheticDefaultImports": true,
+        "experimentalDecorators": true,
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "noUnusedLocals": true,
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "strictNullChecks": true,
+        "paths": {
+            "#lib/*": [ "./dist/lib" ]
+        }
+    }
+}

@@ -11,11 +11,8 @@ RUN apt-get update && apt-get install curl gnupg -y \
   && apt-get install google-chrome-stable -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /usr/src/bot
-WORKDIR /usr/src/bot
-
-# Copy image assests
-COPY ./assets/images /user/src/bot
+RUN mkdir -p /usr/src/main-discord-bot
+WORKDIR /usr/src/main-discord-bot
 
 # Install fonts
 RUN apt-get update && apt-get install -y fontconfig
@@ -23,10 +20,11 @@ COPY ./assets/fonts /usr/local/share/fonts
 RUN fc-cache -f -v
 
 # Setup npm
-COPY package.json /usr/src/bot
+COPY package.json /usr/src/main-discord-bot
+COPY .npmrc /usr/src/main-discord-bot
 RUN npm i -g pnpm \
   && pnpm i
 
-COPY . /usr/src/bot
+COPY . /usr/src/main-discord-bot
 
 CMD ["pnpm", "run", "deploy"]

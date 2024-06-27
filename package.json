@@ -1,43 +1,43 @@
 {
-  "name": "typical",
-  "version": "1.0.0",
-  "description": "A typical Discord bot.",
+  "name": "@typical-developers/main-discord-bot",
+  "author": "typical-developers",
+  "version": "2.0.0",
+  "description": "The main Discord bot that is used in Typical Developers' servers.",
+  "license": "GPL-3.0",
   "main": "./dist/index.js",
   "type": "module",
   "imports": {
     "#lib/*": "./dist/lib/*.js"
   },
   "scripts": {
-    "clean": "tsc -build -clean ./src/tsconfig.json src",
-    "build": "npm run clean && tsc -build ./src/tsconfig.json src",
-    "start": "node dist/index.js",
-    "deploy": "npm run build && npm run start",
-    "deploy:dev": "set DEV_DEPLOYMENT=true&& npm run build && npm run start",
-    "format": "prettier --write \"src/**/*.ts\""
+    "clean": "rimraf ./dist/",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "build": "pnpm run clean && tsc",
+    "build:watch": "pnpm run clean && tsc -w",
+    "deploy": "pnpm run build && node ./dist/index.js",
+    "deploy:dev": "set DEV_DEPLOYMENT=true&&pnpm run clean && pnpm run build && node ./dist/index.js"
   },
-  "author": "LuckFire",
-  "license": "GPL-3.0",
   "dependencies": {
-    "@sapphire/decorators": "~6.0.2",
-    "@sapphire/discord-utilities": "~3.0.4",
-    "@sapphire/framework": "~4.5.1",
-    "@sapphire/pieces": "~3.7.0",
-    "@sapphire/plugin-subcommands": "~4.0.2",
-    "@sapphire/ts-config": "~4.0.1",
-    "@supabase/supabase-js": "~2.31.0",
+    "@sapphire/discord-utilities": "^3.3.0",
+    "@sapphire/discord.js-utilities": "^7.3.0",
+    "@sapphire/framework": "^5.2.1",
+    "@sapphire/pieces": "^4.2.2",
     "discord.js": "^14.15.3",
-    "mongodb": "^5.7.0",
-    "noblox.js": "^4.14.1",
+    "gql-query-builder": "^3.8.0",
+    "graphql": "^16.8.2",
     "node-cache": "^5.1.2",
     "node-html-to-image": "^4.0.0",
-    "puppeteer": "^22.6.5",
-    "vm2": "^3.9.19"
+    "puppeteer": "^22.11.1",
+    "redis": "^4.6.14"
   },
   "devDependencies": {
-    "@sapphire/prettier-config": "^2.0.0",
-    "prettier": "^3.0.0",
-    "tslib": "^2.6.1",
-    "typescript": "^5.1.6"
-  },
-  "prettier": "@sapphire/prettier-config"
+    "@sapphire/decorators": "^6.1.0",
+    "@sapphire/plugin-subcommands": "^6.0.3",
+    "@types/node": "^20.14.4",
+    "@typical-developers/api-types": "^0.1.12",
+    "dotenv": "^16.4.5",
+    "prettier": "^3.3.2",
+    "rimraf": "^5.0.7",
+    "typescript": "^5.4.5"
+  }
 }

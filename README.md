@@ -1,23 +1,33 @@
-# Typical
-Open-sourced code for Typical bot. This is primarily for anyone who is interested in looking at the source or wants to contribute something towards the bot, so documentation is basically non-existent. Feedback is very much appreciated.
+# Typical Developers Discord Bot
+Open-sourced code for the Typical Developers Discord bot, used in relating Typical Developers servers. There is no documentation except for inside of the code itself; this is for those who want to look at or use the bot's code and add new features to it. Feedback is very much appreciated!
 
-# Usage
-### Install Dependencies
+> [!NOTE]  
+> `@typical-developers/api-types` is a private npm github package. This package is private since it would expose some of our internal api types, which we do not feel comfortable allowing others to have access to.
+
+## Usage
+### Prequesties
+- Node 18 (LTS recommended)
+- pnpm (`npm i -g pnpm`)
+
+### Installing Dependencies
 ```
-npm i
+pnpm i
 ```
-### Setting Environmental Variables
-Please refer the the `src/env-example.json` file in the repository. The `env.json` file must be located in `/src`.
+
+### Environment
+Refer to the `.env-example` for environmental variables
+
 ### Building
 ```
-npm run build
+pnpm run build
 ```
-### Assets
-It is required to install any fonts in `assets/fonts` on the machine the bot is running on. This is due to the fact it uses an html-to-image package to render images.
 
+### Deployment
+```
+pnpm run deploy
+```
 
-# License
-> **Basic Rundown**  
-> You are allowed to do whatever with this code (modify, redistribute, sell, etc) as long as you let others do the same.
+## Licensing
+All code for the bot is licensed under the [GNU General Public License v3.0](https://github.com/typical-developers/main-discord-bot/blob/main/LICENSE) license. Please refer to the LICENSE file for more information regarding rights and limitations.
 
-All code for the bot is licensed under the [GNU General Public License v3.0 license](./LICENSE). Please refer to the LICENSE file for more information regarding rights and limitations.
+TL;DR: You are allowed to do whatever with the code (modify, sell, redistribute, etc) as long as you allow others to do the same with yours.

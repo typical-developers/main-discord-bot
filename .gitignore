@@ -1,7 +1,5 @@
-src/env.json
-package-lock.json
-pnpm-lock.yaml
+# Environment
+.env
 node_modules
 dist
-
-supabase
+pnpm-lock.yaml
