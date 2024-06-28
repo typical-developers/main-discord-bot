@@ -40,10 +40,10 @@ export class VoiceRoomCreation extends Listener {
                 return;
             };
 
-            this.cooldown.push(state.member!.id);
             await state.member?.voice.setChannel(room);
             await room.send(voiceRoomInfoEmbed(data, settings));
-
+            
+            this.cooldown.push(state.member!.id);
             setTimeout(() => {
                 const index = this.cooldown.findIndex((id) => id === state.member!.id);
                 this.cooldown.splice(index, 1);
