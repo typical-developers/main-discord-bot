@@ -53,6 +53,8 @@ export class VoiceRoomCreation extends Listener {
             // just to make sure the remove is removed.
             if (!room) throw e;
 
+            state.channel?.send(`<@${state.member!.id}> something went wrong with voice channel creation, try creating one again.`).catch(() => null);
+
             await this.removeOldVoiceRoom(room);
             throw e;
         }
