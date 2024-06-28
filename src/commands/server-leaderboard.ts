@@ -68,8 +68,8 @@ export class ServerLeaderboard extends Subcommand {
         // I absolutely fucking hate how time works in JavaScript. Why cant it be like in PostgreSQL?
         // Why cant I easily tell it that I want it to be midnight in UTC.
         const today = new Date();
-        const weekLastDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay() + 6, 20);
-        const monthLastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0, 20);
+        const weekLastDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay() + 6);
+        const monthLastDay = new Date(today.getFullYear(), today.getMonth() + 1, 1);
 
         const leaderboard = new AttachmentBuilder(
             await new LeaderboardStats({
@@ -83,15 +83,13 @@ export class ServerLeaderboard extends Subcommand {
                                 describeHeader: 'Weekly Activity Leaderboard',
                                 otherHeader:  `Resets on ` +
                                     new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(weekLastDay) +
-                                    ` @ ` +
-                                    new Intl.DateTimeFormat('en-US', { timeStyle: 'long' }).format(weekLastDay)
+                                    ` @ 12:00:00 AM EST`
                             }
                         case 'monthly': return {
                             describeHeader: 'Monthly Activity Leaderboard',
                             otherHeader:  `Resets on `
                                 + new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(monthLastDay) +
-                                ` @ ` +
-                                new Intl.DateTimeFormat('en-US', { timeStyle: 'long' }).format(monthLastDay)
+                                ` @ 12:00:00 AM EST`
                         }
                         default: return {
                             describeHeader: 'Top Activity Leaderboard',
