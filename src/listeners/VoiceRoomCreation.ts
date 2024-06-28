@@ -26,6 +26,7 @@ export class VoiceRoomCreation extends Listener {
         }).catch(() => null);
 
         try {
+            // The room was not created.
             if (!room) {
                 await state.member?.voice.disconnect();
                 return;
@@ -33,6 +34,7 @@ export class VoiceRoomCreation extends Listener {
 
             const data = await this.api.createVoiceRoom(state.guild.id, settings.voice_channel_id, room.id, state.member!.id);
             if (!data) {
+                // The API did not return the data it wanted back.
                 await room.delete();
                 await state.member?.voice.disconnect();
                 return;
@@ -49,8 +51,10 @@ export class VoiceRoomCreation extends Listener {
         }
         catch (e) {
             // just to make sure the remove is removed.
-            if (!room) return;
+            if (!room) throw e;
+
             await this.removeOldVoiceRoom(room);
+            throw e;
         }
     }
 
