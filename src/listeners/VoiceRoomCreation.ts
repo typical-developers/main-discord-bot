@@ -40,9 +40,14 @@ export class VoiceRoomCreation extends Listener {
                 return;
             };
 
-            await state.member?.voice.setChannel(room);
+            const updatedState = (await state.member?.voice.setChannel(room))?.voice;
             await room.send(voiceRoomInfoEmbed(data, settings));
             
+            if (!updatedState?.channelId || updatedState.channelId !== room.id) {
+                await this.removeOldVoiceRoom(room);
+                return;
+            }
+
             this.cooldown.push(state.member!.id);
             setTimeout(() => {
                 const index = this.cooldown.findIndex((id) => id === state.member!.id);
