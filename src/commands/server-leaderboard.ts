@@ -69,7 +69,7 @@ export class ServerLeaderboard extends Subcommand {
         // Why cant I easily tell it that I want it to be midnight in UTC.
         const today = new Date();
         const weekLastDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay() + 6);
-        const monthLastDay = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        const monthLastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
         const leaderboard = new AttachmentBuilder(
             await new LeaderboardStats({
@@ -83,13 +83,13 @@ export class ServerLeaderboard extends Subcommand {
                                 describeHeader: 'Weekly Activity Leaderboard',
                                 otherHeader:  `Resets on ` +
                                     new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(weekLastDay) +
-                                    ` @ 12:00:00 AM EST`
+                                    ` @ 8:00:00 PM EST`
                             }
                         case 'monthly': return {
                             describeHeader: 'Monthly Activity Leaderboard',
                             otherHeader:  `Resets on `
                                 + new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(monthLastDay) +
-                                ` @ 12:00:00 AM EST`
+                                ` @ 8:00:00 PM EST`
                         }
                         default: return {
                             describeHeader: 'Top Activity Leaderboard',
