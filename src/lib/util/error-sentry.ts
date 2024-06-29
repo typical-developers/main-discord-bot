@@ -17,12 +17,17 @@ export async function respond(interaction: CommandInteraction, options: Interact
     }
 }
 
+const webhookErrorCache: string[] = [];
+
 /**
  * Log the error to the sentry webhook.
  * @param info Error information
  * @param details Extra details about the error.
  */
 export async function logToWebhook(info: string, details: any) {
+    if (webhookErrorCache.includes(info)) return;
+    webhookErrorCache.push(info);
+
     const timestamp = new Date().toLocaleTimeString('en-us', {
         hour12: false,
         hour: '2-digit',
@@ -40,4 +45,9 @@ export async function logToWebhook(info: string, details: any) {
             files: [errorDetails]
         })
         .catch((err) => console.log(err));
+
+    // Remove from the details cache after 60 seconds.
+    setTimeout(() => {
+        webhookErrorCache.slice(webhookErrorCache.indexOf(info), 1);
+    }, 1000 * 60);
 }
