@@ -38,7 +38,7 @@ export async function getMessageContent(memberInfo: GuildMember, messageDetails:
     if (!canViewChannel(memberInfo, channel)) return null;
 
     const message = await channel.messages.fetch(messageDetails.messageId).catch(() => null);
-    if (!message || !message.content && !message.attachments) return null;
+    if (!message || !message.content.length && !message.attachments.size) return null;
 
     return message;
 }
