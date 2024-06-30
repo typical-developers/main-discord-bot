@@ -68,7 +68,7 @@ export class ServerLeaderboard extends Subcommand {
         // I absolutely fucking hate how time works in JavaScript. Why cant it be like in PostgreSQL?
         // Why cant I easily tell it that I want it to be midnight in UTC.
         const today = new Date();
-        const weekLastDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay() + 7);
+        const weekLastDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay() + 8);
         const monthLastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
         const leaderboard = new AttachmentBuilder(
