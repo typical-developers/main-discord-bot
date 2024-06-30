@@ -65,11 +65,14 @@ export class ServerLeaderboard extends Subcommand {
 
         await interaction.deferReply({ fetchReply: true });
 
-        // I absolutely fucking hate how time works in JavaScript. Why cant it be like in PostgreSQL?
-        // Why cant I easily tell it that I want it to be midnight in UTC.
         const today = new Date();
-        const weekLastDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay() + 8);
-        const monthLastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        today.setHours(0, 0, 0, 0);
+
+        const weekLastDay = new Date(today);
+        weekLastDay.setDate(weekLastDay.getDate() - weekLastDay.getDay() + 7);
+
+        const monthLastDay = new Date(today);
+        monthLastDay.setMonth(monthLastDay.getMonth() + 1, 0);
 
         const leaderboard = new AttachmentBuilder(
             await new LeaderboardStats({
