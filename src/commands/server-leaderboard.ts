@@ -66,13 +66,13 @@ export class ServerLeaderboard extends Subcommand {
         await interaction.deferReply({ fetchReply: true });
 
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        today.setUTCHours(0, 0, 0, 0);
 
         const weekLastDay = new Date(today);
-        weekLastDay.setDate(weekLastDay.getDate() - weekLastDay.getDay() + 7);
+        weekLastDay.setUTCDate(today.getUTCDate() - today.getUTCDay() + (today.getUTCDay() === 0 ? 1 : 8));
 
         const monthLastDay = new Date(today);
-        monthLastDay.setMonth(monthLastDay.getMonth() + 1, 0);
+        monthLastDay.setUTCMonth(monthLastDay.getUTCMonth() + 1, 1);
 
         const leaderboard = new AttachmentBuilder(
             await new LeaderboardStats({
@@ -81,13 +81,12 @@ export class ServerLeaderboard extends Subcommand {
                 // This is awful. Truly awful.
                 ...(() => {
                     switch (type) {
-                        case 'weekly':
-                                return {
-                                describeHeader: 'Weekly Activity Leaderboard',
-                                otherHeader:  `Resets on ` +
-                                    new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(weekLastDay) +
-                                    ` @ 8:00:00 PM EST`
-                            }
+                        case 'weekly': return {
+                            describeHeader: 'Weekly Activity Leaderboard',
+                            otherHeader:  `Resets on ` +
+                                new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(weekLastDay) +
+                                ` @ 8:00:00 PM EST`
+                        }
                         case 'monthly': return {
                             describeHeader: 'Monthly Activity Leaderboard',
                             otherHeader:  `Resets on `
