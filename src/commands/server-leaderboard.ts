@@ -46,6 +46,8 @@ export class ServerLeaderboard extends Subcommand {
     public async getGuildActivityLeaderboard(interaction: Subcommand.ChatInputCommandInteraction) {
         if (!interaction.guild) return;
 
+        await interaction.deferReply({ fetchReply: true });
+
         const type = interaction.options.getString('type') || 'all';
         const { activity_tracking } = await this.container.api.getGuildSettings(interaction.guild.id);
         if (!activity_tracking) {
@@ -62,8 +64,6 @@ export class ServerLeaderboard extends Subcommand {
                 message: 'There is no activity leaderboard available for this guild.'
             });
         }
-
-        await interaction.deferReply({ fetchReply: true });
 
         const today = new Date();
         today.setUTCHours(0, 0, 0, 0);
