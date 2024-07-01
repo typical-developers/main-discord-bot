@@ -18,13 +18,13 @@ export class RenameVoiceRoom extends InteractionHandler {
     }
 
     public async run(interaction: ModalSubmitInteraction, limit: number) {
-        if (!interaction.guildId) return;
+        if (!interaction.guildId || !interaction.channelId) return;
 
-        const info = await this.container.api.getVoiceRoom(interaction.guildId!, interaction.channelId!);
-        const channel = interaction.guild?.channels.cache.get(interaction.channelId!);
+        const info = await this.container.api.getVoiceRoom(interaction.guildId, interaction.channelId);
+        const channel = interaction.channel;
 
         if (!info || !channel) return;
-        if (!channel.isVoiceBased()) return; // makes typescript shut up
+        if (!channel.isVoiceBased()) return;
 
         const originSettings = await voiceRoomSettingsFromOrigin(interaction.guildId, info.origin_channel_id);
         if (!originSettings) return;

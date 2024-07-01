@@ -24,15 +24,18 @@ export class RenameVoiceRoom extends InteractionHandler {
     }
 
     public async run(interaction: ButtonInteraction) {
-        const info = await this.container.api.getVoiceRoom(interaction.guildId!, interaction.channelId!);
-        const channel = interaction.guild?.channels.cache.get(interaction.channelId!);
-        if (!info || !channel || !interaction.guildId) return;
-        if (!channel.isVoiceBased()) return; // makes typescript shut up
+        if (!interaction.guildId || !interaction.channelId) return;
 
-        const updatedInfo = await this.container.api.updateVoiceRoom(interaction.guildId!, interaction.channelId!, { is_locked: !info.is_locked });
+        const info = await this.container.api.getVoiceRoom(interaction.guildId, interaction.channelId);
+        const channel = interaction.channel;
+
+        if (!info || !channel || !interaction.guildId) return;
+        if (!channel.isVoiceBased()) return;
+
+        const updatedInfo = await this.container.api.updateVoiceRoom(interaction.guildId, interaction.channel.id, { is_locked: !info.is_locked });
         if (!updatedInfo) return;
 
-        const settings = await voiceRoomSettingsFromOrigin(interaction.guildId!, updatedInfo.origin_channel_id);
+        const settings = await voiceRoomSettingsFromOrigin(interaction.guildId, updatedInfo.origin_channel_id);
         if (!settings) throw new Error('Unable to get settings.');
 
         updatedInfo.is_locked
