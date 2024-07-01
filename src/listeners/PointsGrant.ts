@@ -23,6 +23,7 @@ export class PointsGrant extends Listener {
 
         const updatedProfile = await this.container.api.incrementActivityPoints(message.guildId, message.author.id, activity_tracking_grant, activity_tracking_cooldown);
         if (!updatedProfile) return;
+        if (!updatedProfile.activity_info.progression.current_roles.length) return;
 
         const memberRoles = message.member?.roles.cache.map((r) => r.id) || [];
         const missingActivityRoles = updatedProfile.activity_info.progression.current_roles
