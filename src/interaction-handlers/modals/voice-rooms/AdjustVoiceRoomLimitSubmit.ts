@@ -37,7 +37,7 @@ export class RenameVoiceRoom extends InteractionHandler {
             throw new UserError({ identifier: 'LIMIT_TOO_LOW', message: 'You cannot set the limit below 1. If you want to lock the voice room, please use the lock button (if accessible).' });
         }
         
-        if (limit > originSettings.user_limit) {
+        if (originSettings.user_limit !== 0 && limit > originSettings.user_limit) {
             throw new UserError({ identifier: 'LIMIT_TOO_HIGH', message: `You cannot set the limit past the original limit of ${originSettings.user_limit}` });
         }
 
