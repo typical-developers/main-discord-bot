@@ -1,4 +1,4 @@
-import { Colors, EmbedBuilder, GuildBasedChannel, GuildMember, Message, PermissionFlagsBits } from "discord.js";
+import { ChannelType, Colors, EmbedBuilder, GuildBasedChannel, GuildMember, Message, PermissionFlagsBits } from "discord.js";
 import { MessageLinkRegex } from '@sapphire/discord-utilities';
 import { container } from "@sapphire/pieces";
 import { isGuildBasedChannel } from "@sapphire/discord.js-utilities";
@@ -66,9 +66,19 @@ export async function createMessageEmbed(message: Message): Promise<EmbedBuilder
         },
         description: content,
         footer: {
-            text: isGuildBasedChannel(channel)
-                ? `#${channel.name} - ${guild?.name}`
-                : `${channel.id}`,
+            text: (() => {
+                if (!isGuildBasedChannel(channel)) return `${channel.id}`;
+
+                switch (channel.type) {
+                    case ChannelType.GuildText:
+                    case ChannelType.GuildAnnouncement:
+                    case ChannelType.GuildVoice:
+                    case ChannelType.GuildStageVoice:
+                        return `${guild?.name + ' -' || ''} #${channel.name}`
+                    default:
+                        return `${guild?.name + ' -' || ''} ${channel.name}`
+                }
+            })(),
             iconURL: guild?.iconURL() || undefined
         },
         timestamp: createdTimestamp
