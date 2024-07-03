@@ -10,7 +10,7 @@ import { voiceRoomInfoEmbed } from '#lib/util/voice-rooms';
 })
 export class VoiceRoomCreation extends Listener {
     public cooldown: string[] = [];
-    public api = this.container.api;
+    public api = this.container.api.bot;
 
     private async createNewVoiceRoom(state: VoiceState, settings: VoiceRoomSettingsDetails) {
         if (this.cooldown.includes(state.member!.id)) {

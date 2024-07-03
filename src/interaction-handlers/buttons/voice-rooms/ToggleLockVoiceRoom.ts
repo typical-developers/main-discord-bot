@@ -26,13 +26,13 @@ export class RenameVoiceRoom extends InteractionHandler {
     public async run(interaction: ButtonInteraction) {
         if (!interaction.guildId || !interaction.channelId) return;
 
-        const info = await this.container.api.getVoiceRoom(interaction.guildId, interaction.channelId);
+        const info = await this.container.api.bot.getVoiceRoom(interaction.guildId, interaction.channelId);
         const channel = interaction.channel;
 
         if (!info || !channel || !interaction.guildId) return;
         if (!channel.isVoiceBased()) return;
 
-        const updatedInfo = await this.container.api.updateVoiceRoom(interaction.guildId, interaction.channel.id, { is_locked: !info.is_locked });
+        const updatedInfo = await this.container.api.bot.updateVoiceRoom(interaction.guildId, interaction.channel.id, { is_locked: !info.is_locked });
         if (!updatedInfo) return;
 
         const settings = await voiceRoomSettingsFromOrigin(interaction.guildId, updatedInfo.origin_channel_id);

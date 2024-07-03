@@ -10,7 +10,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Colors, ComponentType, Em
  * @returns {Promise<boolean>} Whether the channel can be modified or not.
  */
 export async function isOwner(guildId: string, channelId: string, userId: string): Promise<boolean> {
-    const roomDetails = await container.api.getVoiceRoom(guildId, channelId);
+    const roomDetails = await container.api.bot.getVoiceRoom(guildId, channelId);
     if (!roomDetails) return false;
 
     return roomDetails.current_owner_id === userId
@@ -69,7 +69,7 @@ export function voiceRoomInfoEmbed(settings: VoiceRoomDetails, originSettings: V
  * @returns {Promise<VoiceRoomSettingsDetails>}
  */
 export async function voiceRoomSettingsFromOrigin(guildId: string, originId: string): Promise<VoiceRoomSettingsDetails> {
-    const rooms = (await container.api.getGuildSettings(guildId)).voice_rooms;
+    const rooms = (await container.api.bot.getGuildSettings(guildId)).voice_rooms;
     const index = rooms.findIndex(({ voice_channel_id }) => voice_channel_id === originId);
 
     return rooms[index];

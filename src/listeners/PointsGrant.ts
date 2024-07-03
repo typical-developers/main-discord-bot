@@ -12,16 +12,16 @@ export class PointsGrant extends Listener {
         if (message.author.bot || message.system) return;
         if (!message.guildId) return;
 
-        const { activity_tracking, activity_tracking_grant, activity_tracking_cooldown } = await this.container.api.getGuildSettings(message.guildId);
+        const { activity_tracking, activity_tracking_grant, activity_tracking_cooldown } = await this.container.api.bot.getGuildSettings(message.guildId);
         if (!activity_tracking) return;
 
-        const currentProfile = await this.container.api.getMemberProfile(message.guildId, message.author.id);
+        const currentProfile = await this.container.api.bot.getMemberProfile(message.guildId, message.author.id);
         const time = Math.floor(new Date().getTime() / 1000);
 
         if (!currentProfile) return;
         if (currentProfile.activity_info.last_grant_epoch > time) return;
 
-        const updatedProfile = await this.container.api.incrementActivityPoints(message.guildId, message.author.id, activity_tracking_grant, activity_tracking_cooldown);
+        const updatedProfile = await this.container.api.bot.incrementActivityPoints(message.guildId, message.author.id, activity_tracking_grant, activity_tracking_cooldown);
         if (!updatedProfile) return;
         if (!updatedProfile.activity_info.progression.current_roles.length) return;
 

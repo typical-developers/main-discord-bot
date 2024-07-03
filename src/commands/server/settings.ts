@@ -156,7 +156,7 @@ export class Settings extends Subcommand {
     public async updateActivityDefaults(interaction: Subcommand.ChatInputCommandInteraction) {
         if (!interaction.guild) return;
 
-        const settings = await this.container.api.updateGuildSettings(interaction.guildId!, this.removeNullSettingOptions({
+        const settings = await this.container.api.bot.updateGuildSettings(interaction.guildId!, this.removeNullSettingOptions({
             activity_tracking: interaction.options.getBoolean('toggle'),
             activity_tracking_cooldown: interaction.options.getNumber('cooldown'),
             activity_tracking_grant: interaction.options.getNumber('amount')
@@ -181,7 +181,7 @@ export class Settings extends Subcommand {
     public async addActivityRole(interaction: Subcommand.ChatInputCommandInteraction) {
         if (!interaction.guildId) return;
 
-        const response = await this.container.api.updateGuildActivityRoles(interaction.guildId, { add: [{
+        const response = await this.container.api.bot.updateGuildActivityRoles(interaction.guildId, { add: [{
             role_id: interaction.options.getRole('role', true).id,
             required_points: interaction.options.getNumber('required-points', true)
         }]});
@@ -201,7 +201,7 @@ export class Settings extends Subcommand {
 
         const roleId = interaction.options.getRole('role', true).id;
 
-        const response = await this.container.api.updateGuildActivityRoles(interaction.guildId, { remove: [roleId] });
+        const response = await this.container.api.bot.updateGuildActivityRoles(interaction.guildId, { remove: [roleId] });
         if (!response) {
             throw new Error(`Failed to remove role for ${interaction.guildId}.`);
         }
@@ -224,11 +224,11 @@ export class Settings extends Subcommand {
         }
 
         // makes sure the room isn't an active voice room
-        if (await this.container.api.getVoiceRoom(interaction.guildId, roomId)) {
+        if (await this.container.api.bot.getVoiceRoom(interaction.guildId, roomId)) {
             throw new UserError({ identifier: 'IS_ACTIVE_VOICE_ROOM', message: 'The channel id provided is an active voice room channel.' });
         }
 
-        const response = await this.container.api.addVoiceRoom(interaction.guildId, roomId, {
+        const response = await this.container.api.bot.addVoiceRoom(interaction.guildId, roomId, {
             user_limit: interaction.options.getNumber('limit') || 0,
             can_rename: interaction.options.getBoolean('renaming') || false,
             can_lock: interaction.options.getBoolean('locking')|| false,
@@ -254,7 +254,7 @@ export class Settings extends Subcommand {
             throw new UserError({ identifier: 'IS_NOT_A_VOICE_CHANNEL', message: 'Please provide a valid voice channel id.' });
         }
 
-        const response = await this.container.api.removeVoiceRoom(interaction.guildId, roomId);
+        const response = await this.container.api.bot.removeVoiceRoom(interaction.guildId, roomId);
         if (!response) {
             throw new Error(`Failed to remove voice room for ${interaction.guildId}.`);
         }

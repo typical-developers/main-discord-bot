@@ -49,7 +49,7 @@ export class ServerLeaderboard extends Subcommand {
         await interaction.deferReply({ fetchReply: true });
 
         const type = interaction.options.getString('type') || 'all';
-        const { activity_tracking } = await this.container.api.getGuildSettings(interaction.guild.id);
+        const { activity_tracking } = await this.container.api.bot.getGuildSettings(interaction.guild.id);
         if (!activity_tracking) {
             throw new UserError({
                 identifier: 'TRACKING_DISBALED',
@@ -57,7 +57,7 @@ export class ServerLeaderboard extends Subcommand {
             });
         }
 
-        const leaderboardStats = await this.container.api.getActivityLeaderboard(interaction.guild.id, '', type);
+        const leaderboardStats = await this.container.api.bot.getActivityLeaderboard(interaction.guild.id, '', type);
         if (!leaderboardStats) {
             throw new UserError({
                 identifier: 'NO_LEADEARBOARD',

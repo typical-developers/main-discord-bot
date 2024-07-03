@@ -20,7 +20,7 @@ export class RenameVoiceRoom extends InteractionHandler {
     public async run(interaction: ModalSubmitInteraction, limit: number) {
         if (!interaction.guildId || !interaction.channelId) return;
 
-        const info = await this.container.api.getVoiceRoom(interaction.guildId, interaction.channelId);
+        const info = await this.container.api.bot.getVoiceRoom(interaction.guildId, interaction.channelId);
         const channel = interaction.channel;
 
         if (!info || !channel) return;

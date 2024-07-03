@@ -1,4 +1,6 @@
-import { TypicalAPI } from '#lib/structures/API';
+import { BotGraphQLAPI } from '#lib/extensions/BotGraphQLAPI';
 import { container } from '@sapphire/pieces';
 
-container.api = new TypicalAPI(process.env.BOT_ENDPOINT_API_KEY);
+container.api = {
+    bot: new BotGraphQLAPI(process.env.BOT_ENDPOINT_API_KEY)
+};

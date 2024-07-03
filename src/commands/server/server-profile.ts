@@ -73,7 +73,7 @@ export class ServerProfile extends Command {
         if (member.user.bot) return;
         if (!interaction.guild) return;
 
-        const { activity_tracking } = await this.container.api.getGuildSettings(interaction.guild.id);
+        const { activity_tracking } = await this.container.api.bot.getGuildSettings(interaction.guild.id);
         if (!activity_tracking) {
             throw new UserError({
                 identifier: 'TRACKING_DISBALED',
@@ -81,7 +81,7 @@ export class ServerProfile extends Command {
             });
         }
 
-        const profile = await this.container.api.getMemberProfile(interaction.guild.id, member.id);
+        const profile = await this.container.api.bot.getMemberProfile(interaction.guild.id, member.id);
         if (!profile) {
             throw new UserError({
                 identifier: 'NO_PROFILE',
