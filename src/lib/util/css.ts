@@ -55,6 +55,9 @@ export enum CSSDeclarations {
     '_webkit_text_fill_color',
     '_webkit_mask_image',
     'min_width',
+    'background_image',
+    'background_size',
+    'background_position'
 }
 
 export type CSSDeclaration = {
