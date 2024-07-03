@@ -33,7 +33,7 @@ export class BotGraphQLAPI extends TypicalAPI {
         this.baseUrl = new URL('/bot/graphql', this.baseUrl);
     }
 
-     /**
+    /**
      * Fetch the settings of a guild.
      * @param guildId The id for the guild.
      * @returns {Promise<GuildSettings>}
