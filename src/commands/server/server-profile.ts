@@ -68,8 +68,7 @@ export class ServerProfile extends Command {
         }
     }
 
-    private async generateCard(interaction: Command.ContextMenuCommandInteraction | Command.ChatInputCommandInteraction, member: GuildMember | undefined) {
-        if (!member) return;
+    private async generateCard(interaction: Command.ContextMenuCommandInteraction | Command.ChatInputCommandInteraction, member: GuildMember) {
         if (member.user.bot) return;
         if (!interaction.guild) return;
 
@@ -138,7 +137,14 @@ export class ServerProfile extends Command {
     }
 
     public override async contextMenuRun(interaction: Command.ContextMenuCommandInteraction) {
-        const member = await interaction.guild?.members.fetch(interaction.targetId);
+        const member = await interaction.guild?.members.fetch(interaction.targetId).catch(() => undefined);
+
+        if (!member) {
+            return await interaction.reply({
+                content: 'Unable to fetch the member\'s details.',
+                ephemeral: true
+            });
+        }
 
         return this.generateCard(interaction, member);
     }
