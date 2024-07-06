@@ -43,6 +43,40 @@ export class ServerLeaderboard extends Subcommand {
             });
     }
 
+    private leaderboardResetTime(time: Date) {
+        return `Resets on ` +
+                new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(time) +
+                ` @ ` +
+                new Intl.DateTimeFormat('en-US', { timeStyle: 'long' }).format(time)
+    }
+
+    private leaderboardHeaders(type: string) {
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+
+        switch (type) {
+            case 'weekly': 
+                const weekLastDay = new Date(today);
+                weekLastDay.setUTCDate(today.getUTCDate() - today.getUTCDay() + (today.getUTCDay() === 0 ? 1 : 8));
+                
+                return {
+                    describeHeader: 'Weekly Activity Leaderboard',
+                    otherHeader:  this.leaderboardResetTime(weekLastDay)
+                }
+            case 'monthly':
+                const monthLastDay = new Date(today);
+                monthLastDay.setUTCMonth(monthLastDay.getUTCMonth() + 1, 1);
+
+                return {
+                    describeHeader: 'Monthly Activity Leaderboard',
+                    otherHeader:  this.leaderboardResetTime(monthLastDay)
+                }
+            default: return {
+                describeHeader: 'Top Activity Leaderboard',
+            }
+        }
+    }
+
     public async getGuildActivityLeaderboard(interaction: Subcommand.ChatInputCommandInteraction) {
         if (!interaction.guild) return;
 
@@ -65,41 +99,11 @@ export class ServerLeaderboard extends Subcommand {
             });
         }
 
-        const today = new Date();
-        today.setUTCHours(0, 0, 0, 0);
-
-        const weekLastDay = new Date(today);
-        weekLastDay.setUTCDate(today.getUTCDate() - today.getUTCDay() + (today.getUTCDay() === 0 ? 1 : 8));
-
-        const monthLastDay = new Date(today);
-        monthLastDay.setUTCMonth(monthLastDay.getUTCMonth() + 1, 1);
-
         const leaderboard = new AttachmentBuilder(
             await new LeaderboardStats({
                 headerImage: interaction.guild.iconURL({ forceStatic: true, size: 64 }) || '',
                 mainHeader: interaction.guild.name,
-                // This is awful. Truly awful.
-                ...(() => {
-                    switch (type) {
-                        case 'weekly': return {
-                            describeHeader: 'Weekly Activity Leaderboard',
-                            otherHeader:  `Resets on ` +
-                                new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(weekLastDay) +
-                                ` @ ` +
-                                new Intl.DateTimeFormat('en-US', { timeStyle: 'long' }).format(weekLastDay)
-                        }
-                        case 'monthly': return {
-                            describeHeader: 'Monthly Activity Leaderboard',
-                            otherHeader:  `Resets on `
-                                + new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(monthLastDay) +
-                                ` @ ` +
-                                new Intl.DateTimeFormat('en-US', { timeStyle: 'long' }).format(monthLastDay)
-                        }
-                        default: return {
-                            describeHeader: 'Top Activity Leaderboard',
-                        }
-                    }
-                })(),
+                ...this.leaderboardHeaders(type),
                 fields: {
                     holder: 'Member',
                     value: 'Activity Points'
