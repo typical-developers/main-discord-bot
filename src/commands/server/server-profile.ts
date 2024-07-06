@@ -153,11 +153,18 @@ export class ServerProfile extends Command {
          * Should look into how to make this better, but based on types, data returned can be different.
          */
         if (user) {
-            member = await interaction.guild?.members.fetch(user.id);
+            member = await interaction.guild?.members.fetch(user.id).catch(() => undefined);
         }
         else {
             if (!interaction.member) return;
-            member = await interaction.guild?.members.fetch(interaction.member.user.id);
+            member = await interaction.guild?.members.fetch(interaction.member.user.id).catch(() => undefined);
+        }
+
+        if (!member) {
+            return await interaction.reply({
+                content: 'Unable to fetch the member\'s details.',
+                ephemeral: true
+            });
         }
 
         return this.generateCard(interaction, member);
