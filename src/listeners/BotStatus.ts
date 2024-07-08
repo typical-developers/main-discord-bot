@@ -42,7 +42,7 @@ export class BotStatus extends Listener {
                 if (!oaklandsPlayers) break;
 
                 this.currentStatus = BotStatusCycle.DisasterDefensePlayng;
-                this.activity = { name: `Oaklands・${oaklandsPlayers} playing` };
+                this.activity.name = `Oaklands・${oaklandsPlayers} playing`;
 
                 break;
             case BotStatusCycle.DisasterDefensePlayng:
@@ -50,7 +50,7 @@ export class BotStatus extends Listener {
                 if (!ddPlayers) break;
 
                 this.currentStatus = BotStatusCycle.OaklandsPlaying;
-                this.activity = { name: `Disaster Defense・${ddPlayers} playing` };
+                this.activity.name = `Disaster Defense・${ddPlayers} playing`;
 
                 break;
         }
