@@ -62,7 +62,7 @@ export class BotStatus extends Listener {
         return new Promise((res) => {
             setTimeout(async () => {
                 res(await this.statusRun(client));
-            }, 5 * 1000);
+            }, 10 * 1000);
         });
     }
 
