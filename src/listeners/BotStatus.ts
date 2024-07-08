@@ -38,18 +38,20 @@ export class BotStatus extends Listener {
 
         switch (this.currentStatus) {
             case BotStatusCycle.OaklandsPlaying:
+                this.currentStatus = BotStatusCycle.DisasterDefensePlayng;
+                
                 const oaklandsPlayers = this.playingCache[ExperienceUniverseID.Oaklands];
                 if (!oaklandsPlayers) break;
 
-                this.currentStatus = BotStatusCycle.DisasterDefensePlayng;
                 this.activity.name = `Oaklands・${oaklandsPlayers} playing`;
 
                 break;
             case BotStatusCycle.DisasterDefensePlayng:
+                this.currentStatus = BotStatusCycle.OaklandsPlaying;
+                
                 const ddPlayers = this.playingCache[ExperienceUniverseID.DisasterDefense];
                 if (!ddPlayers) break;
 
-                this.currentStatus = BotStatusCycle.OaklandsPlaying;
                 this.activity.name = `Disaster Defense・${ddPlayers} playing`;
 
                 break;
