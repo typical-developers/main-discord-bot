@@ -39,7 +39,8 @@ export class ServerLeaderboard extends Subcommand {
             .registerChatInputCommand({
                 name: this.name,
                 description: this.description,
-                options: this._groupOptions
+                options: this._groupOptions,
+                dmPermission: false
             });
     }
 

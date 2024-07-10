@@ -24,11 +24,13 @@ export class ServerProfile extends Command {
             .registerChatInputCommand({
                 name: this.name,
                 description: this.description,
-                options: this._options
+                options: this._options,
+                dmPermission: false
             })
             .registerContextMenuCommand({
                 type: ApplicationCommandType.User,
-                name: "Get User's Profile"
+                name: "Get User's Profile",
+                dmPermission: false
             });
     }
 

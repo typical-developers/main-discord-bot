@@ -150,6 +150,7 @@ export class Settings extends Subcommand {
                 description: this.description,
                 options: this._options,
                 defaultMemberPermissions: [PermissionFlagsBits.Administrator],
+                dmPermission: false
             });
     }
 
