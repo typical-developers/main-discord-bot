@@ -1,5 +1,6 @@
 import { Command } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
+import { AttachmentBuilder, codeBlock, EmbedBuilder, inlineCode } from 'discord.js';
 
 @ApplyOptions<Command.Options>({
     description: 'Fetch information on the SMP server!'
@@ -21,13 +22,22 @@ export class ServerProfile extends Command {
             return null;
         }
 
-        const { players } = await response.json() as {
+        const { online, players, icon, hostname } = await response.json() as {
             // There are more types, but this is realistically all we need for now.
-            players: { online: number; max: number; };
-            [key: string]: any;
+            online: boolean;
+            players: {
+                online: number;
+                max: number;
+                list?: {
+                    name: string;
+                    uuid: string;
+                }[];
+            };
+            icon: string;
+            hostname: string;
         }
 
-        return { players };
+        return { online, players, icon, hostname };
     }
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
@@ -40,9 +50,31 @@ export class ServerProfile extends Command {
             });
         }
 
-        const { players } = serverInfo;
+        const { online, players, icon, hostname } = serverInfo;
+        const iconAttachment = new AttachmentBuilder(Buffer.from(icon.replace('data:image\/png;base64', ''), 'base64'), { name: 'icon.png' });
+        const statusEmbed = new EmbedBuilder({
+            color: 0xfede3a,
+            title: 'Typical Developers SMP',
+            description: `
+                **Server Status:** ${inlineCode(online ? '🟢 Online' : '🔴 Offline')}
+                **IP:** ${inlineCode(hostname)}
+            `,
+            fields: [
+                {
+                    name: `Players ${players.online}/${players.max}`,
+                    value: codeBlock(players.list?.length
+                        ? players.list.map(({ name }) => name).join(', \n')
+                        : 'No players currently online.'
+                    )
+                }
+            ],
+            thumbnail: { url: `attachment://icon.png` },
+            timestamp: Date.now()
+        });
+
         await interaction.editReply({
-            content: `${players.online}/${players.max} currently online`
+            embeds: [statusEmbed],
+            files: [iconAttachment]
         });
     }
 }
