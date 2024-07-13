@@ -33,7 +33,7 @@ export class ServerProfile extends Command {
                     uuid: string;
                 }[];
             };
-            icon: string;
+            icon?: string;
             hostname: string;
         }
 
@@ -51,7 +51,7 @@ export class ServerProfile extends Command {
         }
 
         const { online, players, icon, hostname } = serverInfo;
-        const iconAttachment = new AttachmentBuilder(Buffer.from(icon.replace('data:image\/png;base64', ''), 'base64'), { name: 'icon.png' });
+        const iconAttachment = new AttachmentBuilder(icon ? Buffer.from(icon.replace('data:image\/png;base64', '')) : '', { name: 'icon.png' });
         const statusEmbed = new EmbedBuilder({
             color: 0xfede3a,
             title: 'Typical Developers SMP',
