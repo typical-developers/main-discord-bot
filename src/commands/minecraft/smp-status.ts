@@ -25,7 +25,7 @@ export class ServerProfile extends Command {
         const { online, players, icon, hostname } = await response.json() as {
             // There are more types, but this is realistically all we need for now.
             online: boolean;
-            players: {
+            players?: {
                 online: number;
                 max: number;
                 list?: {
@@ -51,30 +51,34 @@ export class ServerProfile extends Command {
         }
 
         const { online, players, icon, hostname } = serverInfo;
-        const iconAttachment = new AttachmentBuilder(icon ? Buffer.from(icon.replace('data:image\/png;base64', '')) : '', { name: 'icon.png' });
+        const iconAttachment = icon ? new AttachmentBuilder(Buffer.from(icon.replace('data:image\/png;base64', '')), { name: 'icon.png' }) : null;
         const statusEmbed = new EmbedBuilder({
             color: 0xfede3a,
             title: 'Typical Developers SMP',
-            description: `
-                **Server Status:** ${inlineCode(online ? '🟢 Online' : '🔴 Offline')}
-                **IP:** ${inlineCode(hostname)}
-            `,
+            description: `**Server Status:** ${inlineCode(online ? '🟢 Online' : '🔴 Offline')}\n**IP:** ${inlineCode(hostname)}`,
             fields: [
                 {
-                    name: `Players ${players.online}/${players.max}`,
-                    value: codeBlock(players.list?.length
+                    // name: `Players ${players?.online || 0}/${players?.max || 0}`,
+                    name: `Players ${players ? `${players?.online || 0}/${players?.max || 0}` : ``}`,
+                    value: codeBlock(players?.list?.length
                         ? players.list.map(({ name }) => name).join(', \n')
                         : 'No players currently online.'
                     )
                 }
             ],
-            thumbnail: { url: `attachment://icon.png` },
+            ...(iconAttachment
+                ? { thumbnail: { url: `attachment://icon.png` } }
+                : {}
+            ),
             timestamp: Date.now()
         });
 
         await interaction.editReply({
             embeds: [statusEmbed],
-            files: [iconAttachment]
+            ...(iconAttachment
+                ? { files: [iconAttachment] }
+                : {}
+            )
         });
     }
 }
