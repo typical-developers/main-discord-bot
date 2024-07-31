@@ -50,7 +50,8 @@ export class MessageEmbeds extends Listener {
                 .map((link, index) =>
                     ({
                         label: `${index+1} - ID ${link.messageId}`,
-                        value: `https://discord.com/channels/${link.guildId}/${link.channelId}/${link.messageId}`
+                        value: `https://discord.com/channels/${link.guildId}/${link.channelId}/${link.messageId}`,
+                        default: link.messageId === messageLinks[0].messageId ? true : false
                     })
                 );
 
