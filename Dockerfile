@@ -1,4 +1,4 @@
-FROM node:latest
+FROM node:22.1.0
 
 # Make puppeteer skip chromium downloading
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
