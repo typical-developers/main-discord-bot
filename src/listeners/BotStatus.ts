@@ -32,9 +32,8 @@ export class BotStatus extends Listener {
         this.playingCache = data.reduce((acc, curr) => ({...acc, [curr.id]: curr.playing}), {});
     }
 
-
     public async statusRun(client: Client) {
-        await this.recachePlayers([ExperienceUniverseID.Oaklands, ExperienceUniverseID.DisasterDefense]);
+        await this.recachePlayers([ExperienceUniverseID.Oaklands, ExperienceUniverseID.DisasterDefense, ExperienceUniverseID.SprayPaintDeluxe]);
 
         switch (this.currentStatus) {
             case BotStatusCycle.OaklandsPlaying:
@@ -47,12 +46,21 @@ export class BotStatus extends Listener {
 
                 break;
             case BotStatusCycle.DisasterDefensePlayng:
-                this.currentStatus = BotStatusCycle.OaklandsPlaying;
+                this.currentStatus = BotStatusCycle.SprayPaintDeluxePlaying;
                 
                 const ddPlayers = this.playingCache[ExperienceUniverseID.DisasterDefense];
                 if (!ddPlayers) break;
 
                 this.activity.name = `Disaster Defense・${ddPlayers} playing`;
+
+                break;
+            case BotStatusCycle.SprayPaintDeluxePlaying:
+                this.currentStatus = BotStatusCycle.OaklandsPlaying;
+
+                const sprayPaintPlayers = this.playingCache[ExperienceUniverseID.SprayPaintDeluxe];
+                if (!sprayPaintPlayers) break;
+
+                this.activity.name = `Spray Paint Deluxe・${sprayPaintPlayers} playing`;
 
                 break;
         }
