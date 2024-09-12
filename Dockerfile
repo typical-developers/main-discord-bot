@@ -14,6 +14,8 @@ RUN apt-get update && apt-get install curl gnupg -y \
 RUN mkdir -p /usr/src/main-discord-bot
 WORKDIR /usr/src/main-discord-bot
 
+RUN which google-chrome-stable
+
 # Install fonts
 RUN apt-get update && apt-get install -y fontconfig
 COPY ./assets/fonts /usr/local/share/fonts
