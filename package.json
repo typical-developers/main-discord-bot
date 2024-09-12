@@ -12,7 +12,7 @@
   "scripts": {
     "format": "prettier --write \"src/**/*.ts\"",
     "deploy": "bun .",
-    "deploy:dev": "DEV_DEPLOYMENT=true bun ."
+    "deploy:dev": "tsc --noEmit && DEV_DEPLOYMENT=true bun ."
   },
   "dependencies": {
     "@sapphire/discord-utilities": "^3.3.0",

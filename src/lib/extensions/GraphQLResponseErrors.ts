@@ -18,7 +18,9 @@ export class GraphQLResponseErrors extends Error {
      * @param errors The object of GraphQL errors provided.
      */
     constructor(errors: GraphQLErrorStructure[]) {
-        super('Something went wrong with a GraphQL query.');
+        console.log(`GraphQLResponseError: ${new Error().stack}`);
+
+        super(`Something went wrong with a GraphQL query.`);
         this.errors = errors;
     }
 }
