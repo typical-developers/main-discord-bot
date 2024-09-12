@@ -57,7 +57,7 @@ export class HTMLToImage {
             waitUntil: 'load',
             transparent: true,
             puppeteerArgs: {
-                executablePath: process.env.DEV_DEPLOYMENT === 'true' ? puppeteer.executablePath() : 'google-chrome-stable',
+                executablePath: process.env.DEV_DEPLOYMENT === 'true' ? puppeteer.executablePath() : '/usr/bin/google-chrome-stable',
                 args: ['--no-sandbox', '--disable-gpu', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
                 ignoreDefaultArgs: ['--disable-extensions']
             },
