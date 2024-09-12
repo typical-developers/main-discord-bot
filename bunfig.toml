@@ -1,2 +1,0 @@
-[install.scopes]
-"@typical-developers" = { url = "npm.pkg.github.com/:_authToken=${GITHUB_PACKAGES_TOKEN}" }

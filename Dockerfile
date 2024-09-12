@@ -22,7 +22,7 @@ RUN fc-cache -f -v
 # Setup npm
 COPY package.json /usr/src/main-discord-bot
 COPY bun.lockb /usr/src/main-discord-bot
-COPY bunfig.toml /usr/src/main-discord-bot
+COPY .npmrc /usr/src/main-discord-bot
 COPY . /usr/src/main-discord-bot
 
 RUN bun i
