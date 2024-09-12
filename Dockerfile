@@ -1,4 +1,4 @@
-FROM node:22.1.0
+FROM oven/bun:1.1.21
 
 # Make puppeteer skip chromium downloading
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
@@ -21,10 +21,10 @@ RUN fc-cache -f -v
 
 # Setup npm
 COPY package.json /usr/src/main-discord-bot
-COPY .npmrc /usr/src/main-discord-bot
-RUN npm i -g pnpm \
-  && pnpm i
-
+COPY bun.lockb /usr/src/main-discord-bot
+COPY bunfig.toml /usr/src/main-discord-bot
 COPY . /usr/src/main-discord-bot
 
-CMD ["pnpm", "run", "deploy"]
+RUN bun i
+
+CMD ["bun", "run", "deploy"]
