@@ -3,7 +3,8 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { AttachmentBuilder, codeBlock, EmbedBuilder, inlineCode } from 'discord.js';
 
 @ApplyOptions<Command.Options>({
-    description: 'Fetch information on the SMP server!'
+    description: 'Fetch information on the SMP server!',
+    enabled: false
 })
 export class ServerProfile extends Command {
     public override async registerApplicationCommands(registry: Command.Registry) {
