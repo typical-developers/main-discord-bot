@@ -261,7 +261,7 @@ export class ProfileCard extends HTMLToImage {
                         _webkit_text_fill_color: 'transparent'
                     });
                 },
-                abbreviatedPoints: Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 3 })
+                abbreviatedPoints: Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 })
                     .format(activityProgression.totalPoints).toLowerCase(),
                 currentProgress: activityProgression.currentProgress,
                 nextProgress: activityProgression.requiredProgress,
