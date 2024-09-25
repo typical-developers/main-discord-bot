@@ -2,7 +2,6 @@ import { HTMLToImage } from '#lib/structures/HTMLToImage';
 import { htmlFunctions } from '#lib/util/html';
 import { css, declarations } from '#lib/util/css';
 import { imageToBase64 } from '#lib/util/files';
-import { abbreviateNumber } from '#lib/util/abbreviate';
 
 const { div, img } = htmlFunctions;
 
@@ -262,7 +261,8 @@ export class ProfileCard extends HTMLToImage {
                         _webkit_text_fill_color: 'transparent'
                     });
                 },
-                abbreviatedPoints: abbreviateNumber(activityProgression.totalPoints),
+                abbreviatedPoints: Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 3 })
+                    .format(activityProgression.totalPoints).toLowerCase(),
                 currentProgress: activityProgression.currentProgress,
                 nextProgress: activityProgression.requiredProgress,
                 progressBarGradient1: details.progressBar?.gradient1 || '#4D5EFA',
