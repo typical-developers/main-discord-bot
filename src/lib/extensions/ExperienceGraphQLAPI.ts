@@ -28,7 +28,8 @@ export class ExperienceGraphQLAPI extends TypicalAPI {
             operation: 'OaklandsMaterialsCashEarned',
             fields: [
                 'material_type',
-                'cash_amount'
+                'cash_amount',
+                'currency_type'
             ]
         });
 
@@ -41,7 +42,8 @@ export class ExperienceGraphQLAPI extends TypicalAPI {
             operation: 'OaklandsUserCashEarned',
             fields: [
                 'user_id',
-                'cash_amount'
+                'cash_amount',
+                'currency_type'
             ]
         });
 

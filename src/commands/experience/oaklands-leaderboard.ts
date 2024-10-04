@@ -85,9 +85,9 @@ export class OaklandsLeaderboard extends Subcommand {
             }), {});
 
         const formattedLeaderboard = usersLeaderboard
-            .map(({ user_id, cash_amount }) => ({
+            .map(({ user_id, cash_amount, currency_type }) => ({
                 holder: `${`@${userProfiles[user_id]}` || user_id}`,
-                value: `$${cash_amount.toLocaleString()}`
+                value: `${currency_type === 'Candy2024'?'🍬':'$'}${cash_amount.toLocaleString()}`
             }))
             .slice(0, 25);
 
@@ -124,11 +124,11 @@ export class OaklandsLeaderboard extends Subcommand {
         }
 
         const limitedLeaderboard = materialsLeaderboard
-            .map(({ material_type, cash_amount }) => ({
+            .map(({ material_type, cash_amount, currency_type }) => ({
                 holder: material_type === 'ExampleTree'
                     ? 'Oak Tree'
                     : material_type.split(/(?=[A-Z])/).join(' '),
-                value: `$${cash_amount.toLocaleString()}`
+                value: `${currency_type === 'Candy2024'?'🍬':'$'}${cash_amount.toLocaleString()}`
             }))
             .slice(0, 25);
 
