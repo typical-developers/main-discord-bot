@@ -21,7 +21,7 @@ export class HTMLToImage {
         this.html = html({}, [
             head({}, [
                 script({
-                    src: 'https://twemoji.maxcdn.com/v/latest/twemoji.min.js',
+                    src: 'https://unpkg.com/twemoji@latest/dist/twemoji.min.js',
                     crossorigin: 'anonymous'
                 }),
                 style({}, [
