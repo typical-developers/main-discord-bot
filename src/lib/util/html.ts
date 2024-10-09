@@ -30,7 +30,8 @@ export enum HTMLTags {
     'html',
     'head',
     'body',
-    'img'
+    'img',
+    'meta'
 }
 
 export type HTMLTag = keyof typeof HTMLTags;

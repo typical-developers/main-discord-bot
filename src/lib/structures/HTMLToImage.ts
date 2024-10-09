@@ -4,7 +4,7 @@ import puppeteer from 'puppeteer';
 import { htmlFunctions } from '#lib/util/html';
 import { css } from '#lib/util/css';
 
-const { html, head, script, style, body } = htmlFunctions;
+const { html, head, meta, script, style, body } = htmlFunctions;
 
 export class HTMLToImage {
     /** The raw HTML. */
@@ -20,6 +20,9 @@ export class HTMLToImage {
     constructor(page: { html: string; styling: string[] }, content: any) {
         this.html = html({}, [
             head({}, [
+                meta({
+                    charset: "utf-8"
+                }),
                 script({
                     src: 'https://unpkg.com/twemoji@latest/dist/twemoji.min.js',
                     crossorigin: 'anonymous'
