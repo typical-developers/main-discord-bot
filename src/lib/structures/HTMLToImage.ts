@@ -3,7 +3,7 @@ import { htmlFunctions } from '#lib/util/html';
 import { css } from '#lib/util/css';
 import { container } from '@sapphire/pieces';
 
-const { html, head, meta, script, style, body } = htmlFunctions;
+const { html, head, meta, style, body } = htmlFunctions;
 
 export class HTMLToImage {
     /** The raw HTML. */
@@ -22,10 +22,10 @@ export class HTMLToImage {
                 meta({
                     charset: "utf-8"
                 }),
-                script({
-                    src: 'https://unpkg.com/twemoji@latest/dist/twemoji.min.js',
-                    crossorigin: 'anonymous'
-                }),
+                // script({
+                //     src: 'https://unpkg.com/twemoji@latest/dist/twemoji.min.js',
+                //     crossorigin: 'anonymous'
+                // }),
                 style({}, [
                     css('body', {
                         position: 'absolute',
@@ -44,7 +44,7 @@ export class HTMLToImage {
                 style({}, [...page.styling])
             ]),
             body({}, [page.html]),
-            script({}, ['twemoji.parse(document.body)'])
+            // script({}, ['twemoji.parse(document.body)'])
         ]);
 
         this.htmlContent = content;

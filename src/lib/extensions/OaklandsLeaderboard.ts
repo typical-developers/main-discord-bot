@@ -140,7 +140,7 @@ export class OaklandsLeaderboardStats extends HTMLToImage {
             })
         ];
 
-        super({ html, styling: styling }, {
+        super({ html: html, styling: styling }, {
             mainHeaderText: details.header,
             timeRemaining: () => {
                 const nowEpoch = new Date().getTime() / 1000;
