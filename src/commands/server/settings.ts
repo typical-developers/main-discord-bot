@@ -127,7 +127,7 @@ export class Settings extends Subcommand {
         const settings = Object.entries(options)
             .reduce((acc, [k, v]) => {
                 if (v !== null) {
-                    acc[k] = v;
+                    acc[k as keyof Partial<GuildSettingsInput>] = v;
                 }
 
                 return acc;

@@ -19,7 +19,7 @@ export abstract class TypicalAPI {
      * @returns {T} The updated data.
      */
     public deepReplace<Data = object>(data: Data, newData: DeepPartial<Data>): Data {
-        const newKeys = Object.keys(newData);
+        const newKeys = Object.keys(newData) as Array<keyof DeepPartial<Data>>;
 
         for (const key of newKeys) {
             const oldValue = data[key];
@@ -29,14 +29,14 @@ export abstract class TypicalAPI {
 
             if (typeof oldValue === 'object' && typeof newValue === 'object') {
                 if (Array.isArray(oldValue) && JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
-                    data[key] = newValue;
+                    data[key] = newValue as Data[keyof Data];
                 }
                 else {
                     data[key] = this.deepReplace(oldValue, newValue);
                 }
             } 
             else if (oldValue !== newValue) {
-                data[key] = newValue;
+                data[key] = newValue as Data[keyof Data];
             }
         }
 

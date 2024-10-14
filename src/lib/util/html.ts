@@ -48,9 +48,9 @@ export function html(tag: HTMLTag, attributes: Object, content: string[] = [''])
 
 /** All individual tag types so you dont have to keep providing them in the html function. */
 export const htmlFunctions = Object.keys(HTMLTags).reduce(
-    (obj, tag: HTMLTag) => ({
+    (obj, tag) => ({
         ...obj,
-        [tag]: (attributes: Object, content: string[] = ['']) => html(tag, attributes, content)
+        [tag]: (attributes: Object, content: string[] = ['']) => html(tag as HTMLTag, attributes, content)
     }),
-    {} as { [key in keyof typeof HTMLTags]: (attributes: Object, content?: string[]) => string }
+    {} as { readonly [key in HTMLTag]: (attributes: Object, content?: string[]) => string }
 );

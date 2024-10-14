@@ -84,9 +84,9 @@ export async function createMessageEmbed(message: Message): Promise<EmbedBuilder
         timestamp: createdTimestamp
     });
 
-    const embedImages = Array.from(attachments.values()).reduce((acc, attachment, index) => {
-        if (index === 0) {
-            embed.setURL(url).setImage(attachment.url);
+    const embedImages = Array.from(attachments.values()).reduce<EmbedBuilder[]>((acc, curr, i) => {
+        if (i === 0) {
+            embed.setURL(url).setImage(curr.url);
             return acc;
         }
 
@@ -94,10 +94,10 @@ export async function createMessageEmbed(message: Message): Promise<EmbedBuilder
             ...acc,
             new EmbedBuilder({
                 url: message.url,
-                image: { url: attachment.url }
+                image: { url: curr.url }
             })
-        ];
-    }, []) as EmbedBuilder[];
+        ]
+    }, []);
 
     return [embed, ...embedImages];
 }
