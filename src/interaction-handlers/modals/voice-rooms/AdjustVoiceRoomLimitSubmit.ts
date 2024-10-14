@@ -1,7 +1,7 @@
 import { InteractionHandler, InteractionHandlerTypes, UserError, } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { ModalSubmitInteraction, inlineCode } from 'discord.js';
-import { voiceRoomSettingsFromOrigin } from '#lib/util/voice-rooms';
+import { voiceRoomSettingsFromOrigin } from '@/lib/util/voice-rooms';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.ModalSubmit

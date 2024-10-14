@@ -10,7 +10,7 @@ import {
     StringSelectMenuComponent,
     StringSelectMenuInteraction
 } from 'discord.js';
-import { createMessageEmbed, getMessageContent, parseMessageLink } from '#lib/util/message-embeds';
+import { createMessageEmbed, getMessageContent, parseMessageLink } from '@/lib/util/message-embeds';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.SelectMenu

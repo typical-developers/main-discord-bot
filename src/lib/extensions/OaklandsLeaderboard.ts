@@ -1,6 +1,6 @@
-import { HTMLToImage } from "#lib/structures/HTMLToImage"
-import { htmlFunctions } from '#lib/util/html';
-import { css } from '#lib/util/css';
+import { HTMLToImage } from "@/lib/structures/HTMLToImage";
+import { htmlFunctions } from '@/lib/util/html';
+import { css } from '@/lib/util/css';
 
 const { div } = htmlFunctions;
 

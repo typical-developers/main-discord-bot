@@ -1,8 +1,8 @@
-import { VoiceRoomSettingsDetails } from '@typical-developers/api-types/graphql';
+import { type VoiceRoomSettingsDetails } from '@typical-developers/api-types/graphql';
 import { Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { ChannelType, DiscordAPIError, Events, VoiceBasedChannel, VoiceState, type DiscordErrorData } from 'discord.js';
-import { voiceRoomInfoEmbed } from '#lib/util/voice-rooms';
+import { ChannelType, DiscordAPIError, Events, type VoiceBasedChannel, VoiceState, type DiscordErrorData } from 'discord.js';
+import { voiceRoomInfoEmbed } from '@/lib/util/voice-rooms';
 
 @ApplyOptions<Listener.Options>({
     event: Events.VoiceStateUpdate,

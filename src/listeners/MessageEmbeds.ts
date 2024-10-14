@@ -1,7 +1,7 @@
-import { type Message, StringSelectMenuBuilder, Events, SelectMenuComponentOptionData, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { type Message, StringSelectMenuBuilder, Events, type SelectMenuComponentOptionData, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { getMessageContent, parseMessageLinks, createMessageEmbed } from '#lib/util/message-embeds';
+import { getMessageContent, parseMessageLinks, createMessageEmbed } from '@/lib/util/message-embeds';
 
 @ApplyOptions<Listener.Options>({
     event: Events.MessageCreate,

@@ -3,7 +3,7 @@ import type {
     OaklandsUserCashEarned
 } from '@typical-developers/api-types/graphql';
 import gql from 'gql-query-builder';
-import { TypicalAPI } from "#lib/structures/TypicalAPI";
+import { TypicalAPI } from "@/lib/structures/TypicalAPI";
 
 export class ExperienceGraphQLAPI extends TypicalAPI {
     protected readonly apiKey: string;

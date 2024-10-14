@@ -1,7 +1,7 @@
-import { HTMLToImage } from '#lib/structures/HTMLToImage';
-import { htmlFunctions } from '#lib/util/html';
-import { css } from '#lib/util/css';
-import { imageToBase64 } from '#lib/util/files';
+import { HTMLToImage } from '@/lib/structures/HTMLToImage';
+import { htmlFunctions } from '@/lib/util/html';
+import { css } from '@/lib/util/css';
+import { imageToBase64 } from '@/lib/util/files';
 
 const { div, img } = htmlFunctions;
 

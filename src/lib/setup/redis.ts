@@ -1,5 +1,5 @@
 import { container } from '@sapphire/pieces';
-import { RedisClientType, createClient } from 'redis';
+import { type RedisClientType, createClient } from 'redis';
 
 const { REDIS_USERNAME, REDIS_PASSWORD, REDIS_HOST } = process.env
 

@@ -21,7 +21,7 @@ import type {
 } from '@typical-developers/api-types/graphql';
 import { container } from '@sapphire/pieces';
 import gql from 'gql-query-builder';
-import { TypicalAPI } from "#lib/structures/TypicalAPI";
+import { TypicalAPI } from "@/lib/structures/TypicalAPI";
 
 export class BotGraphQLAPI extends TypicalAPI {
     protected readonly apiKey: string;

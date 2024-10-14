@@ -1,4 +1,4 @@
-import '#lib/setup/initialize';
+import '@/lib/setup/initialize';
 
 import { ApplicationCommandRegistries, LogLevel, RegisterBehavior, SapphireClient } from '@sapphire/framework';
 import { GatewayIntentBits, Partials } from 'discord.js';

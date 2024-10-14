@@ -1,7 +1,7 @@
-import { ContextMenuCommandErrorPayload, Events, Listener, UserError } from '@sapphire/framework';
+import { type ContextMenuCommandErrorPayload, Events, Listener, UserError } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { GraphQLResponseErrors } from '#lib/extensions/GraphQLResponseErrors';
-import { respond, logToWebhook } from '#lib/util/error-sentry';
+import { GraphQLResponseErrors } from '@/lib/extensions/GraphQLResponseErrors';
+import { respond, logToWebhook } from '@/lib/util/error-sentry';
 
 @ApplyOptions<Listener.Options>({
     event: Events.ContextMenuCommandError,

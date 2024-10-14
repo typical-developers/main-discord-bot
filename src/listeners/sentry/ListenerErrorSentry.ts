@@ -1,7 +1,7 @@
 import { Events, Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { AttachmentBuilder, inlineCode } from 'discord.js';
-import { GraphQLResponseErrors } from '#lib/extensions/GraphQLResponseErrors';
+import { GraphQLResponseErrors } from '@/lib/extensions/GraphQLResponseErrors';
 
 @ApplyOptions<Listener.Options>({
     event: Events.ListenerError,

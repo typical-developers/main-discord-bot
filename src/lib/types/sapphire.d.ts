@@ -1,8 +1,8 @@
 import type { WebhookClient } from 'discord.js';
 import type { RedisClientType } from 'redis';
-import type { BotGraphQLAPI } from '#lib/extensions/BotGraphQLAPI';
-import type { ExperienceGraphQLAPI } from '#lib/extensions/ExperienceGraphQLAPI';
-import type HTMLImageProcessor from '#lib/structures/HTMLImageProcessor';
+import type { BotGraphQLAPI } from '@/lib/extensions/BotGraphQLAPI';
+import type { ExperienceGraphQLAPI } from '@/lib/extensions/ExperienceGraphQLAPI';
+import type HTMLImageProcessor from '@/lib/structures/HTMLImageProcessor';
 
 declare module '@sapphire/pieces' {
     interface Container {

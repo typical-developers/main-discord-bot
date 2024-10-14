@@ -1,5 +1,5 @@
 import Handlebars from "handlebars";
-import { PuppeteerLaunchOptions } from "puppeteer";
+import { type PuppeteerLaunchOptions } from "puppeteer";
 import { Cluster } from "puppeteer-cluster";
 
 interface DrawOptions<T> {

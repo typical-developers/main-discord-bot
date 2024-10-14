@@ -7,7 +7,7 @@
   "module": "./src/index.ts",
   "type": "module",
   "imports": {
-    "#lib/*": "./src/lib/*.ts"
+    "@/*": "./src/*"
   },
   "scripts": {
     "format": "prettier --write \"src/**/*.ts\"",

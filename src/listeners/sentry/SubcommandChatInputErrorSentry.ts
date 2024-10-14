@@ -1,8 +1,8 @@
-import { ChatInputCommandErrorPayload, Listener, UserError } from '@sapphire/framework';
+import { type ChatInputCommandErrorPayload, Listener, UserError } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { GraphQLResponseErrors } from '#lib/extensions/GraphQLResponseErrors';
+import { GraphQLResponseErrors } from '@/lib/extensions/GraphQLResponseErrors';
 import { SubcommandPluginEvents } from '@sapphire/plugin-subcommands';
-import { respond, logToWebhook } from '#lib/util/error-sentry';
+import { respond, logToWebhook } from '@/lib/util/error-sentry';
 
 @ApplyOptions<Listener.Options>({
     event: SubcommandPluginEvents.ChatInputSubcommandError,

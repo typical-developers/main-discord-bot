@@ -1,6 +1,6 @@
 import { Readable } from 'stream';
-import { htmlFunctions } from '#lib/util/html';
-import { css } from '#lib/util/css';
+import { htmlFunctions } from '@/lib/util/html';
+import { css } from '@/lib/util/css';
 import { container } from '@sapphire/pieces';
 
 const { html, head, meta, style, body } = htmlFunctions;

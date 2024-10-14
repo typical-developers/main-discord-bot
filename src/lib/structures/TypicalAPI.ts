@@ -1,6 +1,6 @@
 import { container } from '@sapphire/pieces';
-import type { DeepPartial } from '#lib/types/global';
-import { GraphQLResponseErrors, type GraphQLErrorStructure } from '#lib/extensions/GraphQLResponseErrors';
+import type { DeepPartial } from '@/lib/types/global';
+import { GraphQLResponseErrors, type GraphQLErrorStructure } from '@/lib/extensions/GraphQLResponseErrors';
 
 export abstract class TypicalAPI {
     public baseUrl: URL;

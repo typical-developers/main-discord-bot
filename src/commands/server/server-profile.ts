@@ -2,9 +2,9 @@ import { Command, UserError } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { type ApplicationCommandOptionData, GuildMember, ApplicationCommandOptionType, ApplicationCommandType, AttachmentBuilder } from 'discord.js';
 import { ProfileCardStyles } from '@typical-developers/api-types/graphql';
-import { ProfileCard, ProfileCardCustomization } from '#lib/extensions/ProfileCard';
-import { hexToRGB } from '#lib/util/color';
-import { imageToBase64 } from '#lib/util/files';
+import { ProfileCard, type ProfileCardCustomization } from '@/lib/extensions/ProfileCard';
+import { hexToRGB } from '@/lib/util/color';
+import { imageToBase64 } from '@/lib/util/files';
 
 @ApplyOptions<Command.Options>({
     description: 'Get information on a server member!'

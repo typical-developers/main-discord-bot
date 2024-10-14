@@ -1,7 +1,7 @@
 import { ApplicationCommandOptionType, AttachmentBuilder, type ApplicationCommandSubCommandData } from 'discord.js';
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { ApplyOptions } from '@sapphire/decorators';
-import { OaklandsLeaderboardStats } from '#lib/extensions/OaklandsLeaderboard';
+import { OaklandsLeaderboardStats } from '@/lib/extensions/OaklandsLeaderboard';
 
 @ApplyOptions<Subcommand.Options>({
     description: 'Leaderboards relating to Oaklands statistics.',

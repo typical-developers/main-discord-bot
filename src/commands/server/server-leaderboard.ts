@@ -2,7 +2,7 @@ import { ApplicationCommandOptionType, AttachmentBuilder, type ApplicationComman
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { ApplyOptions } from '@sapphire/decorators';
 import { UserError } from '@sapphire/framework';
-import { LeaderboardStats } from '#lib/extensions/LeaderboardStats';
+import { LeaderboardStats } from '@/lib/extensions/LeaderboardStats';
 
 @ApplyOptions<Subcommand.Options>({
     description: 'Leaderboards relating to server statistics.',

@@ -1,7 +1,7 @@
 import { Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { type Client, type ActivityOptions, Events, ActivityType } from 'discord.js';
-import { BotStatusCycle, ExperienceUniverseID } from '#lib/types/enums';
+import { BotStatusCycle, ExperienceUniverseID } from '@/lib/types/enums';
 
 @ApplyOptions<Listener.Options>({
 	event: Events.ClientReady,

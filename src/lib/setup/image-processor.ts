@@ -1,6 +1,6 @@
 import { container } from '@sapphire/pieces';
 import puppeteer from 'puppeteer';
-import HTMLImageProcessor from "#lib/structures/HTMLImageProcessor"
+import HTMLImageProcessor from "@/lib/structures/HTMLImageProcessor"
 
 container.imageProcessor = await HTMLImageProcessor.launch({
     executablePath: process.env.DEV_DEPLOYMENT === 'true' ? puppeteer.executablePath() : '/usr/bin/google-chrome-stable',

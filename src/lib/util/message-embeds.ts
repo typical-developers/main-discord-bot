@@ -1,4 +1,4 @@
-import { ChannelType, Colors, EmbedBuilder, GuildBasedChannel, GuildMember, Message, PermissionFlagsBits } from "discord.js";
+import { ChannelType, Colors, EmbedBuilder, type GuildBasedChannel, GuildMember, Message, PermissionFlagsBits } from "discord.js";
 import { MessageLinkRegex } from '@sapphire/discord-utilities';
 import { container } from "@sapphire/pieces";
 import { isGuildBasedChannel } from "@sapphire/discord.js-utilities";
