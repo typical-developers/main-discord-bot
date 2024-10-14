@@ -22,8 +22,6 @@
     "discord.js": "^14.15.3",
     "gql-query-builder": "^3.8.0",
     "graphql": "^16.8.2",
-    "node-cache": "^5.1.2",
-    "node-html-to-image": "5.0.0",
     "puppeteer": "23.3.0",
     "redis": "^4.6.14"
   },

@@ -50,18 +50,6 @@ export class HTMLToImage {
      * @returns {Promise<Readable>}
      */
     public async draw(): Promise<Readable> {
-        // const image = await nodeHtmlToImage({
-        //     waitUntil: 'load',
-        //     transparent: true,
-        //     puppeteerArgs: {
-        //         executablePath: process.env.DEV_DEPLOYMENT === 'true' ? puppeteer.executablePath() : '/usr/bin/google-chrome-stable',
-        //         args: ['--no-sandbox', '--disable-gpu', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-        //         ignoreDefaultArgs: ['--disable-extensions']
-        //     },
-        //     html: this.html,
-        //     content: this.htmlContent
-        // });
-
         const image = await container.imageProcessor.draw({
             html: this.html,
             handlebars: this.htmlContent,
