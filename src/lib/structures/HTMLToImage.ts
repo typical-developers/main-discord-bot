@@ -22,17 +22,13 @@ export class HTMLToImage {
                 meta({
                     charset: "utf-8"
                 }),
-                // script({
-                //     src: 'https://unpkg.com/twemoji@latest/dist/twemoji.min.js',
-                //     crossorigin: 'anonymous'
-                // }),
                 style({}, [
                     css('body', {
                         position: 'absolute',
                         margin: '0',
                         color: 'white',
                         background_color: 'transparent',
-                        font_family: 'Fixel Variable',
+                        font_family: 'Fixel Variable, Twemoji, sans-serif',
                         font_size: '12px',
                         text_rendering: 'optimizeLegibility'
                     }),
@@ -43,8 +39,7 @@ export class HTMLToImage {
                 ]),
                 style({}, [...page.styling])
             ]),
-            body({}, [page.html]),
-            // script({}, ['twemoji.parse(document.body)'])
+            body({}, [page.html])
         ]);
 
         this.htmlContent = content;
