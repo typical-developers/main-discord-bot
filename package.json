@@ -22,7 +22,9 @@
     "discord.js": "^14.15.3",
     "gql-query-builder": "^3.8.0",
     "graphql": "^16.8.2",
+    "handlebars": "^4.7.8",
     "puppeteer": "23.3.0",
+    "puppeteer-cluster": "^0.24.0",
     "redis": "^4.6.14"
   },
   "devDependencies": {
