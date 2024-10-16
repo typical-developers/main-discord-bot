@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            body {
+                display: inline-block;
+            }
+
+            .shop-base {
+                width: fit-content;
+            }
+
+            .shop-header {
+                display: flex;
+                align-items: center;
+
+                padding: 4px 6px;
+
+                border-top-left-radius: 5px;
+
+                color: #FFFFFF;
+                background: linear-gradient(#4B4B4B, #282828);
+
+                font-family: 'Arial';
+                font-weight: bold;
+                font-size: 20px;
+                white-space: nowrap;
+                overflow: hidden;
+
+                clip-path: polygon(0 0, 0 100%, 100% 100%, 100% 45%, 98.2% 0);
+            }
+
+            .shop-header a {
+                width: 100%;
+                padding-right: 12px;
+                font-size: 14px;
+                text-align: right;
+            }
+
+            .shop-content {
+                padding: 11px;
+                
+                background: linear-gradient(#F2F2F2, #FFFFFF);
+                outline: 1px solid #AAAAAA;
+                outline-offset: -1px;
+            }
+
+            .shop-content .shop-items {
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
+
+                gap: 24px;
+            }
+            
+            .shop-content .attribution-footer {
+                margin-top: 10px;
+                padding-top: 5px;
+                border-top: 1px solid #808080;
+                font-family: 'Arial';
+                font-size: 11px;
+                font-weight: bold;
+            }
+
+            .shop-item {
+                display: flex;
+                flex-direction: column;
+
+                gap: 4px;
+                width: 110px;
+                
+                font-family: 'Verdana';
+                font-weight: bold;
+                font-size: 12px;
+            }
+
+            .shop-item img {
+                width: 110px;
+                height: 110px;
+                padding: 5px;
+                box-sizing: border-box;
+                outline: 1px solid #EEEEEE;
+                outline-offset: -1px;
+            }
+
+            .shop-item .item-header {
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                overflow: hidden;
+                color: #0000FF;
+            }
+
+            .shop-item .item-cost {
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                overflow: hidden;
+                color: #008000;
+                font-size: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="shop-base">
+            <div class="shop-header">
+                Classic Shop
+                <a>Reset in {{shopResetTime}}</a>
+            </div>
+            <div class="shop-content">
+                <div class="shop-items">
+                    <!-- <div class="shop-item">
+                        <img src="https://web.archive.org/web/20110228202605im_/http://t1bg.roblox.com/unapprove-110x110.Png">
+                        <a class="item-header">Item AAAAAAAAAAAA</a>
+                        <a class="item-cost">Ca$h: 727</a>
+                    </div> -->
+                    {{{shopContentHtml}}}
+                </div>
+                <div class="attribution-footer">
+                    <a>all missing image assets were provided by https://oaklandsrblxwiki.miraheze.org</a>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
