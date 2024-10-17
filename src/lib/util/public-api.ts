@@ -9,7 +9,7 @@ async function _requestEndpoint<Result extends Object>(
     }
 ) {
     const url = new URL(path, BASE_URL);
-    
+
     const res = await fetch(url, {
         method
     });
@@ -26,6 +26,19 @@ export async function classicShop() {
         items: string[];
     }>({
         path: '/v1/oaklands/stores/classic-shop',
+        method: 'GET'
+    });
+}
+
+export async function topMaterialsToday() {
+    return await _requestEndpoint<{
+        reset_time: string;
+        last_update: string;
+        leaderboards: Record<string, Record<string, {
+            position: number; name: string; value: number
+        }>>;
+    }>({
+        path: '/v1/oaklands/leaderboards/top-materials-today',
         method: 'GET'
     });
 }

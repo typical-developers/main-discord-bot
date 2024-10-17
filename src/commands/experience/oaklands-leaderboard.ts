@@ -2,6 +2,8 @@ import { ApplicationCommandOptionType, AttachmentBuilder, type ApplicationComman
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { ApplyOptions } from '@sapphire/decorators';
 import { OaklandsLeaderboardStats } from '@/lib/extensions/OaklandsLeaderboard';
+import { topMaterialsToday } from '@/lib/util/public-api';
+import { generateOaklandsLeaderboard, getResetTime } from '@/lib/util/image-generators';
 
 @ApplyOptions<Subcommand.Options>({
     description: 'Leaderboards relating to Oaklands statistics.',
@@ -26,10 +28,25 @@ export class OaklandsLeaderboard extends Subcommand {
         {
             type: ApplicationCommandOptionType.Subcommand,
             name: 'daily-materials',
-            description: 'Fetch the top 25 sold materials today in Oaklands.'
+            description: 'Fetch the top 25 sold materials today in Oaklands.',
+            options: [
+                {
+                    type: ApplicationCommandOptionType.String,
+                    name: 'leaderboard',
+                    description: 'The leaderboard type. Default is all time.',
+                    choices: [
+                        { name: 'Cash', value: 'cash' },
+                        { name: 'Candy', value: 'candy2024' }
+                    ]
+                }
+            ]
         }
-
     ];
+
+    private readonly _currencyDetails: Record<string, { type: string; color: string; }> = {
+        cash: { type: '$', color: '#37FF91' },
+        candy2024: { type: '🍬', color: '#D82A40' }
+    }
 
     public override async registerApplicationCommands(registry: Subcommand.Registry) {
         registry
@@ -66,6 +83,62 @@ export class OaklandsLeaderboard extends Subcommand {
         }[]};
 
         return data;
+    }
+
+    private _getPositionAcronym(position: number) {
+        switch (position) {
+            case 1:
+                return `1st`;
+            case 2:
+                return `2nd`;
+            case 3:
+                return `3rd`;
+            default:
+                return `${position}th`
+        }
+    }
+
+    private _getPositionColor(position: number) {
+        switch (position) {
+            case 1:
+                return `#ECD400`;
+            case 2:
+                return `#B1B1B1`;
+            case 3:
+                return `#F67600`;
+            default:
+                return null;
+        }
+    }
+
+    private _generateRows(rows: Record<string, { position: number; name: string; value: number }>, currency: { type: string; color: string; }) {
+        const values = Object.values(rows);
+
+        const newRows = [];
+
+        for (const row of values) {
+            const positionAcronym = this._getPositionAcronym(row.position);
+            const positionColor = this._getPositionColor(row.position);
+
+            newRows.push({
+                rank: {
+                    value: positionAcronym,
+                    customProperties: positionColor
+                        ? { style: `color: ${positionColor}; width: 0;` }
+                        : { style: "width: 0;" }
+                },
+                material: {
+                    value: row.name,
+                    ...(positionColor ? { customProperties: { style: `color: ${positionColor}` } } : {})
+                },
+                amount: {
+                    value: `${currency.type}${row.value.toLocaleString()}`,
+                    customProperties: { style: `color: ${currency.color}` }
+                }
+            });
+        }
+
+        return newRows;
     }
 
     public async getTopMonthlyLeaderboard(interaction: Subcommand.ChatInputCommandInteraction) {
@@ -116,38 +189,34 @@ export class OaklandsLeaderboard extends Subcommand {
     public async getDailyMaterialsLeaderboard(interaction: Subcommand.ChatInputCommandInteraction) {
         await interaction.deferReply({ fetchReply: true });
 
-        const materialsLeaderboard = await this.container.api.experience.fetchOaklandsMaterialsCashEarned() || [];
-        if (!materialsLeaderboard?.length || materialsLeaderboard.length < 15) {
+        const currencyType = interaction.options.getString('leaderboard') || 'cash';
+
+        const materials = await topMaterialsToday();
+        if (!materials) {
             return await interaction.editReply({
-                content: 'There is not enough leaderboard data yet for today.'
+                content: 'There was an issue fetching the materials leaderboard.'
             });
         }
 
-        const limitedLeaderboard = materialsLeaderboard
-            .map(({ material_type, cash_amount, currency_type }) => ({
-                holder: material_type === 'ExampleTree'
-                    ? 'Oak Tree'
-                    : material_type.split(/(?=[A-Z])/).join(' '),
-                value: `${currency_type === 'Candy2024'?'🍬':'$'}${cash_amount.toLocaleString()}`
-            }))
-            .slice(0, 25);
+        const materialLeaderboard = materials.leaderboards[currencyType];
+        if (!materialLeaderboard) {
+            return await interaction.editReply({
+                content: 'There is no data for this leaderboard.'
+            });
+        }
 
         const today = new Date();
         today.setUTCHours(0, 0, 0, 0);
-        
         const tommorrow = new Date(today);
         tommorrow.setUTCDate(today.getUTCDate() + 1);
 
         const leaderboard = new AttachmentBuilder(
-            await new OaklandsLeaderboardStats({
-                header: `Today's Top ${limitedLeaderboard.length} Sold Materials`,
-                resetTime: tommorrow,
-                fields: {
-                    holder: 'MATERIAL',
-                    value: 'AMOUNT'
-                },
-                stats: limitedLeaderboard
-            }).draw(),
+            await generateOaklandsLeaderboard({
+                title: "Today's Top 25 Sold Materials",
+                resetTime: getResetTime(new Date(materials.reset_time)),
+                columns: ['rank', 'material', 'amount'],
+                rows: this._generateRows(materialLeaderboard, this._currencyDetails[currencyType]).slice(0, 25),
+            }),
             { name: 'top-materials-leaderboard.png' }
         );
 

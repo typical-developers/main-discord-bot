@@ -1,7 +1,7 @@
 import { Command } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { AttachmentBuilder } from 'discord.js';
-import { generateClassicShop } from '@/lib/util/image-generators';
+import { generateClassicShop, getResetTime } from '@/lib/util/image-generators';
 import { htmlFunctions } from '@/lib/util/html';
 import { classicShop } from '@/lib/util/public-api';
 
@@ -44,23 +44,6 @@ export class OaklandsClassicShop extends Command {
         ClassicMoai: { price: 1250, thumbnail: "https://tr.rbxcdn.com/180DAY-0ed7be414329998ea0b4cc25b4e391d1/150/150/Hat/Webp/noFilter" }
     }
 
-    private _resetTime(reset: Date): string {
-        const nowSeconds = new Date().getTime() / 1000;
-        const resetSeconds = reset.getTime() / 1000
-
-        const remainingSeconds = Math.floor(resetSeconds - nowSeconds);
-
-        if (remainingSeconds <= 0) {
-            return `00:00:00`;
-        }
-
-        const hours = Math.floor(remainingSeconds / 3600).toString().padStart(2, '0');
-        const minutes = Math.floor((remainingSeconds % 3600) / 60).toString().padStart(2, '0');
-        const seconds = Math.floor(remainingSeconds % 60).toString().padStart(2, '0');
-
-        return `${hours}:${minutes}:${seconds}`
-    }
-
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
         await interaction.deferReply({ fetchReply: true });
 
@@ -72,7 +55,7 @@ export class OaklandsClassicShop extends Command {
 
         const attachment = new AttachmentBuilder(
             await generateClassicShop({
-                shopResetTime: this._resetTime(new Date(shop.reset_time)),
+                shopResetTime: getResetTime(new Date(shop.reset_time)),
                 shopContentHtml: shop.items.filter((i) => i !== "GiftOfEmotion").map((i) => {
                     const name = i.split(/(?=[A-Z])/).join(' ');
                     const details = this._shopItems[i];

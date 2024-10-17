@@ -8,6 +8,8 @@ export enum HTMLTags {
     'ul',
     'li',
     'th',
+    'tr',
+    'td',
     'blockquote',
     'br',
     'hr',
