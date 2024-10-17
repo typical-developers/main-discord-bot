@@ -200,12 +200,12 @@ export class OaklandsLeaderboard extends Subcommand {
    
         const leaderboard = new AttachmentBuilder(
             await generateOaklandsLeaderboard({
-                title: "Today's Top 25 Sold Materials",
+                title: "This Month\'s Top Sellers",
                 resetTime: getResetTime(new Date(usersLeaderboard.reset_time)),
                 columns: ['rank', 'user', 'amount'],
                 rows: (await this._generatePlayersRows(usersLeaderboard.players, this._currencyDetails[currencyType.toLowerCase()])).slice(0, 25),
             }),
-            { name: 'top-materials-leaderboard.png' }
+            { name: 'top-sellers-leaderboard.png' }
         );
 
         await interaction.editReply({ files: [leaderboard] });
@@ -229,11 +229,6 @@ export class OaklandsLeaderboard extends Subcommand {
                 content: 'There is no data for this leaderboard.'
             });
         }
-
-        const today = new Date();
-        today.setUTCHours(0, 0, 0, 0);
-        const tommorrow = new Date(today);
-        tommorrow.setUTCDate(today.getUTCDate() + 1);
 
         const leaderboard = new AttachmentBuilder(
             await generateOaklandsLeaderboard({
