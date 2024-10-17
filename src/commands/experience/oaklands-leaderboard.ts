@@ -132,7 +132,7 @@ export class OaklandsLeaderboard extends Subcommand {
                     ...(positionColor ? { customProperties: { style: `color: ${positionColor}` } } : {})
                 },
                 amount: {
-                    value: `${currency.type}${row.value.toLocaleString()}`,
+                    value: `${currency.type} ${row.value.toLocaleString()}`,
                     customProperties: { style: `color: ${currency.color}` }
                 }
             });
