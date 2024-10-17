@@ -44,7 +44,7 @@ export class OaklandsClassicShop extends Command {
     }
 
     private async _getClassicShop() {
-        const res = await fetch('https://public-api.typicaldevelopers.com/v1/oaklands/classic-shop');
+        const res = await fetch('https://public-api.typicaldevelopers.com/v1/oaklands/stores/classic-shop');
 
         if (!res.ok) {
             return null;
@@ -59,6 +59,10 @@ export class OaklandsClassicShop extends Command {
         const resetSeconds = reset.getTime() / 1000
 
         const remainingSeconds = Math.floor(resetSeconds - nowSeconds);
+
+        if (remainingSeconds <= 0) {
+            return `00:00:00`;
+        }
 
         const hours = Math.floor(remainingSeconds / 3600).toString().padStart(2, '0');
         const minutes = Math.floor((remainingSeconds % 3600) / 60).toString().padStart(2, '0');
