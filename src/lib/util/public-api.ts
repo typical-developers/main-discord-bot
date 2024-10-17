@@ -10,6 +10,10 @@ async function _requestEndpoint<Result extends Object>(
 ) {
     const url = new URL(path, BASE_URL);
 
+    if (params) {
+        url.search = params.toString();
+    }
+
     const res = await fetch(url, {
         method
     });
@@ -39,6 +43,25 @@ export async function topMaterialsToday() {
         }>>;
     }>({
         path: '/v1/oaklands/leaderboards/top-materials-today',
+        method: 'GET'
+    });
+}
+
+export async function topUsersMonthly(type: string = 'Cash') {
+    const params = new URLSearchParams()
+    params.set('currencyType', type);
+
+    return await _requestEndpoint<{
+        reset_time: string;
+        next_page_cursor: string;
+        players: {
+            position: number;
+            user_id: string;
+            cash_amount: number;
+        }[];
+    }>({
+        path: '/v1/oaklands/leaderboards/top-players-monthly',
+        params: params,
         method: 'GET'
     });
 }

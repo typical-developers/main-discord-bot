@@ -2,7 +2,7 @@ import { ApplicationCommandOptionType, AttachmentBuilder, type ApplicationComman
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { ApplyOptions } from '@sapphire/decorators';
 import { OaklandsLeaderboardStats } from '@/lib/extensions/OaklandsLeaderboard';
-import { topMaterialsToday } from '@/lib/util/public-api';
+import { topMaterialsToday, topUsersMonthly } from '@/lib/util/public-api';
 import { generateOaklandsLeaderboard, getResetTime } from '@/lib/util/image-generators';
 
 @ApplyOptions<Subcommand.Options>({
@@ -23,7 +23,18 @@ export class OaklandsLeaderboard extends Subcommand {
         {
             type: ApplicationCommandOptionType.Subcommand,
             name: 'monthly-sellers',
-            description: 'Fetch the top 25 sellers for the month on Oaklands.'
+            description: 'Fetch the top 25 sellers for the month on Oaklands.',
+            options: [
+                {
+                    type: ApplicationCommandOptionType.String,
+                    name: 'type',
+                    description: 'The leaderboard type. Default is Cash.',
+                    choices: [
+                        { name: 'Cash', value: 'Cash' },
+                        { name: 'Candy', value: 'Candy2024' }
+                    ]
+                }
+            ]
         },
         {
             type: ApplicationCommandOptionType.Subcommand,
@@ -32,8 +43,8 @@ export class OaklandsLeaderboard extends Subcommand {
             options: [
                 {
                     type: ApplicationCommandOptionType.String,
-                    name: 'leaderboard',
-                    description: 'The leaderboard type. Default is all time.',
+                    name: 'type',
+                    description: 'The leaderboard type. Default is Cash.',
                     choices: [
                         { name: 'Cash', value: 'cash' },
                         { name: 'Candy', value: 'candy2024' }
@@ -57,7 +68,7 @@ export class OaklandsLeaderboard extends Subcommand {
             });
     }
 
-    private async bulkUserFetch(ids: string[]) {
+    private async _bulkUserFetch(ids: string[]) {
         const url = new URL('/v1/users', 'https://users.roblox.com');
 
         const response = await fetch(url, {
@@ -111,9 +122,8 @@ export class OaklandsLeaderboard extends Subcommand {
         }
     }
 
-    private _generateRows(rows: Record<string, { position: number; name: string; value: number }>, currency: { type: string; color: string; }) {
+    private _generateMaterialsRows(rows: Record<string, { position: number; name: string; value: number }>, currency: { type: string; color: string; }) {
         const values = Object.values(rows);
-
         const newRows = [];
 
         for (const row of values) {
@@ -141,46 +151,61 @@ export class OaklandsLeaderboard extends Subcommand {
         return newRows;
     }
 
-    public async getTopMonthlyLeaderboard(interaction: Subcommand.ChatInputCommandInteraction) {
-        await interaction.deferReply({ fetchReply: true });
-
-        const usersLeaderboard = await this.container.api.experience.fetchOaklandsUserCashEarned() || [];
-        if (!usersLeaderboard?.length || usersLeaderboard.length < 15) {
-            return await interaction.editReply({
-                content: 'There is not enough leaderboard data yet for this month.'
-            });
-        }
-
-        const userProfiles: { [key: string]: string } = (await this.bulkUserFetch(usersLeaderboard.map(({ user_id }) => user_id)))
+    private async _generatePlayersRows(rows: { position: number; user_id: string; cash_amount: number; }[], currency: { type: string; color: string; }) {
+        const userProfiles: { [key: string]: string } = (await this._bulkUserFetch(rows.map(({ user_id }) => user_id)))
             .reduce((acc, curr) => ({
                 [curr.id.toString()]: curr.name,
                 ...acc
             }), {});
 
-        const formattedLeaderboard = usersLeaderboard
-            .map(({ user_id, cash_amount, currency_type }) => ({
-                holder: `${`@${userProfiles[user_id]}` || user_id}`,
-                value: `${currency_type === 'Candy2024'?'🍬':'$'}${cash_amount.toLocaleString()}`
-            }))
-            .slice(0, 25);
 
-        const today = new Date();
-        today.setUTCHours(0, 0, 0, 0);
-        
-        const nextMonth = new Date(today);
-        nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1, 1);
+        const newRows = [];
 
-        const leaderboard = new AttachmentBuilder(
-            await new OaklandsLeaderboardStats({
-                header: `This Month's Top ${formattedLeaderboard.length} Sellers`,
-                resetTime: nextMonth,
-                fields: {
-                    holder: 'USER',
-                    value: 'AMOUNT'
+        for (const row of rows) {
+            const positionAcronym = this._getPositionAcronym(row.position);
+            const positionColor = this._getPositionColor(row.position);
+
+            newRows.push({
+                rank: {
+                    value: positionAcronym,
+                    customProperties: positionColor
+                        ? { style: `color: ${positionColor}; width: 0;` }
+                        : { style: "width: 0;" }
                 },
-                stats: formattedLeaderboard
-            }).draw(),
-            { name: 'top-sellers-leaderboard.png' }
+                user: {
+                    value: userProfiles[row.user_id],
+                    ...(positionColor ? { customProperties: { style: `color: ${positionColor}` } } : {})
+                },
+                amount: {
+                    value: `${currency.type} ${row.cash_amount.toLocaleString()}`,
+                    customProperties: { style: `color: ${currency.color}` }
+                }
+            })
+        }
+
+        return newRows;
+    }
+
+    public async getTopMonthlyLeaderboard(interaction: Subcommand.ChatInputCommandInteraction) {
+        await interaction.deferReply({ fetchReply: true });
+
+        const currencyType = interaction.options.getString('type') || 'Cash';
+        const usersLeaderboard = await topUsersMonthly(currencyType);
+
+        if (!usersLeaderboard) {
+            return await interaction.editReply({
+                content: 'There was an issue fetching the user\'s leaderboard.'
+            });
+        }
+   
+        const leaderboard = new AttachmentBuilder(
+            await generateOaklandsLeaderboard({
+                title: "Today's Top 25 Sold Materials",
+                resetTime: getResetTime(new Date(usersLeaderboard.reset_time)),
+                columns: ['rank', 'user', 'amount'],
+                rows: (await this._generatePlayersRows(usersLeaderboard.players, this._currencyDetails[currencyType.toLowerCase()])).slice(0, 25),
+            }),
+            { name: 'top-materials-leaderboard.png' }
         );
 
         await interaction.editReply({ files: [leaderboard] });
@@ -189,7 +214,7 @@ export class OaklandsLeaderboard extends Subcommand {
     public async getDailyMaterialsLeaderboard(interaction: Subcommand.ChatInputCommandInteraction) {
         await interaction.deferReply({ fetchReply: true });
 
-        const currencyType = interaction.options.getString('leaderboard') || 'cash';
+        const currencyType = interaction.options.getString('type') || 'cash';
 
         const materials = await topMaterialsToday();
         if (!materials) {
@@ -215,7 +240,7 @@ export class OaklandsLeaderboard extends Subcommand {
                 title: "Today's Top 25 Sold Materials",
                 resetTime: getResetTime(new Date(materials.reset_time)),
                 columns: ['rank', 'material', 'amount'],
-                rows: this._generateRows(materialLeaderboard, this._currencyDetails[currencyType]).slice(0, 25),
+                rows: this._generateMaterialsRows(materialLeaderboard, this._currencyDetails[currencyType]).slice(0, 25),
             }),
             { name: 'top-materials-leaderboard.png' }
         );
