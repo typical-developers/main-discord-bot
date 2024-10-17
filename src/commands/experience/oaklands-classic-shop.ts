@@ -1,8 +1,9 @@
 import { Command } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
+import { AttachmentBuilder } from 'discord.js';
 import { generateClassicShop } from '@/lib/util/image-generators';
 import { htmlFunctions } from '@/lib/util/html';
-import { AttachmentBuilder } from 'discord.js';
+import { classicShop } from '@/lib/util/public-api';
 
 const { div, img, a } = htmlFunctions;
 
@@ -43,17 +44,6 @@ export class OaklandsClassicShop extends Command {
         ClassicMoai: { price: 1250, thumbnail: "https://tr.rbxcdn.com/180DAY-0ed7be414329998ea0b4cc25b4e391d1/150/150/Hat/Webp/noFilter" }
     }
 
-    private async _getClassicShop() {
-        const res = await fetch('https://public-api.typicaldevelopers.com/v1/oaklands/stores/classic-shop');
-
-        if (!res.ok) {
-            return null;
-        }
-
-        const data: { reset_time: string; items: string[] } = await res.json();
-        return data;
-    }
-
     private _resetTime(reset: Date): string {
         const nowSeconds = new Date().getTime() / 1000;
         const resetSeconds = reset.getTime() / 1000
@@ -74,7 +64,7 @@ export class OaklandsClassicShop extends Command {
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
         await interaction.deferReply({ fetchReply: true });
 
-        const shop = await this._getClassicShop();
+        const shop = await classicShop();
 
         if (!shop) {
             return interaction.editReply('Unable to fetch the Oaklands Classic Shop at this time, try again later.');
