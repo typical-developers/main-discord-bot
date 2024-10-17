@@ -11,7 +11,6 @@ declare module '@sapphire/pieces' {
         /** Key for the backend api. */
         api: {
             bot: BotGraphQLAPI;
-            experience: ExperienceGraphQLAPI;
         };
         /** Webhooks for logging stuff that happens on the client. */
         sentry: {

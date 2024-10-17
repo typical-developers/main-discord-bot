@@ -1,7 +1,6 @@
 import { ApplicationCommandOptionType, AttachmentBuilder, type ApplicationCommandSubCommandData } from 'discord.js';
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { ApplyOptions } from '@sapphire/decorators';
-import { OaklandsLeaderboardStats } from '@/lib/extensions/OaklandsLeaderboard';
 import { topMaterialsToday, topUsersMonthly } from '@/lib/util/public-api';
 import { generateOaklandsLeaderboard, getResetTime } from '@/lib/util/image-generators';
 
