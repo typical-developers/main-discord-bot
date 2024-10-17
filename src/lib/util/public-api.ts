@@ -1,13 +1,31 @@
 const BASE_URL = 'https://public-api.typicaldevelopers.com/';
 
-export async function classicShop() {
-    const url = new URL('/v1/oaklands/stores/classic-shop', BASE_URL);
-    const res = await fetch(url);
-    
-    if (!res.ok) {
-        return null;
+async function _requestEndpoint<Result extends Object>(
+    { path, params, method }:
+    {
+        path: string;
+        params?: URLSearchParams;
+        method: string;
     }
+) {
+    const url = new URL(path, BASE_URL);
+    
+    const res = await fetch(url, {
+        method
+    });
 
-    const data: { reset_time: string; items: string[] } = await res.json();
+    if (!res.ok) return null;
+
+    const data: Result = await res.json();
     return data;
+}
+
+export async function classicShop() {
+    return await _requestEndpoint<{
+        reset_time: string;
+        items: string[];
+    }>({
+        path: '/v1/oaklands/stores/classic-shop',
+        method: 'GET'
+    });
 }
