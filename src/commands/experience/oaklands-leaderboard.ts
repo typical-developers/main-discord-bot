@@ -226,7 +226,7 @@ export class OaklandsLeaderboard extends Subcommand {
                 title: "Today's Top 25 Sold Materials",
                 resetTime: getResetTime(new Date(materials.reset_time)),
                 columns: ['rank', 'material', 'amount'],
-                rows: this._generateMaterialsRows(materials.leaderboard, this._currencyDetails[currencyType]).slice(0, 25),
+                rows: this._generateMaterialsRows(materials.leaderboard, this._currencyDetails[currencyType.toLowerCase()]).slice(0, 25),
             }),
             { name: 'top-materials-leaderboard.png' }
         );
