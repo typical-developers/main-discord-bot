@@ -45,8 +45,8 @@ export class OaklandsLeaderboard extends Subcommand {
                     name: 'type',
                     description: 'The leaderboard type. Default is Cash.',
                     choices: [
-                        { name: 'Cash', value: 'cash' },
-                        { name: 'Candy', value: 'candy2024' }
+                        { name: 'Cash', value: 'Cash' },
+                        { name: 'Candy', value: 'Candy2024' }
                     ]
                 }
             ]
@@ -213,9 +213,9 @@ export class OaklandsLeaderboard extends Subcommand {
     public async getDailyMaterialsLeaderboard(interaction: Subcommand.ChatInputCommandInteraction) {
         await interaction.deferReply({ fetchReply: true });
 
-        const currencyType = interaction.options.getString('type') || 'cash';
+        const currencyType = interaction.options.getString('type') || 'Cash';
 
-        const materials = await topMaterialsToday();
+        const materials = await topMaterialsToday(currencyType);
         if (!materials) {
             return await interaction.editReply({
                 content: 'There was an issue fetching the materials leaderboard.'
