@@ -121,11 +121,10 @@ export class OaklandsLeaderboard extends Subcommand {
         }
     }
 
-    private _generateMaterialsRows(rows: Record<string, { position: number; name: string; value: number }>, currency: { type: string; color: string; }) {
-        const values = Object.values(rows);
+    private _generateMaterialsRows(rows: { position: number; name: string; value: number; }[], currency: { type: string; color: string; }) {
         const newRows = [];
 
-        for (const row of values) {
+        for (const row of rows) {
             const positionAcronym = this._getPositionAcronym(row.position);
             const positionColor = this._getPositionColor(row.position);
 
@@ -202,7 +201,7 @@ export class OaklandsLeaderboard extends Subcommand {
                 title: "This Month\'s Top Sellers",
                 resetTime: getResetTime(new Date(usersLeaderboard.reset_time)),
                 columns: ['rank', 'user', 'amount'],
-                rows: (await this._generatePlayersRows(usersLeaderboard.players, this._currencyDetails[currencyType.toLowerCase()])).slice(0, 25),
+                rows: (await this._generatePlayersRows(usersLeaderboard.leaderboard, this._currencyDetails[currencyType.toLowerCase()])).slice(0, 25),
             }),
             { name: 'top-sellers-leaderboard.png' }
         );
@@ -222,19 +221,12 @@ export class OaklandsLeaderboard extends Subcommand {
             });
         }
 
-        const materialLeaderboard = materials.leaderboards[currencyType];
-        if (!materialLeaderboard) {
-            return await interaction.editReply({
-                content: 'There is no data for this leaderboard.'
-            });
-        }
-
         const leaderboard = new AttachmentBuilder(
             await generateOaklandsLeaderboard({
                 title: "Today's Top 25 Sold Materials",
                 resetTime: getResetTime(new Date(materials.reset_time)),
                 columns: ['rank', 'material', 'amount'],
-                rows: this._generateMaterialsRows(materialLeaderboard, this._currencyDetails[currencyType]).slice(0, 25),
+                rows: this._generateMaterialsRows(materials.leaderboard, this._currencyDetails[currencyType]).slice(0, 25),
             }),
             { name: 'top-materials-leaderboard.png' }
         );

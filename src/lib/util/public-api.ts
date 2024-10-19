@@ -41,9 +41,12 @@ export async function topMaterialsToday(type: string = 'Cash') {
     return await _requestEndpoint<{
         reset_time: string;
         last_update: string;
-        leaderboards: Record<string, Record<string, {
-            position: number; name: string; value: number
-        }>>;
+        currency_types: string[];
+        leaderboard: {
+            position: number;
+            name: string;
+            value: number
+        }[];
     }>({
         path: '/v1/oaklands/leaderboards/top-materials-today', params,
         method: 'GET'
@@ -57,7 +60,7 @@ export async function topUsersMonthly(type: string = 'Cash') {
     return await _requestEndpoint<{
         reset_time: string;
         next_page_cursor: string;
-        players: {
+        leaderboard: {
             position: number;
             user_id: string;
             cash_amount: number;
