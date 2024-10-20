@@ -155,7 +155,7 @@ export class OaklandsLeaderboard extends Subcommand {
             const profile = users[parseInt(user_id)];
 
             return {
-                [user_id]: profile.name || user_id,
+                [user_id]: profile?.name || user_id,
                 ...acc
             }
         }, {});
