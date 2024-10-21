@@ -152,7 +152,8 @@ export class OaklandsLeaderboard extends Subcommand {
     private async _generatePlayersRows(rows: { position: number; user_id: string; cash_amount: number; }[], currency: { type: string; color: string; }) {
         const users = await this._bulkUserFetch(rows.map(({ user_id }) => user_id));
         const userProfiles: { [key: string]: string; } = rows.reduce((acc, { user_id }) => {
-            const profile = users[parseInt(user_id)];
+            const profileIndex = users.findIndex(({ id }) => id === parseInt(user_id));
+            const profile = users[profileIndex];
 
             return {
                 [user_id]: profile?.name || user_id,
