@@ -4,7 +4,7 @@ import { htmlFunctions } from "@/lib/util/html";
 
 const { th, tr, td } = htmlFunctions;
 
-export function getResetTime(reset: Date) {
+export function getResetTime(reset: Date, includeHours: boolean = false) {
     const nowSeconds = new Date().getTime() / 1000;
     const resetSeconds = reset.getTime() / 1000
 
@@ -14,11 +14,18 @@ export function getResetTime(reset: Date) {
         return `00:00:00`;
     }
 
-    const hours = Math.floor(remainingSeconds / 3600).toString().padStart(2, '0');
-    const minutes = Math.floor((remainingSeconds % 3600) / 60).toString().padStart(2, '0');
     const seconds = Math.floor(remainingSeconds % 60).toString().padStart(2, '0');
+    const minutes = Math.floor((remainingSeconds % 3600) / 60).toString().padStart(2, '0');
 
-    return `${hours}:${minutes}:${seconds}`;
+    if (!includeHours) {
+        const hours = Math.floor(remainingSeconds / 3600).toString().padStart(2, '0');
+        return `${hours}:${minutes}:${seconds}`;
+    }
+
+    const hours = Math.floor((remainingSeconds / 3600) % 24).toString().padStart(2, '0');
+    const days = Math.floor(remainingSeconds / 86400).toString().padStart(2, '0');
+
+    return `${days}:${hours}:${minutes}:${seconds}`;
 }
 
 /**

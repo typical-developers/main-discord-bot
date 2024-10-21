@@ -203,7 +203,7 @@ export class OaklandsLeaderboard extends Subcommand {
         const leaderboard = new AttachmentBuilder(
             await generateOaklandsLeaderboard({
                 title: "This Month\'s Top Sellers",
-                resetTime: getResetTime(new Date(usersLeaderboard.reset_time)),
+                resetTime: getResetTime(new Date(usersLeaderboard.reset_time), true),
                 columns: ['rank', 'user', 'amount'],
                 rows: (await this._generatePlayersRows(usersLeaderboard.leaderboard, this._currencyDetails[currencyType.toLowerCase()])).slice(0, 25),
             }),
