@@ -5,6 +5,7 @@ import HTMLImageProcessor from "@/lib/structures/HTMLImageProcessor"
 container.imageProcessor = await HTMLImageProcessor.launch({
     executablePath: process.env.DEV_DEPLOYMENT === 'true' ? puppeteer.executablePath() : '/usr/bin/google-chrome-stable',
     headless: "shell",
+    // headless: false,
     args: [
         '--autoplay-policy=user-gesture-required',
         '--disable-background-networking',

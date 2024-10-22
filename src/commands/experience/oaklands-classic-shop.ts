@@ -63,7 +63,7 @@ export class OaklandsClassicShop extends Command {
                     const html = div({ class: "shop-item" }, [
                         img({ src: details.thumbnail !== ""
                                 ? details.thumbnail
-                                : "https://web.archive.org/web/20110228202605im_/http://t1bg.roblox.com/unapprove-110x110.Png"
+                                : "https://www.roblox.com/Thumbs/unapproved.png"
                             }),
                         a({ class: "item-header" }, [name]),
                         a({ class: "item-cost" }, [`Ca$h: ${details.price.toString()}`])
