@@ -53,12 +53,15 @@ export async function topMaterialsToday(type: string = 'Cash') {
     });
 }
 
-export async function topUsersMonthly(type: string = 'Cash') {
+export async function topUsersMonthly(type: string = 'Cash', limit: number = 25, cursor: string = '') {
     const params = new URLSearchParams();
     params.set('currencyType', type);
+    params.set('limit', limit.toString());
+    params.set('cursor', cursor);
 
     return await _requestEndpoint<{
         reset_time: string;
+        previous_page_cursor: string;
         next_page_cursor: string;
         leaderboard: {
             position: number;

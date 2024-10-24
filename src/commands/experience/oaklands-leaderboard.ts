@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, AttachmentBuilder, type ApplicationCommandSubCommandData } from 'discord.js';
+import { ActionRowBuilder, ApplicationCommandOptionType, AttachmentBuilder, ButtonBuilder, ButtonStyle, ComponentType, type ApplicationCommandSubCommandData } from 'discord.js';
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { ApplyOptions } from '@sapphire/decorators';
 import { topMaterialsToday, topUsersMonthly } from '@/lib/util/public-api';
@@ -205,7 +205,7 @@ export class OaklandsLeaderboard extends Subcommand {
                 title: "This Month\'s Top Sellers",
                 resetTime: getResetTime(new Date(usersLeaderboard.reset_time), true),
                 columns: ['rank', 'user', 'amount'],
-                rows: (await this._generatePlayersRows(usersLeaderboard.leaderboard, this._currencyDetails[currencyType.toLowerCase()])).slice(0, 25),
+                rows: (await this._generatePlayersRows(usersLeaderboard.leaderboard, this._currencyDetails[currencyType.toLowerCase()])),
             }),
             { name: 'top-sellers-leaderboard.png' }
         );
