@@ -23,6 +23,7 @@
     "gql-query-builder": "^3.8.0",
     "graphql": "^16.8.2",
     "handlebars": "^4.7.8",
+    "openblox": "^1.0.59",
     "puppeteer": "23.3.0",
     "puppeteer-cluster": "^0.24.0",
     "redis": "^4.6.14"
