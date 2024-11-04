@@ -2,7 +2,7 @@ import { container } from "@sapphire/pieces";
 import { readAssetFile } from "@/lib/util/files";
 import { htmlFunctions } from "@/lib/util/html";
 
-const { th, tr, td } = htmlFunctions;
+const { div, img, a, th, tr, td } = htmlFunctions;
 
 export function getResetTime(reset: Date, includeHours: boolean = false) {
     const nowSeconds = new Date().getTime() / 1000;
@@ -28,21 +28,37 @@ export function getResetTime(reset: Date, includeHours: boolean = false) {
     return `${days}:${hours}:${minutes}:${seconds}`;
 }
 
-/**
- * Generate an image for the current classic shop.
- * @param handlebars The required hanlebars options.
- * @returns {Promise<Buffer>}
- */
-export async function generateClassicShop(handlebars: { shopResetTime: string, shopContentHtml: string }): Promise<Buffer> {
+export async function generateClassicShop(options: {
+    resetTime: string;
+    items: {
+        thumbnail: string;
+        name: string;
+        price: number;
+    }[];
+}) {
     const html = readAssetFile('/assets/html/classic-shop.html');
 
     if (!html) {
         throw new Error('Something went wrong with generating the classic shop image.');
     }
 
+    const content = options.items.map((i) =>
+        div({ class: "shop-item" }, [
+            img({ src: i.thumbnail !== ""
+                ? i.thumbnail
+                : "https://www.roblox.com/Thumbs/unapproved.png"
+            }),
+            a({ class: "item-header"}, [i.name]),
+            a({ class: "item-cost" }, [`Ca$h: ${i.price}`])
+        ])
+    ).join('');
+
     const image = await container.imageProcessor.draw({
         transparency: true,
-        html, handlebars
+        html, handlebars: {
+            shopResetTime: options.resetTime,
+            shopContentHtml: content
+        }
     });
 
     return image;

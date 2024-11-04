@@ -1,3 +1,7 @@
+// const BASE_URL = process.env.DEV_DEPLOYMENT !== 'true'
+//     ? 'https://public-api.typicaldevelopers.com/'
+//     : 'http://127.0.0.1:3000';
+
 const BASE_URL = 'https://public-api.typicaldevelopers.com/';
 
 async function _requestEndpoint<Result extends Object>(
@@ -24,12 +28,27 @@ async function _requestEndpoint<Result extends Object>(
     return data;
 }
 
-export async function classicShop() {
+export async function fetchStore<T extends string>(store: T) {
+    const availableStores = await _requestEndpoint<{ stores: string[] }>({
+        path: '/v1/oaklands/stores',
+        method: 'GET'
+    });
+
+    if (!availableStores?.stores || !availableStores.stores.includes(store)) {
+        return null;
+    }
+
     return await _requestEndpoint<{
-        reset_time: string;
-        items: string[];
+        reset_time?: string;
+        shop_items: {
+            type: string;
+            name: string;
+            currency: string;
+            price: number;
+            identifier: string;
+        }[];
     }>({
-        path: '/v1/oaklands/stores/classic-shop',
+        path: `/v1/oaklands/stores/${store}`,
         method: 'GET'
     });
 }
