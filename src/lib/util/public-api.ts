@@ -1,8 +1,12 @@
-// const BASE_URL = process.env.DEV_DEPLOYMENT !== 'true'
-//     ? 'https://public-api.typicaldevelopers.com/'
-//     : 'http://127.0.0.1:3000';
+const BASE_URL = process.env.DEV_DEPLOYMENT !== 'true'
+    ? 'https://public-api.typicaldevelopers.com/'
+    : 'http://127.0.0.1:3000';
 
-const BASE_URL = 'https://public-api.typicaldevelopers.com/';
+// const BASE_URL = 'https://public-api.typicaldevelopers.com/';
+
+export function joinUrl(path: string) {
+    return `${BASE_URL}${path}`;
+}
 
 async function _requestEndpoint<Result extends Object>(
     { path, params, method }:
@@ -46,6 +50,7 @@ export async function fetchStore<T extends string>(store: T) {
             currency: string;
             price: number;
             identifier: string;
+            image: string;
         }[];
     }>({
         path: `/v1/oaklands/stores/${store}`,
