@@ -10,7 +10,7 @@ import {
 } from 'discord.js';
 import { usersInfoFromIds } from 'openblox/classic/users';
 import { generateClassicShop, generateOaklandsLeaderboard, getResetTime } from '@/lib/util/image-generators';
-import { fetchStore, topMaterialsToday, topUsersMonthly } from '@/lib/util/public-api';
+import { fetchStore, topMaterialsToday, topUsersMonthly, joinUrl } from '@/lib/util/public-api';
 
 @ApplyOptions<Subcommand.Options>({
     description: 'Manage settings for the current guild.',
@@ -70,31 +70,6 @@ export class Settings extends Subcommand {
             });
     }
 
-    private readonly _shopItemsThumbnails: Record<string, string> = {
-        WitchesBrew: "https://tr.rbxcdn.com/180DAY-0c8652841b77bbee2ffee7e63ed51794/150/150/Gear/Webp/noFilter",
-        Oakpiece: "",
-        VinylStud: "https://static.miraheze.org/oaklandsrblxwikiwiki/0/04/Vinyl-Stud_Vinyl.png",
-        ClassicJeepVehiclePad: "https://static.miraheze.org/oaklandsrblxwikiwiki/5/55/Classic_Joop.png",
-        BloxyCola: "https://tr.rbxcdn.com/180DAY-90b877c5aecda54566b428250712c21b/150/150/Gear/Webp/noFilter",
-        TobascoSauce: "https://tr.rbxcdn.com/180DAY-a2ecaf223b1aed9ad0bcca15dda049be/150/150/Gear/Webp/noFilter",
-        RocketLauncher: "https://static.miraheze.org/oaklandsrblxwikiwiki/f/f5/Confetti_Launcher.png",
-        TeamFlag: "https://static.miraheze.org/oaklandsrblxwikiwiki/6/6a/Team_Flag_Red.png",
-        StudGift: "",
-        Slingshot:"",
-        Trowel: "",
-        HealingCoil: "https://tr.rbxcdn.com/180DAY-d147d1c62a17bccd46ab2fed0f7c5a61/150/150/Gear/Webp/noFilter",
-        // GiftOfEmotion: "",
-        ClassicBillboard: "",
-        BabyDucky: "https://tr.rbxcdn.com/180DAY-8ec8b7ea7250d6f47a87b1f69123bbcd/150/150/Hat/Webp/noFilter",
-        CannedBeans: "https://tr.rbxcdn.com/180DAY-2a535f607032decea59ba0552830542e/150/150/Gear/Webp/noFilter",
-        GravityCoil: "https://tr.rbxcdn.com/180DAY-5a087350499e826bfd11e06a312b8f45/150/150/Gear/Webp/noFilter",
-        SpeedCoil: "https://tr.rbxcdn.com/180DAY-7ee382f34b7657e33a2f94ad863f1b14/150/150/Gear/Webp/noFilter",
-        TrappedBeans: "https://tr.rbxcdn.com/180DAY-2a535f607032decea59ba0552830542e/150/150/Gear/Webp/noFilter",
-        SubspaceTripmine: "https://tr.rbxcdn.com/180DAY-8aa4c9d1585a59ca78ce7657f6728c7b/150/150/Gear/Webp/noFilter",
-        LinkedSword: "https://tr.rbxcdn.com/180DAY-4abe6932f60781b03a2c15e399a4be92/150/150/Gear/Webp/noFilter" ,
-        ClassicMoai: "https://tr.rbxcdn.com/180DAY-0ed7be414329998ea0b4cc25b4e391d1/150/150/Hat/Webp/noFilter"
-    }
-
     public async classicShop(interaction: Subcommand.ChatInputCommandInteraction) {
         await interaction.deferReply({ fetchReply: true });
 
@@ -108,9 +83,9 @@ export class Settings extends Subcommand {
         const attachment = new AttachmentBuilder(
             await generateClassicShop({
                 resetTime, items: shop.shop_items
-                    .filter((item) => this._shopItemsThumbnails[item.identifier] !== undefined)
+                    .filter((item) => item.identifier !== 'GiftOfEmotion')
                     .map((item) => ({
-                        thumbnail: this._shopItemsThumbnails[item.identifier],
+                        thumbnail: joinUrl(item.image),
                         name: item.name,
                         price: item.price
                     }))
