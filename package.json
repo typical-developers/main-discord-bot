@@ -17,9 +17,11 @@
   "dependencies": {
     "@sapphire/discord-utilities": "^3.3.0",
     "@sapphire/discord.js-utilities": "^7.3.0",
-    "@sapphire/framework": "^5.2.1",
+    "@sapphire/framework": "^5.3.1",
     "@sapphire/pieces": "^4.2.2",
-    "discord.js": "^14.15.3",
+    "@sapphire/plugin-scheduled-tasks": "^10.0.2",
+    "@sapphire/plugin-subcommands": "^6.0.3",
+    "discord.js": "^14.16.3",
     "gql-query-builder": "^3.8.0",
     "graphql": "^16.8.2",
     "handlebars": "^4.7.8",
@@ -30,7 +32,6 @@
   },
   "devDependencies": {
     "@sapphire/decorators": "^6.1.0",
-    "@sapphire/plugin-subcommands": "^6.0.3",
     "@types/node": "^20.14.4",
     "@typical-developers/api-types": "^0.1.19",
     "dotenv": "^16.4.5",

@@ -1,6 +1,13 @@
-import { ApplicationCommandOptionType, AttachmentBuilder, PermissionFlagsBits, type ApplicationCommandSubCommandData, type ApplicationCommandSubGroupData } from 'discord.js';
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { ApplyOptions } from '@sapphire/decorators';
+import {
+    ApplicationCommandOptionType,
+    ApplicationIntegrationType,
+    AttachmentBuilder,
+    InteractionContextType,
+    type ApplicationCommandSubCommandData,
+    type ApplicationCommandSubGroupData
+} from 'discord.js';
 import { usersInfoFromIds } from 'openblox/classic/users';
 import { generateClassicShop, generateOaklandsLeaderboard, getResetTime } from '@/lib/util/image-generators';
 import { fetchStore, topMaterialsToday, topUsersMonthly } from '@/lib/util/public-api';
@@ -51,7 +58,15 @@ export class Settings extends Subcommand {
                 name: this.name,
                 description: this.description,
                 options: this._options,
-                dmPermission: false
+                contexts: [
+                    InteractionContextType.BotDM,
+                    InteractionContextType.Guild,
+                    InteractionContextType.PrivateChannel,
+                ],
+                integrationTypes: [
+                    ApplicationIntegrationType.GuildInstall,
+                    ApplicationIntegrationType.UserInstall,
+                ]
             });
     }
 
