@@ -33,15 +33,6 @@ async function _requestEndpoint<Result extends Object>(
 }
 
 export async function fetchStore<T extends string>(store: T) {
-    const availableStores = await _requestEndpoint<{ stores: string[] }>({
-        path: '/v1/oaklands/stores',
-        method: 'GET'
-    });
-
-    if (!availableStores?.stores || !availableStores.stores.includes(store)) {
-        return null;
-    }
-
     return await _requestEndpoint<{
         reset_time?: string;
         shop_items: {
