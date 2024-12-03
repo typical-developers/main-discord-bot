@@ -41,12 +41,30 @@ export class Settings extends Subcommand {
                 {
                     type: ApplicationCommandOptionType.Subcommand,
                     name: 'daily-materials',
-                    description: 'Fetch the current top daily materials.'
+                    description: 'Fetch the current top daily materials.',
+                    options: [{
+                        type: ApplicationCommandOptionType.String,
+                        name: 'type',
+                        description: 'The leaderboard type. Default is Cash.',
+                        choices: [
+                            { name: 'Cash', value: 'Cash' },
+                            { name: 'Snowflakes', value: 'Snowflakes2024' }
+                        ]
+                    }],
                 },
                 {
                     type: ApplicationCommandOptionType.Subcommand,
                     name: 'monthly-sellers',
-                    description: 'Fetch the current top monthly sellers.'
+                    description: 'Fetch the current top monthly sellers.',
+                    options: [{
+                        type: ApplicationCommandOptionType.String,
+                        name: 'type',
+                        description: 'The leaderboard type. Default is Cash.',
+                        choices: [
+                            { name: 'Cash', value: 'Cash' },
+                            { name: 'Snowflakes', value: 'Snowflakes2024' }
+                        ]
+                    }],
                 }
             ]
         },
@@ -98,7 +116,8 @@ export class Settings extends Subcommand {
 
     private readonly _currencyDetails: Record<string, { type: string; color: string; }> = {
         cash: { type: '$', color: '#37FF91' },
-        candy2024: { type: '🍬', color: '#D82A40' }
+        candy2024: { type: '🍬', color: '#D82A40' },
+        snowflakes2024: { type: '❄️', color: '#85F3FF' },
     }
 
     private _getPositionAcronym(position: number) {
