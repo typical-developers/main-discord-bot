@@ -21,6 +21,7 @@ export class ExistingSpawnRoomChannelId extends InteractionHandler {
 
     private async _getVoiceChannels(interaction: AutocompleteInteraction) {
         const channels = await interaction.guild!.channels.fetch();
+        const afkChannel = interaction.guild!.afkChannel;
         const settings = await this.container.api.getGuildSettings(interaction.guild!.id);
         
         const voiceChannels: VoiceChannel[] = [];
@@ -30,6 +31,7 @@ export class ExistingSpawnRoomChannelId extends InteractionHandler {
 
             if (channel.type !== ChannelType.GuildVoice) continue;
             if (channel.parent === null) continue;
+            if (channel.id === afkChannel?.id) continue;
 
             if (settings.spawn_rooms.find(({ channel_id }) => channel_id === channel.id)) continue;
 
