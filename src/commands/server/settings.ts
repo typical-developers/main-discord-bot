@@ -10,6 +10,7 @@ import {
     type ApplicationCommandSubCommandData,
     type ApplicationCommandSubGroupData,
 } from 'discord.js';
+import { checkCategoryPermissions } from '@/lib/util/voice-rooms';
 
 @ApplyOptions<Subcommand.Options>({
     description: 'Manage settings for the current guild.',
@@ -243,19 +244,6 @@ export class Settings extends Subcommand {
         return settings;
     }
 
-    private _checkParentCategoryPerms(category: CategoryChannel, clientMember: GuildMember) {
-        const hasCategoryPermission = category.permissionsFor(clientMember).has([
-            PermissionFlagsBits.ReadMessageHistory,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.EmbedLinks,
-            PermissionFlagsBits.AttachFiles,
-            PermissionFlagsBits.MoveMembers,
-            PermissionFlagsBits.ManageChannels,
-        ]);
-
-        return hasCategoryPermission;
-    }
-
     public async createSpawnRoom(interaction: Subcommand.ChatInputCommandInteraction) {
         if (!interaction.guild) return;
 
@@ -284,7 +272,7 @@ export class Settings extends Subcommand {
         }
 
         const clientMember = await interaction.guild.members.fetch(interaction.client.user.id);
-        const hasCategoryPermission = this._checkParentCategoryPerms(channel.parent, clientMember);
+        const hasCategoryPermission = checkCategoryPermissions(channel.parent, clientMember);
 
         if (!hasCategoryPermission) {
             return await interaction.editReply({
@@ -339,7 +327,7 @@ export class Settings extends Subcommand {
         }
 
         const clientMember = await interaction.guild.members.fetch(interaction.client.user.id);
-        const hasCategoryPermission = this._checkParentCategoryPerms(channel.parent, clientMember);
+        const hasCategoryPermission = checkCategoryPermissions(channel.parent, clientMember);
 
         if (!hasCategoryPermission) {
             await this.container.api.deleteVoiceSpawnRoom(interaction.guild.id, channelId);

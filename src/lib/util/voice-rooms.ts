@@ -1,7 +1,7 @@
 // import type { VoiceRoomDetails, VoiceRoomSettingsDetails } from "@typical-developers/api-types/graphql";
 
 import { container } from "@sapphire/pieces";
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, Colors, ComponentType, EmbedBuilder, inlineCode } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, CategoryChannel, Colors, ComponentType, EmbedBuilder, GuildMember, inlineCode, PermissionFlagsBits } from "discord.js";
 import type { ActiveVoiceRoom, GuildSettings } from "@/lib/types/api";
 
 /**
@@ -106,4 +106,23 @@ export async function voiceRoomSettingsFromOrigin(guildId: string, originId: str
     const settings = rooms.find(({ channel_id }) => channel_id === originId);
 
     return settings;
+}
+
+/**
+ * Check the category permissions to make sure the bot can create voice rooms in it.
+ * @param category The category to check permissions for.
+ * @param clientMember The client member.
+ * @returns 
+ */
+export async function checkCategoryPermissions(category: CategoryChannel, clientMember: GuildMember) {
+    const hasCategoryPermission = category.permissionsFor(clientMember).has([
+        PermissionFlagsBits.ReadMessageHistory,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.AttachFiles,
+        PermissionFlagsBits.MoveMembers,
+        PermissionFlagsBits.ManageChannels,
+    ]);
+
+    return hasCategoryPermission;
 }
