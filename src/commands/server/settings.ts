@@ -216,7 +216,9 @@ export class Settings extends Subcommand {
     public override async registerApplicationCommands(registry: Subcommand.Registry) {
         registry
             .registerChatInputCommand({
-                name: this.name,
+                name: process.env.DEV_DEPLOYMENT === 'true'
+                    ? `stging-${this.name}`
+                    : this.name,
                 description: this.description,
                 options: this._options,
                 defaultMemberPermissions: [PermissionFlagsBits.Administrator],
