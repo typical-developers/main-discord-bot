@@ -310,6 +310,8 @@ export class Settings extends Subcommand {
                 message: 'This channel is not a valid spawn room.'
             });
         }
+
+        await interaction.deferReply({ fetchReply: true, ephemeral: true });
         
         if (!channel.parent) {
             await this.container.api.deleteVoiceSpawnRoom(interaction.guild.id, channelId);
@@ -330,7 +332,7 @@ export class Settings extends Subcommand {
         if (!hasCategoryPermission) {
             await this.container.api.deleteVoiceSpawnRoom(interaction.guild.id, channelId);
             return await interaction.editReply({
-                content: 'The bot is missing one or more permissions for creating voice rooms.',
+                content: 'The bot is missing one or more permissions for creating voice rooms in the parent category.',
             });
         }
 
@@ -348,7 +350,6 @@ export class Settings extends Subcommand {
             });
         }
 
-        await interaction.deferReply({ fetchReply: true, ephemeral: true });
         
         const updated = await this.container.api.modifyVoiceSpawnRoom(interaction.guild.id, channelId, options);
 
