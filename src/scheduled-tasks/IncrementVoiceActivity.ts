@@ -4,7 +4,7 @@ import TaskError from '@/lib/extensions/TaskError';
 
 export class IncrementVoiceActivity extends ScheduledTask {
     public constructor(context: ScheduledTask.LoaderContext, options: ScheduledTask.Options) {
-        super(context, { ...options});
+        super(context, { ...options });
     }
 
     private async _getGuild(guildId: string) {

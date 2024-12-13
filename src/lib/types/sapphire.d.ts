@@ -28,5 +28,6 @@ declare module '@sapphire/pieces' {
 declare module '@sapphire/plugin-scheduled-tasks' {
 	interface ScheduledTasks {
 		IncrementVoiceActivity: { guildId: string; channelId: string; memberId: string; };
+        RemoveSlowmode: { guildId: string; channelId: string; previous?: number; };
 	}
 }

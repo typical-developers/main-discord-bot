@@ -18,11 +18,11 @@ export class ModerationSlowmode extends Command {
             name: 'channel',
             description: "The channel to have slowmode for (in seconds). Defaults to current.",
         },
-        // {
-        //     type: ApplicationCommandOptionType.Number,
-        //     name: 'auto-remove',
-        //     description: "How long until the slowmode should automatically remove (in seconds).",
-        // }
+        {
+            type: ApplicationCommandOptionType.Number,
+            name: 'auto-remove',
+            description: "How long until the slowmode should automatically remove (in seconds).",
+        }
     ]
 
     public override async registerApplicationCommands(registry: Command.Registry) {
@@ -54,6 +54,19 @@ export class ModerationSlowmode extends Command {
         });
     }
 
+    private async _createNewTask(payload: { guildId: string; channelId: string; previous: number; }, duration: number) {
+        return await this.container.tasks.create(
+            {
+                name: 'RemoveSlowmode',
+                payload: payload,
+            },
+            {
+                repeated: false,
+                delay: duration * 1000,
+            }
+        );
+    }
+
     public override async chatInputRun(interaction: ChatInputCommandInteraction) {
         if (!interaction.channel) return;
 
@@ -65,8 +78,21 @@ export class ModerationSlowmode extends Command {
 
         await interaction.deferReply({ fetchReply: true, ephemeral: true });
 
-        const setChannel = interaction.options.getChannel<ChannelType.GuildText>('channel', false);
         const duration = interaction.options.getNumber('duration', true);
+        const setChannel = interaction.options.getChannel<ChannelType.GuildText>('channel', false);
+        const autoRemove = interaction.options.getNumber('auto-remove', false);
+
+        if (autoRemove) {
+            if (autoRemove < duration) return await interaction.editReply({
+                content: "The auto-remove duration must be the same as or greater than the duration.",
+            });
+
+            await this._createNewTask({
+                guildId: interaction.guildId!,
+                channelId: setChannel?.id ?? interaction.channelId!,
+                previous: setChannel?.rateLimitPerUser ?? interaction.channel.rateLimitPerUser,
+            }, autoRemove);
+        }
 
         if (setChannel) {
             if (setChannel.type !== ChannelType.GuildText) 
