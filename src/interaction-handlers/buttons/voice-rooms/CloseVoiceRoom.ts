@@ -32,8 +32,12 @@ export class RenameVoiceRoom extends InteractionHandler {
         if (!room || !channel) return;
         if (!channel.isVoiceBased()) return;
 
-        for (const [_, member] of channel.members) {
-            await member.voice.setChannel(null);
-        }
+        if (!channel.deletable) return;
+        await channel.delete();
+        await this.container.api.deleteVoiceRoom(channel.guildId, channel.id);
+
+        // for (const [_, member] of channel.members) {
+        //     await member.voice.setChannel(null);
+        // }
     }
 }

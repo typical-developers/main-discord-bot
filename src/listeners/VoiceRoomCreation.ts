@@ -72,13 +72,13 @@ export class VoiceRoomCreation extends Listener {
         if (!current.member) return;
         if (!previous.guild.id && !current.guild.id) return;
 
+        if (previous.channel === null && current.channel == null) return;
+
         // We check this condition first in the event a spawn remove is removed.
         if (previous.channel) {
             const info = await this.container.api.getVoiceRoom(previous.guild.id, previous.channel.id);
             if (!info) return;
             
-            if (previous.channel === null) return;
-
             const connected = previous.channel.members.map(({ id }) => id);
             if (connected.includes(info.current_owner_id)) return;
 
