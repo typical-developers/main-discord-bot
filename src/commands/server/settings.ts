@@ -257,6 +257,27 @@ export class Settings extends Subcommand {
 
         await interaction.deferReply({ fetchReply: true, ephemeral: true });
 
+        if (!channel.parent) {
+            return await interaction.editReply({
+                content: 'The creation channel must be in a parent category.',
+            });
+        }
+
+        const clientMember = await interaction.guild.members.fetch(interaction.client.user.id);
+        const hasCategoryPermission = channel.parent.permissionsFor(clientMember)?.has([
+            PermissionFlagsBits.ReadMessageHistory,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.EmbedLinks,
+            PermissionFlagsBits.AttachFiles,
+            PermissionFlagsBits.MoveMembers,
+        ]);
+
+        if (!hasCategoryPermission) {
+            return await interaction.editReply({
+                content: 'The bot is missing one or more permissions for creating voice rooms.',
+            });
+        }
+
         const options = this._removeNullOptions({
             user_limit: interaction.options.getNumber('user-limit'),
             can_rename: interaction.options.getBoolean('can-rename'),
@@ -276,8 +297,13 @@ export class Settings extends Subcommand {
 
         const settings = await this.container.api.getGuildSettings(interaction.guild.id);
         const channelId = interaction.options.getString('channel-id', true);
+        const channel = await interaction.guild.channels.fetch(channelId).catch(() => null);
         const currentOptions = settings.spawn_rooms.find(({ channel_id }) => channel_id === channelId);
         
+        if (!channel) {
+            throw new UserError({ identifier: "INVALID_CHANNEL", message: "This channel does not exist!" });
+        }
+
         if (!currentOptions) {
             throw new UserError({
                 identifier: 'INVALID_CHANNEL',
@@ -285,6 +311,13 @@ export class Settings extends Subcommand {
             });
         }
         
+        if (!channel.parent) {
+            const deleted = await this.container.api.deleteVoiceSpawnRoom(interaction.guild.id, channelId);
+            return await interaction.editReply({
+                content: `The spawn room is not in a parent category so it has been deleted.`
+            });
+        }
+
         const options = this._removeNullOptions({
             user_limit: interaction.options.getNumber('user-limit'),
             can_rename: interaction.options.getBoolean('can-rename'),
