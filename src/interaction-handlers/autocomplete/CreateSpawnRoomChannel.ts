@@ -1,3 +1,4 @@
+import { checkCategoryPermissions } from '@/lib/util/voice-rooms';
 import { ApplyOptions } from '@sapphire/decorators';
 import { InteractionHandler, InteractionHandlerTypes } from '@sapphire/framework';
 import { ChannelType, VoiceChannel, type AutocompleteInteraction, type GuildBasedChannel } from 'discord.js';
@@ -18,6 +19,31 @@ export class ExistingSpawnRoomChannelId extends InteractionHandler {
         return this.some();
     }
 
+    private async _getVoiceChannels(interaction: AutocompleteInteraction) {
+        const channels = await interaction.guild!.channels.fetch();
+        const settings = await this.container.api.getGuildSettings(interaction.guild!.id);
+        
+        const voiceChannels: VoiceChannel[] = [];
+
+        for (const [_, channel] of channels) {
+            if (!channel) continue;
+
+            if (channel.type !== ChannelType.GuildVoice) continue;
+            if (channel.parent === null) continue;
+
+            if (settings.spawn_rooms.find(({ channel_id }) => channel_id === channel.id)) continue;
+
+            const clientMember = await interaction.guild!.members.fetch(interaction.client.user.id);
+            const hasCategoryPermission = checkCategoryPermissions(channel.parent, clientMember);
+
+            if (!hasCategoryPermission) continue;
+
+            voiceChannels.push(channel);
+        }
+
+        return voiceChannels;
+    }
+
     public async run(interaction: AutocompleteInteraction) {
         if (!interaction.guild) {
             return await interaction.respond([{
@@ -26,16 +52,7 @@ export class ExistingSpawnRoomChannelId extends InteractionHandler {
             }]);
         }
 
-        const settings = await this.container.api.getGuildSettings(interaction.guild.id);
-        const voiceChannels = (await interaction.guild.channels.fetch()).toJSON()
-            .filter((c) => c !== null)
-            .filter((c) => c!.type === ChannelType.GuildVoice)
-            .filter((c) => {
-                const spawnRoom = settings.spawn_rooms.find(({ channel_id }) => channel_id === c!.id);
-                return !spawnRoom;
-            })
-            .filter((c) => c!.parent !== null)
-            .slice(0, 24) as VoiceChannel[];
+        const voiceChannels = await this._getVoiceChannels(interaction);
 
         if (!voiceChannels.length) {
             return await interaction.respond([{
