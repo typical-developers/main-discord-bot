@@ -312,7 +312,7 @@ export class Settings extends Subcommand {
         }
         
         if (!channel.parent) {
-            const deleted = await this.container.api.deleteVoiceSpawnRoom(interaction.guild.id, channelId);
+            await this.container.api.deleteVoiceSpawnRoom(interaction.guild.id, channelId);
             return await interaction.editReply({
                 content: `The spawn room is not in a parent category so it has been deleted.`
             });
