@@ -34,6 +34,7 @@ export class ExistingSpawnRoomChannelId extends InteractionHandler {
                 const spawnRoom = settings.spawn_rooms.find(({ channel_id }) => channel_id === c!.id);
                 return !spawnRoom;
             })
+            .filter((c) => c!.parent !== null)
             .slice(0, 24) as VoiceChannel[];
 
         if (!voiceChannels.length) {
