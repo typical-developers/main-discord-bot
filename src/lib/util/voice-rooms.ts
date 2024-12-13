@@ -112,9 +112,9 @@ export async function voiceRoomSettingsFromOrigin(guildId: string, originId: str
  * Check the category permissions to make sure the bot can create voice rooms in it.
  * @param category The category to check permissions for.
  * @param clientMember The client member.
- * @returns 
+ * @returns {boolean}
  */
-export function checkCategoryPermissions(category: CategoryChannel, clientMember: GuildMember) {
+export function checkCategoryPermissions(category: CategoryChannel, clientMember: GuildMember): boolean {
     const hasCategoryPermission = category.permissionsFor(clientMember).has([
         PermissionFlagsBits.ReadMessageHistory,
         PermissionFlagsBits.SendMessages,
