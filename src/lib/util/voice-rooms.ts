@@ -88,7 +88,7 @@ export function voiceRoomInfoEmbed(settings: ActiveVoiceRoom, originSettings: Gu
                 style: ButtonStyle.Danger,
                 custom_id: 'voice_room.close',
                 label: 'Close Room',
-                disabled: true
+                // disabled: true
             }),
         )
     ];

@@ -58,7 +58,7 @@ export class VoiceRoomCreation extends Listener {
     public async deleteVoiceRoom(channel: VoiceBasedChannel) {
         if (!channel.deletable) return;
 
-        await channel.delete().catch(async () => await channel.send('I was unable to delete this voice channel, a moderator will have to manually do it.'));
+        await channel.delete().catch(() => ({}));
         await this.container.api.deleteVoiceRoom(channel.guildId, channel.id);
     }
 
@@ -76,6 +76,8 @@ export class VoiceRoomCreation extends Listener {
         if (previous.channel) {
             const info = await this.container.api.getVoiceRoom(previous.guild.id, previous.channel.id);
             if (!info) return;
+            
+            if (previous.channel === null) return;
 
             const connected = previous.channel.members.map(({ id }) => id);
             if (connected.includes(info.current_owner_id)) return;
