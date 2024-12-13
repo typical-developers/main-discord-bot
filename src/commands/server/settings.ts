@@ -250,6 +250,7 @@ export class Settings extends Subcommand {
             PermissionFlagsBits.EmbedLinks,
             PermissionFlagsBits.AttachFiles,
             PermissionFlagsBits.MoveMembers,
+            PermissionFlagsBits.ManageChannels,
         ]);
 
         return hasCategoryPermission;
