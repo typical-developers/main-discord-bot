@@ -3,9 +3,12 @@ import { Subcommand } from '@sapphire/plugin-subcommands';
 import { ApplyOptions } from '@sapphire/decorators';
 import {
     ApplicationCommandOptionType,
+    CategoryChannel,
+    ChannelType,
+    GuildMember,
     PermissionFlagsBits,
     type ApplicationCommandSubCommandData,
-    type ApplicationCommandSubGroupData
+    type ApplicationCommandSubGroupData,
 } from 'discord.js';
 
 @ApplyOptions<Subcommand.Options>({
@@ -240,6 +243,18 @@ export class Settings extends Subcommand {
         return settings;
     }
 
+    private _checkParentCategoryPerms(category: CategoryChannel, clientMember: GuildMember) {
+        const hasCategoryPermission = category.permissionsFor(clientMember).has([
+            PermissionFlagsBits.ReadMessageHistory,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.EmbedLinks,
+            PermissionFlagsBits.AttachFiles,
+            PermissionFlagsBits.MoveMembers,
+        ]);
+
+        return hasCategoryPermission;
+    }
+
     public async createSpawnRoom(interaction: Subcommand.ChatInputCommandInteraction) {
         if (!interaction.guild) return;
 
@@ -248,6 +263,10 @@ export class Settings extends Subcommand {
 
         if (!channel) {
             throw new UserError({ identifier: "INVALID_CHANNEL", message: "This channel does not exist!" });
+        }
+
+        if (channel.type !== ChannelType.GuildVoice) {
+            throw new UserError({ identifier: "INVALID_CHANNEL", message: "This channel is not a voice channel!" });
         }
 
         const voiceRoom = await this.container.api.getVoiceRoom(interaction.guild.id, channelId);
@@ -264,13 +283,7 @@ export class Settings extends Subcommand {
         }
 
         const clientMember = await interaction.guild.members.fetch(interaction.client.user.id);
-        const hasCategoryPermission = channel.parent.permissionsFor(clientMember)?.has([
-            PermissionFlagsBits.ReadMessageHistory,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.EmbedLinks,
-            PermissionFlagsBits.AttachFiles,
-            PermissionFlagsBits.MoveMembers,
-        ]);
+        const hasCategoryPermission = this._checkParentCategoryPerms(channel.parent, clientMember);
 
         if (!hasCategoryPermission) {
             return await interaction.editReply({
@@ -304,6 +317,10 @@ export class Settings extends Subcommand {
             throw new UserError({ identifier: "INVALID_CHANNEL", message: "This channel does not exist!" });
         }
 
+        if (channel.type !== ChannelType.GuildVoice) {
+            throw new UserError({ identifier: "INVALID_CHANNEL", message: "This channel is not a voice channel!" });
+        }
+
         if (!currentOptions) {
             throw new UserError({
                 identifier: 'INVALID_CHANNEL',
@@ -321,13 +338,7 @@ export class Settings extends Subcommand {
         }
 
         const clientMember = await interaction.guild.members.fetch(interaction.client.user.id);
-        const hasCategoryPermission = channel.parent.permissionsFor(clientMember)?.has([
-            PermissionFlagsBits.ReadMessageHistory,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.EmbedLinks,
-            PermissionFlagsBits.AttachFiles,
-            PermissionFlagsBits.MoveMembers,
-        ]);
+        const hasCategoryPermission = this._checkParentCategoryPerms(channel.parent, clientMember);
 
         if (!hasCategoryPermission) {
             await this.container.api.deleteVoiceSpawnRoom(interaction.guild.id, channelId);
