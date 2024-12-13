@@ -318,6 +318,22 @@ export class Settings extends Subcommand {
             });
         }
 
+        const clientMember = await interaction.guild.members.fetch(interaction.client.user.id);
+        const hasCategoryPermission = channel.parent.permissionsFor(clientMember)?.has([
+            PermissionFlagsBits.ReadMessageHistory,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.EmbedLinks,
+            PermissionFlagsBits.AttachFiles,
+            PermissionFlagsBits.MoveMembers,
+        ]);
+
+        if (!hasCategoryPermission) {
+            await this.container.api.deleteVoiceSpawnRoom(interaction.guild.id, channelId);
+            return await interaction.editReply({
+                content: 'The bot is missing one or more permissions for creating voice rooms.',
+            });
+        }
+
         const options = this._removeNullOptions({
             user_limit: interaction.options.getNumber('user-limit'),
             can_rename: interaction.options.getBoolean('can-rename'),
