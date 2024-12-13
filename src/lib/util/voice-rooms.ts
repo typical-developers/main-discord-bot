@@ -114,7 +114,7 @@ export async function voiceRoomSettingsFromOrigin(guildId: string, originId: str
  * @param clientMember The client member.
  * @returns 
  */
-export async function checkCategoryPermissions(category: CategoryChannel, clientMember: GuildMember) {
+export function checkCategoryPermissions(category: CategoryChannel, clientMember: GuildMember) {
     const hasCategoryPermission = category.permissionsFor(clientMember).has([
         PermissionFlagsBits.ReadMessageHistory,
         PermissionFlagsBits.SendMessages,
