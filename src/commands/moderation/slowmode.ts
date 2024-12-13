@@ -28,7 +28,7 @@ export class ModerationSlowmode extends Command {
     public override async registerApplicationCommands(registry: Command.Registry) {
         registry.registerChatInputCommand({
             name: process.env.DEV_DEPLOYMENT === 'true'
-                ? `stging-${this.name}`
+                ? `dev-${this.name}`
                 : this.name,
             description: this.description,
             defaultMemberPermissions: [ PermissionFlagsBits.ManageMessages ],

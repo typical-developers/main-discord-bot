@@ -217,7 +217,7 @@ export class Settings extends Subcommand {
         registry
             .registerChatInputCommand({
                 name: process.env.DEV_DEPLOYMENT === 'true'
-                    ? `stging-${this.name}`
+                    ? `dev-${this.name}`
                     : this.name,
                 description: this.description,
                 options: this._options,
