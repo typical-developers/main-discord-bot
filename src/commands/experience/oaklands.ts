@@ -49,7 +49,8 @@ export class Settings extends Subcommand {
                         choices: [
                             { name: 'Cash', value: 'Cash' },
                             { name: 'Snowflakes', value: 'Snowflakes2024' }
-                        ]
+                        ],
+                        required: true
                     }],
                 },
                 {
@@ -63,7 +64,8 @@ export class Settings extends Subcommand {
                         choices: [
                             { name: 'Cash', value: 'Cash' },
                             { name: 'Snowflakes', value: 'Snowflakes2024' }
-                        ]
+                        ],
+                        required: true
                     }],
                 }
             ]
