@@ -48,7 +48,7 @@ export class Settings extends Subcommand {
                         description: 'The leaderboard type. Default is Cash.',
                         choices: [
                             { name: 'Cash', value: 'Cash' },
-                            { name: 'Snowflakes', value: 'Snowflakes2024' }
+                            // { name: 'Snowflakes', value: 'Snowflakes2024' }
                         ],
                         required: true
                     }],
@@ -63,7 +63,7 @@ export class Settings extends Subcommand {
                         description: 'The leaderboard type. Default is Cash.',
                         choices: [
                             { name: 'Cash', value: 'Cash' },
-                            { name: 'Snowflakes', value: 'Snowflakes2024' }
+                            // { name: 'Snowflakes', value: 'Snowflakes2024' }
                         ],
                         required: true
                     }],
