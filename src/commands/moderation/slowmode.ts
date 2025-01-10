@@ -30,7 +30,8 @@ export class ModerationSlowmode extends Command {
             name: this.name,
             description: this.description,
             defaultMemberPermissions: [ PermissionFlagsBits.ManageMessages ],
-            options: this._commandOptions
+            options: this._commandOptions,
+            dmPermission: false
         });
     }
 
