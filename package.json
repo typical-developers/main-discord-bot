@@ -18,7 +18,7 @@
     "@sapphire/discord-utilities": "~3.3.0",
     "@sapphire/discord.js-utilities": "~7.3.0",
     "@sapphire/framework": "~5.3.1",
-    "@sapphire/pieces": "~4.2.2",
+    "@sapphire/pieces": "^4.4.0",
     "@sapphire/plugin-scheduled-tasks": "~10.0.2",
     "@sapphire/plugin-subcommands": "~6.0.3",
     "discord.js": "~14.16.3",
