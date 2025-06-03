@@ -1,5 +1,8 @@
 declare namespace NodeJS {
     interface ProcessEnv {
+        /** The API url. */
+        API_URL: string;
+
         /** Whether or not the current deployment is a dev build. */
         DEV_DEPLOYMENT: 'true' | 'false';
 

@@ -6,9 +6,9 @@ export abstract class TypicalAPI {
     public baseUrl: URL;
 
     constructor() {
-        this.baseUrl = new URL(process.env.DEV_DEPLOYMENT === 'true'
+        this.baseUrl = new URL(process.env.DEV_DEPLOYMENT === 'true' && !process.env.API_URL
             ? 'http://127.0.0.1:3000'
-            : 'https://api.typicaldevelopers.com'
+            :  process.env.API_URL
         );
     }
 
