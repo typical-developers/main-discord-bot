@@ -97,7 +97,14 @@ export abstract class TypicalAPI {
                 ...extraHeaders
             },
             body: JSON.stringify({ query, variables })
-        }).catch(() => null);
+        }).catch(async (r) => {
+            try {
+                const resp = await r.text();
+                console.log(resp);
+            } catch {}
+
+            return null;
+        });
 
         if (!response) throw new Error('Fetch failed, the API may be down.');
         if (!response.ok) throw new Error(`Status code ${response.status}`);
