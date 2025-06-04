@@ -1,4 +1,4 @@
-declare namespace NodeJS {
+declare namespace Bun {
     interface ProcessEnv {
         /** The API url. */
         API_URL: string;
