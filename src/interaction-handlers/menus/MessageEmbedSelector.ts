@@ -23,7 +23,7 @@ export class MessageEmbedSelector extends InteractionHandler {
     }
 
     private getMessageMenu(components: StringSelectMenuInteraction['message']['components'], defaultLink: string) {
-        const menu = components.find(row =>
+        const menu = (components as ActionRow<StringSelectMenuComponent>[]).find(row =>
             row.components.some(({ type, customId }) =>
                 type === ComponentType.StringSelect
                 && customId === 'MessageEmbedSelector'

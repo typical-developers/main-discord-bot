@@ -6,7 +6,7 @@ import { container } from "@sapphire/pieces";
  * @param interaction The original interaction.
  * @param options Options that will apply to the response.
  */
-export async function respond(interaction: CommandInteraction, options: InteractionReplyOptions) {
+export async function respond(interaction: CommandInteraction, options: { content?: string }) {
     if (interaction.deferred) {
         await interaction.editReply(options).catch(() => null);
     } else {

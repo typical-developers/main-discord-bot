@@ -1,5 +1,5 @@
+import { type LaunchOptions } from "puppeteer";
 import Handlebars from "handlebars";
-import { type PuppeteerLaunchOptions } from "puppeteer";
 import { Cluster } from "puppeteer-cluster";
 
 interface DrawOptions<T> {
@@ -38,7 +38,7 @@ export default class HTMLImageProcessor {
      * @param options The custom options you want for puppeteer.
      * @returns {Promise<HTMLImageProcessor>}
      */
-    static async launch(options?: PuppeteerLaunchOptions): Promise<HTMLImageProcessor> {
+    static async launch(options?: LaunchOptions): Promise<HTMLImageProcessor> {
         const cluster = await Cluster.launch({
             concurrency: Cluster.CONCURRENCY_PAGE,
             maxConcurrency: 5,
