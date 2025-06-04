@@ -9,7 +9,7 @@ import {
     type ApplicationCommandSubGroupData
 } from 'discord.js';
 import { usersInfoFromIds } from 'openblox/classic/users';
-import { fetchStore, topMaterialsToday, topUsersMonthly, joinUrl } from '@/lib/util/public-api';
+import { fetchStore, topMaterialsToday, topUsersMonthly } from '#/lib/util/public-api';
 
 @ApplyOptions<Subcommand.Options>({
     description: 'Manage settings for the current guild.',

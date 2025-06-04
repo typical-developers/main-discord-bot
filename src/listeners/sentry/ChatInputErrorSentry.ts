@@ -1,6 +1,6 @@
 import { type ChatInputCommandErrorPayload, Events, Listener, UserError } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { respond, logToWebhook } from '@/lib/util/error-sentry';
+import { respond, logToWebhook } from '#/lib/util/error-sentry';
 
 @ApplyOptions<Listener.Options>({
     event: Events.ChatInputCommandError,
