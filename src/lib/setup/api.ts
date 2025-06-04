@@ -1,3 +1,4 @@
-import { container } from '@sapphire/pieces';
+import { container } from '@sapphire/framework';
+import { API } from '#/lib/util/api';
 
-const { BOT_ENDPOINT_API_KEY } = process.env
+container.api = API;

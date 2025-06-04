@@ -1,6 +1,7 @@
 import { okAsync, errAsync } from 'neverthrow';
+import RequestError from '#/lib/extensions/RequestError';
 
-export async function request<T = any>({ url, method, body, headers, query } :{
+export async function request<R = any, E = any>({ url, method, body, headers, query } :{
     url: URL,
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     body?: Record<string, any>,
@@ -10,9 +11,16 @@ export async function request<T = any>({ url, method, body, headers, query } :{
     const params = new URLSearchParams();
     if (query && Object.keys(query).length) {
         for (const [key, value] of Object.entries(query)) {
+            if (typeof value === 'object') {
+                params.set(key, JSON.stringify(value));
+                continue;
+            }
+
             params.set(key, value.toString());
         }
     }
+
+    url.search = params.toString();
 
     const res = await fetch(url, {
         method,
@@ -23,18 +31,31 @@ export async function request<T = any>({ url, method, body, headers, query } :{
         body: JSON.stringify(body)
     });
 
-    if (!res.ok) {
-        return errAsync(new Error('Request failed.'));
-    };
-
     const contentType = res.headers.get('content-type');
+
+    if (!res.ok) {
+        let payload = {} as E;
+        if (contentType === 'application/json') {
+           payload = await res.json();
+        }
+
+        return errAsync(new RequestError<E>({
+            message: "response was not ok.",
+            response: res,
+            payload
+        }));
+    };
 
     switch (contentType) {
         case 'application/json':
-            return okAsync(await res.json() as T);
+            return okAsync(await res.json() as R);
         case 'text/html':
-            return okAsync(await res.text());
+            return okAsync(await res.text() as R);
         default:
-            return errAsync(new Error('Invalid content type returned.'));
+            return errAsync(new RequestError({
+                message: "response returned unspecified content type.",
+                response: res
+            }
+        ));
     }
 }
