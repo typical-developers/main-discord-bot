@@ -26,7 +26,7 @@
     "neverthrow": "^8.2.0",
     "openblox": "~1.0.59",
     "puppeteer": "24.10.0",
-    "puppeteer-cluster": "~0.24.0",
+    "puppeteer-cluster-connect": "^0.0.8",
     "redis": "5.5.5"
   },
   "devDependencies": {
