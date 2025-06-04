@@ -1,5 +1,5 @@
-declare namespace Bun {
-    interface ProcessEnv {
+declare module Bun {
+    interface Env {
         /** The API url. */
         API_URL: string;
 

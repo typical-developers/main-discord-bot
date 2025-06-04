@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@sapphire/decorators": "~6.1.0",
-    "@types/node": "~20.14.4",
+    "@types/bun": "latest",
     "dotenv": "~16.4.5",
     "prettier": "~3.3.2",
     "rimraf": "~5.0.7",
