@@ -22,6 +22,7 @@
     "@sapphire/plugin-scheduled-tasks": "~10.0.2",
     "@sapphire/plugin-subcommands": "~6.0.3",
     "discord.js": "~14.16.3",
+    "neverthrow": "^8.2.0",
     "openblox": "~1.0.59",
     "puppeteer": "23.3.0",
     "puppeteer-cluster": "~0.24.0",
