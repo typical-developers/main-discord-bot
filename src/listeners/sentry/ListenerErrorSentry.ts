@@ -1,7 +1,6 @@
 import { Events, Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { AttachmentBuilder, inlineCode } from 'discord.js';
-import { GraphQLResponseErrors } from '@/lib/extensions/GraphQLResponseErrors';
 
 @ApplyOptions<Listener.Options>({
     event: Events.ListenerError,
@@ -28,16 +27,12 @@ export class ListenerErrorSentry extends Listener {
             .catch((err) => console.log(err));
     }
 
-    public override async run(error: Error | GraphQLResponseErrors) {
+    public override async run(error: Error) {
         if (process.env.DEV_DEPLOYMENT === 'true') {
             return console.log(error);
         }
 
         switch (true) {
-            case error instanceof GraphQLResponseErrors:
-                const { message, errors } = error as GraphQLResponseErrors;
-                await this.sendWebhook(message, JSON.stringify(errors, null, 2));
-                break;
             case error instanceof Error:
                 await this.sendWebhook(error.message, error.stack);
                 break;

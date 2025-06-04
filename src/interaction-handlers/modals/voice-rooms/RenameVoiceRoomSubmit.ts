@@ -1,34 +1,9 @@
-import { InteractionHandler, InteractionHandlerTypes, } from '@sapphire/framework';
-import { ApplyOptions } from '@sapphire/decorators';
-import { ModalSubmitInteraction, inlineCode } from 'discord.js';
+// import { InteractionHandler, InteractionHandlerTypes, } from '@sapphire/framework';
+// import { ApplyOptions } from '@sapphire/decorators';
+// import { ModalSubmitInteraction, inlineCode } from 'discord.js';
 
-@ApplyOptions<InteractionHandler.Options>({
-	interactionHandlerType: InteractionHandlerTypes.ModalSubmit
-})
-export class RenameVoiceRoom extends InteractionHandler {
-    public override async parse(interaction: ModalSubmitInteraction) {
-        if (!interaction.guildId || !interaction.channelId) return this.none();
-        if (interaction.customId !== 'voice_room.rename_submit') return this.none();
-
-        const name = interaction.fields.getTextInputValue('channel_name');
-
-        return this.some(name);
-    }
-
-    public async run(interaction: ModalSubmitInteraction, name: string) {
-        if (!interaction.guildId || !interaction.channelId) return;
-
-        const info = await this.container.api.bot.getVoiceRoom(interaction.guildId, interaction.channelId);
-        const channel = interaction.channel;
-
-        if (!info || !channel) return;
-        if (!channel.isVoiceBased()) return;
-
-        await interaction.deferReply({ ephemeral: true, fetchReply: true });
-        await interaction.editReply({ content: 'Updating channel name. If you are constantly renaming the channel, this may take a bit longer.' });
-
-        await channel.setName(name);
-
-        await interaction.editReply({ content: `Renamed voice room to ${inlineCode(name)}.` });
-    }
-}
+// @ApplyOptions<InteractionHandler.Options>({
+// 	interactionHandlerType: InteractionHandlerTypes.ModalSubmit
+// })
+// export class RenameVoiceRoomSubmit extends InteractionHandler {
+// }

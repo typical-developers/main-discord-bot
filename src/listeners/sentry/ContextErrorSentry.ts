@@ -1,6 +1,5 @@
 import { type ContextMenuCommandErrorPayload, Events, Listener, UserError } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { GraphQLResponseErrors } from '@/lib/extensions/GraphQLResponseErrors';
 import { respond, logToWebhook } from '@/lib/util/error-sentry';
 
 @ApplyOptions<Listener.Options>({
@@ -8,7 +7,7 @@ import { respond, logToWebhook } from '@/lib/util/error-sentry';
     once: false
 })
 export class ContextErrorSentry extends Listener {
-    public override async run(error: Error | UserError | GraphQLResponseErrors, { interaction }: ContextMenuCommandErrorPayload) {
+    public override async run(error: Error | UserError, { interaction }: ContextMenuCommandErrorPayload) {
         if (process.env.DEV_DEPLOYMENT === 'true' && !(error instanceof UserError)) {
             console.log(error);
             return respond(interaction, {
@@ -22,10 +21,6 @@ export class ContextErrorSentry extends Listener {
                 return respond(interaction, {
                     content: error.message
                 });
-            case error instanceof GraphQLResponseErrors:
-                const { message, errors } = error as GraphQLResponseErrors;
-                await logToWebhook(message, JSON.stringify(errors, null, 2));
-                break;
             case error instanceof Error:
                 await logToWebhook(error.message, error.stack);
                 break;

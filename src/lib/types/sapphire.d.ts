@@ -10,7 +10,6 @@ declare module '@sapphire/pieces' {
         cache: RedisClientType;
         /** Key for the backend api. */
         api: {
-            bot: BotGraphQLAPI;
         };
         /** Webhooks for logging stuff that happens on the client. */
         sentry: {

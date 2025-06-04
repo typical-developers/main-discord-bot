@@ -1,6 +1,5 @@
 import { type ChatInputCommandErrorPayload, Listener, UserError } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { GraphQLResponseErrors } from '@/lib/extensions/GraphQLResponseErrors';
 import { SubcommandPluginEvents } from '@sapphire/plugin-subcommands';
 import { respond, logToWebhook } from '@/lib/util/error-sentry';
 
@@ -9,7 +8,7 @@ import { respond, logToWebhook } from '@/lib/util/error-sentry';
     once: false
 })
 export class ChatInputErrorSentry extends Listener {
-    public override async run(error: Error | UserError | GraphQLResponseErrors, { interaction }: ChatInputCommandErrorPayload) {
+    public override async run(error: Error | UserError, { interaction }: ChatInputCommandErrorPayload) {
         if (process.env.DEV_DEPLOYMENT === 'true' && !(error instanceof UserError)) {
             console.log(error);
             return respond(interaction, {
@@ -23,10 +22,6 @@ export class ChatInputErrorSentry extends Listener {
                 return respond(interaction, {
                     content: error.message
                 });
-            case error instanceof GraphQLResponseErrors:
-                const { message, errors } = error as GraphQLResponseErrors;
-                await logToWebhook(message, JSON.stringify(errors, null, 2));
-                break;
             case error instanceof Error:
                 await logToWebhook(error.message, error.stack);
                 break;
