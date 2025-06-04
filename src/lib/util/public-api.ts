@@ -1,8 +1,6 @@
 import { request } from "./request";
 
-const BASE_URL = process.env.DEV_DEPLOYMENT !== 'true'
-    ? 'https://public-api.typicaldevelopers.com/'
-    : 'http://127.0.0.1:3000';
+const BASE_URL = process.env.PUBLIC_API_URL;
 
 export async function fetchStore<T extends string>(store: T) {
     return await request<{
