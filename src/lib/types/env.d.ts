@@ -42,5 +42,10 @@ declare module Bun {
          * If there is no password, leave empty or put `nopass`.
          */
         REDIS_PASSWORD?: string;
+
+        /**
+         * The chrome websocket connection url.
+         */
+        CHROME_WS_URL: string;
     }
 }

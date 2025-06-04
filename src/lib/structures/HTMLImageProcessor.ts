@@ -1,4 +1,4 @@
-import { type LaunchOptions } from "puppeteer";
+import puppeteer, { type LaunchOptions } from "puppeteer";
 import Handlebars from "handlebars";
 import { Cluster } from "puppeteer-cluster";
 
@@ -16,9 +16,9 @@ export default class HTMLImageProcessor {
         this._cluster = cluster;
 
         this._cluster.task(async ({ page, data: { html, transparency, savePath } }) => {
-            await page.setContent(html, { waitUntil: 'load' });
+            await page.setContent(html, { waitUntil: 'networkidle0', timeout: 0 });
 
-            const element = await page.$('body');
+            const element = await page.$('#root');
 
             if (!element) {
                 throw new Error('No body element was found to screenshot.');
@@ -40,6 +40,7 @@ export default class HTMLImageProcessor {
      */
     static async launch(options?: LaunchOptions): Promise<HTMLImageProcessor> {
         const cluster = await Cluster.launch({
+            puppeteer: puppeteer,
             concurrency: Cluster.CONCURRENCY_PAGE,
             maxConcurrency: 5,
             puppeteerOptions: options,

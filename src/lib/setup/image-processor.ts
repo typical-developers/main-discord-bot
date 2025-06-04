@@ -1,11 +1,10 @@
-import { container } from '@sapphire/pieces';
-import puppeteer from 'puppeteer';
+import { container } from '@sapphire/framework';
 import HTMLImageProcessor from "#/lib/structures/HTMLImageProcessor"
 
 container.imageProcessor = await HTMLImageProcessor.launch({
-    executablePath: process.env.DEV_DEPLOYMENT === 'true' ? puppeteer.executablePath() : '/usr/bin/google-chrome-stable',
-    headless: "shell",
-    // headless: false,
+    headless: true,
+    defaultViewport: { width: 1920, height: 1080 },
+    browserWSEndpoint: "ws://localhost:9222",
     args: [
         '--autoplay-policy=user-gesture-required',
         '--disable-background-networking',
