@@ -68,15 +68,6 @@ type MemberProfileOpts = {
     create?: boolean;
 };
 
-type MemberProfileCardOpts = {
-    display_name: string;
-    username: string;
-    avatar_url: string;
-    chat_activity_role?: {
-        accent: string;
-        title: string;
-    };
-}
 
 type IncrementActivityPointsOpts = {
     activity_type: "chat"
@@ -149,12 +140,11 @@ async function incrementMemberActivityPoints(guildId: string, userId: string, qu
     });
 }
 
-async function getMemberProfileCard(guildId: string, userId: string, query: MemberProfileCardOpts) {
+async function getMemberProfileCard(guildId: string, userId: string) {
     return request<string, APIError>({
         url: new URL(`/guild/${guildId}/member/${userId}/profile/card`, BASE_URL),
         method: 'GET',
-        headers: AUTH_HEADERS,
-        query
+        headers: AUTH_HEADERS
     });
 }
 
@@ -165,4 +155,4 @@ export const API = {
     getMemberProfile,
     getMemberProfileCard,
     incrementMemberActivityPoints
-}
+};
