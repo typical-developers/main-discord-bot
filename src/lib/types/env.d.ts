@@ -30,9 +30,12 @@ declare module Bun {
 
         /**
          * The host for the Redis connection.
-         * To do a specific DB, for example, do `127.0.0.1:6379/1`.
          */
         REDIS_HOST: string;
+        /**
+         * The port for the Redis connection.
+         */
+        REDIS_PORT: string;
         /**
          * The username to connect to the Redis instance.
          */
