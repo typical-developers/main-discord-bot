@@ -54,13 +54,8 @@ export class ServerProfile extends Command {
             activity_type: leaderboard,
             display: display
         });
-        if (card.isErr()) {
-            // todo: error handling & logging
-            return;
-        }
 
-        const img = await this.container.imageProcessor.draw({ html: card.value, transparency: true });
-        const attachment = new AttachmentBuilder(Readable.from(img), { name: 'profile.png' });
+        const attachment = new AttachmentBuilder(Readable.from(card), { name: `${interaction.guildId!}_leaderboard.png` });
 
         return await interaction.editReply({
             files: [attachment]

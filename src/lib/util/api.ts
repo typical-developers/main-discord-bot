@@ -1,3 +1,4 @@
+import { container } from '@sapphire/framework';
 import { request } from './request';
 
 const BASE_URL = process.env.BOT_API_URL;
@@ -107,11 +108,13 @@ async function getGuildSettings(guildId: string, { create }: GuildSettingsOpts =
 }
 
 async function getGuildLeaderboard(guildId: string, query: GuildLeaderbaordOpts) {
-    return request<string, APIError>({
-        url: new URL(`/guild/${guildId}/activity-leaderboard/card`, BASE_URL),
-        method: 'GET',
-        headers: AUTH_HEADERS
+    const url = new URL(`/guild/${guildId}/activity-leaderboard/card`, BASE_URL);
+    
+    const img = await container.imageProcessor.draw({
+        url: url.toString(),
     });
+
+    return img;
 }
 
 async function createMemberProfile(guildId: string, userId: string) {
@@ -153,11 +156,13 @@ async function incrementMemberActivityPoints(guildId: string, userId: string, qu
 }
 
 async function getMemberProfileCard(guildId: string, userId: string) {
-    return request<string, APIError>({
-        url: new URL(`/guild/${guildId}/member/${userId}/profile/card`, BASE_URL),
-        method: 'GET',
-        headers: AUTH_HEADERS
+    const url = new URL(`/guild/${guildId}/member/${userId}/profile/card`, BASE_URL);
+    
+    const img = await container.imageProcessor.draw({
+        url: url.toString(),
     });
+
+    return img;
 }
 
 export const API = {

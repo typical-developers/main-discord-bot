@@ -42,13 +42,7 @@ export class ServerProfile extends Command {
         }
 
         const card = await this.container.api.getMemberProfileCard(interaction.guildId!, member.id);
-        if (card.isErr()) {
-            // todo: error handling & logging
-            return;
-        }
-
-        const img = await this.container.imageProcessor.draw({ html: card.value, transparency: true });
-        const attachment = new AttachmentBuilder(Readable.from(img), { name: 'profile.png' });
+        const attachment = new AttachmentBuilder(Readable.from(card), { name: `${interaction.guildId!}-${member.id}_profile.png` });
 
         return await interaction.reply({
             files: [attachment]

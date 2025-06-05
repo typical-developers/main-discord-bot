@@ -1,10 +1,7 @@
 import puppeteer, { Browser, type ConnectOptions } from "puppeteer";
 
 interface DrawOptions<T> {
-    html: string;
-    handlebars?: T;
-    transparency?: boolean;
-    savePath?: string;
+    url: string;
 }
 
 export default class HTMLImageProcessor {
@@ -39,9 +36,13 @@ export default class HTMLImageProcessor {
      */
     public async draw<T extends any>(options: DrawOptions<T>): Promise<Buffer> {
         const page = await this._browser.newPage();
-        await page.setContent(options.html);
+        await page.goto(options.url, { waitUntil: 'networkidle0' });
+        // await page.setContent(options.html, { waitUntil: 'networkidle0' });
+        // await page.evaluate(async () => {
+            // await document.fonts.ready;
+        // });
 
-        const element = await page.$('#root');
+        const element = await page.$('body');
 
         if (!element) {
             throw new Error('No body element was found to screenshot.');
