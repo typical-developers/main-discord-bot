@@ -68,6 +68,10 @@ type MemberProfileOpts = {
     create?: boolean;
 };
 
+type GuildLeaderbaordOpts = {
+    activity_type: string;
+    display: string;
+}
 
 type IncrementActivityPointsOpts = {
     activity_type: "chat"
@@ -100,6 +104,14 @@ async function getGuildSettings(guildId: string, { create }: GuildSettingsOpts =
     }
 
     return settings;
+}
+
+async function getGuildLeaderboard(guildId: string, query: GuildLeaderbaordOpts) {
+    return request<string, APIError>({
+        url: new URL(`/guild/${guildId}/activity-leaderboard/card`, BASE_URL),
+        method: 'GET',
+        headers: AUTH_HEADERS
+    });
 }
 
 async function createMemberProfile(guildId: string, userId: string) {
@@ -151,6 +163,7 @@ async function getMemberProfileCard(guildId: string, userId: string) {
 export const API = {
     createGuildSettings,
     getGuildSettings,
+    getGuildLeaderboard,
     createMemberProfile,
     getMemberProfile,
     getMemberProfileCard,

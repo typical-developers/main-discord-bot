@@ -1,0 +1,69 @@
+import { Readable } from 'stream';
+import { Command } from '@sapphire/framework';
+import { ApplyOptions } from '@sapphire/decorators';
+import { type ApplicationCommandOptionData, ApplicationCommandOptionType, AttachmentBuilder } from 'discord.js';
+
+@ApplyOptions<Command.Options>({
+    description: 'Get information on a server member!'
+})
+export class ServerProfile extends Command {
+    readonly _options: ApplicationCommandOptionData[] = [
+        {
+            type: ApplicationCommandOptionType.String,
+            required: true,
+            name: 'leaderboard',
+            description: "The leaderboard you'd like to see.",
+            choices: [
+                { name: 'Chat Activity', value: 'chat' }
+            ]
+        },
+        {
+            type: ApplicationCommandOptionType.String,
+            required: true,
+            name: 'display',
+            description: "What leaderboard data should be displayed.",
+            choices: [
+                { name: 'All Time', value: 'all' },
+            ]
+        }
+    ];
+
+    public override async registerApplicationCommands(registry: Command.Registry) {
+        registry
+            .registerChatInputCommand({
+                name: this.name,
+                description: this.description,
+                options: this._options,
+                dmPermission: false
+            })
+    }
+
+    public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+        await interaction.deferReply({ withResponse: true })
+
+        const leaderboard = interaction.options.getString('leaderboard', true);
+        const display = interaction.options.getString('display', true);
+
+        const settings = await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
+        if (settings.isErr()) {
+            // todo: error handling & logging
+            return;
+        }
+
+        const card = await this.container.api.getGuildLeaderboard(interaction.guildId!, {
+            activity_type: leaderboard,
+            display: display
+        });
+        if (card.isErr()) {
+            // todo: error handling & logging
+            return;
+        }
+
+        const img = await this.container.imageProcessor.draw({ html: card.value, transparency: true });
+        const attachment = new AttachmentBuilder(Readable.from(img), { name: 'profile.png' });
+
+        return await interaction.editReply({
+            files: [attachment]
+        });
+    }
+}

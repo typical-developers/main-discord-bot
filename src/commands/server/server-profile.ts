@@ -42,7 +42,6 @@ export class ServerProfile extends Command {
         }
 
         const card = await this.container.api.getMemberProfileCard(interaction.guildId!, member.id);
-
         if (card.isErr()) {
             // todo: error handling & logging
             return;
