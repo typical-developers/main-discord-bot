@@ -44,6 +44,16 @@ declare module Bun {
         REDIS_PASSWORD?: string;
 
         /**
+         * The DB that should be used for caching.
+         */
+        
+        REDIS_CACHE_DB?: number;
+        /**
+         * The DB that should be used for @sapphire/plugin-scheduled-tasks
+         */
+        REDIS_TASKS_DB?: number;
+
+        /**
          * The chrome websocket connection url.
          */
         CHROME_WS_URL: string;
