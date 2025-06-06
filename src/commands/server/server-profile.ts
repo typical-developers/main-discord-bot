@@ -78,7 +78,7 @@ export class ServerProfile extends Command {
         if (!member) {
             return await interaction.reply({
                 content: 'Unable to fetch the member\'s details.',
-                ephemeral: true
+                flags: [ MessageFlags.Ephemeral ]
             });
         }
 
@@ -100,7 +100,7 @@ export class ServerProfile extends Command {
         if (!member) {
             return await interaction.reply({
                 content: 'Unable to fetch the member\'s details.',
-                ephemeral: true
+                flags: [ MessageFlags.Ephemeral ]
             });
         }
 
