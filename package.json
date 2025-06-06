@@ -11,8 +11,8 @@
   },
   "scripts": {
     "format": "prettier --write \"src/**/*.ts\"",
-    "deploy": "bun .",
-    "deploy:dev": "tsc --noEmit && DEV_DEPLOYMENT=true bun ."
+    "deploy": "bun --env-file=.env .",
+    "deploy:dev": "tsc --noEmit && DEV_DEPLOYMENT=true bun --env-file=.env ."
   },
   "dependencies": {
     "@sapphire/discord-utilities": "~3.3.0",
@@ -28,13 +28,13 @@
     "openblox": "~1.0.59",
     "puppeteer": "23.3.0",
     "puppeteer-cluster": "~0.24.0",
-    "redis": "~4.6.14"
+    "redis": "~4.6.14",
+    "zod": "^3.25.55"
   },
   "devDependencies": {
     "@sapphire/decorators": "~6.1.0",
     "@types/node": "~20.14.4",
     "@typical-developers/api-types": "~0.1.19",
-    "dotenv": "~16.4.5",
     "prettier": "~3.3.2",
     "rimraf": "~5.0.7",
     "typescript": "5.4.5"
