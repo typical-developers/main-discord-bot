@@ -51,14 +51,15 @@ export class ServerProfile extends Command {
             return;
         }
 
+        await interaction.deferReply({ withResponse: true });
+
         const card = await this.container.api.getMemberProfileCard(interaction.guildId!, userId);
         if (card.isErr()) {
             const err = card.error
 
             if (err.reference === ImageProcessorErrorReference.StatusNotOK) {
-                await interaction.reply({
+                await interaction.editReply({
                     content: 'Member profile does not exist.',
-                    flags: [ MessageFlags.Ephemeral ],
                 });
             }
 

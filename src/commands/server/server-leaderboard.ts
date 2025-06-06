@@ -42,8 +42,6 @@ export class ServerProfile extends Command {
     }
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
-        await interaction.deferReply({ withResponse: true })
-
         const leaderboard = interaction.options.getString('leaderboard', true);
         const display = interaction.options.getString('display', true);
 
@@ -53,14 +51,15 @@ export class ServerProfile extends Command {
             return;
         }
 
+        await interaction.deferReply({ withResponse: true });
+
         const card = await this.container.api.getGuildLeaderboardCard(interaction.guildId!, { activity_type: leaderboard, display });
         if (card.isErr()) {
             const err = card.error
 
             if (err.reference === ImageProcessorErrorReference.StatusNotOK) {
-                await interaction.reply({
+                await interaction.editReply({
                     content: 'Guild leaderboard card does not exist.',
-                    flags: [ MessageFlags.Ephemeral ],
                 });
             }
 
