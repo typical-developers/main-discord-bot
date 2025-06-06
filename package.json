@@ -6,9 +6,7 @@
   "license": "GPL-3.0",
   "module": "./src/index.ts",
   "type": "module",
-  "imports": {
-    "@/*": "./src/*"
-  },
+  "private": true,
   "scripts": {
     "format": "prettier --write \"src/**/*.ts\"",
     "deploy": "bun .",
