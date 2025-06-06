@@ -23,11 +23,11 @@
     "@sapphire/plugin-subcommands": "7.0.1",
     "discord.js": "14.19.3",
     "handlebars": "^4.7.8",
+    "ioredis": "^5.6.1",
     "neverthrow": "^8.2.0",
     "openblox": "~1.0.59",
     "puppeteer": "24.10.0",
-    "puppeteer-cluster-connect": "^0.0.8",
-    "redis": "5.5.5"
+    "puppeteer-cluster-connect": "^0.0.8"
   },
   "devDependencies": {
     "@sapphire/decorators": "6.1.1",

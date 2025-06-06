@@ -1,6 +1,6 @@
 import { container } from '@sapphire/framework';
+import cache from '#/lib/util/cache';
 import { request } from './request';
-import { okAsync } from 'neverthrow';
 
 const BASE_URL = process.env.BOT_API_URL;
 const AUTH = process.env.BOT_ENDPOINT_API_KEY;
@@ -96,14 +96,25 @@ type ActivityRoleOpts = {
 }
 
 async function createGuildSettings(guildId: string) {
-    return await request<GuildSettings, APIError>({
+    const data = await request<GuildSettings, APIError>({
         url: new URL(`/guild/${guildId}/settings/create`, BASE_URL),
         method: 'POST',
         headers: AUTH_HEADERS
     });
+
+    if (data.isOk()) {
+        await cache.jsonSet(`guild:${guildId}:settings`, data.value, "$", {
+            ttl: 60 * 60 * 12
+        });
+    };
+
+    return data;
 }
 
 async function getGuildSettings(guildId: string, { create }: GuildSettingsOpts = {}) {
+    const cached = await cache.jsonGet<GuildSettings>(`guild:${guildId}:settings`);
+    if (cached.isOk()) return cached;
+
     const settings = await request<GuildSettings, APIError>({
         url: new URL(`/guild/${guildId}/settings`, BASE_URL),
         method: 'GET',
@@ -121,23 +132,43 @@ async function getGuildSettings(guildId: string, { create }: GuildSettingsOpts =
         return settings;
     }
 
+    await cache.jsonSet(`guild:${guildId}:settings`, settings.value, "$", {
+        ttl: 60 * 60 * 12
+    });
+
     return settings;
 }
 
 async function updateGuildActivitySettings(guildId: string, settings: ActivitySettingsOpts) {
-    return await request<GuildSettings, APIError>({
+    const data = await request<GuildSettings, APIError>({
         url: new URL(`/guild/${guildId}/settings/update/activity`, BASE_URL),
         method: 'PATCH',
         body: settings
     });
+
+    if (data.isOk()) {
+        await cache.jsonSet(`guild:${guildId}:settings`, data.value, "$", {
+            ttl: 60 * 60 * 12
+        });
+    };
+
+    return data;
 }
 
 async function insertGuildActivityRole(guildId: string, role: ActivityRoleOpts) {
-    return await request<GuildSettings, APIError>({
+    const data = await request<GuildSettings, APIError>({
         url: new URL(`/guild/${guildId}/settings/update/add-activity-role`, BASE_URL),
         method: 'POST',
         body: role
     });
+
+    if (data.isOk()) {
+        await cache.jsonSet(`guild:${guildId}:settings`, data.value, "$", {
+            ttl: 60 * 60 * 12
+        });
+    };
+
+    return data;
 }
 
 async function getGuildLeaderboardCard(guildId: string, query: GuildLeaderbaordOpts) {
@@ -152,11 +183,19 @@ async function getGuildLeaderboardCard(guildId: string, query: GuildLeaderbaordO
 }
 
 async function createMemberProfile(guildId: string, userId: string) {
-    return await request<MemberProfile, APIError>({
+    const data = await request<MemberProfile, APIError>({
         url: new URL(`/guild/${guildId}/member/${userId}/profile/create`, BASE_URL),
         method: 'POST',
         headers: AUTH_HEADERS
     });
+
+    if (data.isOk()) {
+        await cache.jsonSet(`guild:${guildId}:member:${userId}:profile`, data.value, "$", {
+            ttl: 60 * 60 * 12
+        });
+    };
+
+    return data;
 }
 
 async function getMemberProfile(guildId: string, userId: string, { create }: MemberProfileOpts = {}) {
@@ -177,16 +216,28 @@ async function getMemberProfile(guildId: string, userId: string, { create }: Mem
         return profile;
     }
 
+    await cache.jsonSet(`guild:${guildId}:member:${userId}:profile`, profile.value, "$", {
+        ttl: 60 * 60 * 12
+    });
+
     return profile;
 }
 
 async function incrementMemberActivityPoints(guildId: string, userId: string, query: IncrementActivityPointsOpts) {
-    return request<MemberProfile, APIError>({
+    const data = await request<MemberProfile, APIError>({
         url: new URL(`/guild/${guildId}/member/${userId}/profile/increment-points`, BASE_URL),
         method: 'POST',
         headers: AUTH_HEADERS,
         query
     });
+
+    if (data.isOk()) {
+        await cache.jsonSet(`guild:${guildId}:member:${userId}:profile`, data.value, "$", {
+            ttl: 60 * 60 * 12
+        });
+    };
+
+    return data;
 }
 
 async function getMemberProfileCard(guildId: string, userId: string) {
