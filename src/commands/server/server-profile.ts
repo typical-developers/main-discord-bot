@@ -1,7 +1,7 @@
 import { Readable } from 'stream';
 import { Command } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { type ApplicationCommandOptionData, GuildMember, ApplicationCommandOptionType, ApplicationCommandType, AttachmentBuilder } from 'discord.js';
+import { type ApplicationCommandOptionData, GuildMember, ApplicationCommandOptionType, ApplicationCommandType, AttachmentBuilder, MessageFlags } from 'discord.js';
 
 @ApplyOptions<Command.Options>({
     description: 'Get information on a server member!'
@@ -31,7 +31,7 @@ export class ServerProfile extends Command {
             });
     }
 
-    private async generateCard(interaction: Command.ContextMenuCommandInteraction | Command.ChatInputCommandInteraction, member: GuildMember) {
+    private async generateCard(interaction: Command.ContextMenuCommandInteraction | Command.ChatInputCommandInteraction, userId: string) {
         /**
          * This is here to create guild settings incase they don't exist.
          */
@@ -41,10 +41,36 @@ export class ServerProfile extends Command {
             return;
         }
 
-        const card = await this.container.api.getMemberProfileCard(interaction.guildId!, member.id);
-        const attachment = new AttachmentBuilder(Readable.from(card), { name: `${interaction.guildId!}-${member.id}_profile.png` });
+        if (!settings.value.data.chat_activity.is_enabled) {
+            await interaction.reply({
+                content: 'No tracking is enabled for this server.',
+                flags: [ MessageFlags.Ephemeral ],
+            });
 
-        return await interaction.reply({
+            return;
+        }
+
+        const profile = await this.container.api.getMemberProfile(interaction.guildId!, userId);
+        if (profile.isErr()) {
+            if (profile.error.response.status === 404) {
+                await interaction.reply({
+                    content: 'Member does not have a profile.',
+                    flags: [ MessageFlags.Ephemeral ],
+                });
+
+                return;
+            }
+
+            // todo: error handling & logging
+            return;
+        }
+
+        await interaction.deferReply({ withResponse: true });
+
+        const card = await this.container.api.getMemberProfileCard(interaction.guildId!, userId);
+        const attachment = new AttachmentBuilder(Readable.from(card), { name: `${interaction.guildId!}-${userId}_profile.png` });
+
+        return await interaction.editReply({
             files: [attachment]
         });
     }
@@ -59,18 +85,13 @@ export class ServerProfile extends Command {
             });
         }
 
-        return this.generateCard(interaction, member);
+        return this.generateCard(interaction, member.id);
     }
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
         let member: GuildMember | undefined;
 
         const user = interaction.options.getUser('user');
-
-        /**
-         * This is a lot more hacky than it should be.
-         * Should look into how to make this better, but based on types, data returned can be different.
-         */
         if (user) {
             member = await interaction.guild?.members.fetch(user.id).catch(() => undefined);
         }
@@ -86,6 +107,6 @@ export class ServerProfile extends Command {
             });
         }
 
-        return this.generateCard(interaction, member);
+        return this.generateCard(interaction, member.id);
     }
 }
