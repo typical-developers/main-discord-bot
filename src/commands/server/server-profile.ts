@@ -2,6 +2,7 @@ import { Readable } from 'stream';
 import { Command } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { type ApplicationCommandOptionData, GuildMember, ApplicationCommandOptionType, ApplicationCommandType, AttachmentBuilder, MessageFlags } from 'discord.js';
+import { ImageProcessorErrorReference } from '#/lib/extensions/ImageProcessorError';
 
 @ApplyOptions<Command.Options>({
     description: 'Get information on a server member!'
@@ -50,26 +51,21 @@ export class ServerProfile extends Command {
             return;
         }
 
-        const profile = await this.container.api.getMemberProfile(interaction.guildId!, userId);
-        if (profile.isErr()) {
-            if (profile.error.response.status === 404) {
+        const card = await this.container.api.getMemberProfileCard(interaction.guildId!, userId);
+        if (card.isErr()) {
+            const err = card.error
+
+            if (err.reference === ImageProcessorErrorReference.StatusNotOK) {
                 await interaction.reply({
-                    content: 'Member does not have a profile.',
+                    content: 'Member profile does not exist.',
                     flags: [ MessageFlags.Ephemeral ],
                 });
-
-                return;
             }
 
-            // todo: error handling & logging
             return;
         }
 
-        await interaction.deferReply({ withResponse: true });
-
-        const card = await this.container.api.getMemberProfileCard(interaction.guildId!, userId);
-        const attachment = new AttachmentBuilder(Readable.from(card), { name: `${interaction.guildId!}-${userId}_profile.png` });
-
+        const attachment = new AttachmentBuilder(Readable.from(card.value), { name: `${interaction.guildId!}-${userId}_profile.png` });
         return await interaction.editReply({
             files: [attachment]
         });

@@ -1,5 +1,6 @@
 import { container } from '@sapphire/framework';
 import { request } from './request';
+import { okAsync } from 'neverthrow';
 
 const BASE_URL = process.env.BOT_API_URL;
 const AUTH = process.env.BOT_ENDPOINT_API_KEY;
@@ -139,17 +140,15 @@ async function insertGuildActivityRole(guildId: string, role: ActivityRoleOpts) 
     });
 }
 
-async function getGuildLeaderboard(guildId: string, query: GuildLeaderbaordOpts) {
+async function getGuildLeaderboardCard(guildId: string, query: GuildLeaderbaordOpts) {
     const url = new URL(`/guild/${guildId}/activity-leaderboard/card`, BASE_URL);
     for (const [key, value] of Object.entries(query)) {
         url.searchParams.append(key, value);
     }
     
-    const img = await container.imageProcessor.draw({
+    return await container.imageProcessor.draw({
         url: url.toString(),
     });
-
-    return img;
 }
 
 async function createMemberProfile(guildId: string, userId: string) {
@@ -193,11 +192,9 @@ async function incrementMemberActivityPoints(guildId: string, userId: string, qu
 async function getMemberProfileCard(guildId: string, userId: string) {
     const url = new URL(`/guild/${guildId}/member/${userId}/profile/card`, BASE_URL);
     
-    const img = await container.imageProcessor.draw({
+    return await container.imageProcessor.draw({
         url: url.toString(),
     });
-
-    return img;
 }
 
 export const API = {
@@ -205,7 +202,7 @@ export const API = {
     getGuildSettings,
     updateGuildActivitySettings,
     insertGuildActivityRole,
-    getGuildLeaderboard,
+    getGuildLeaderboardCard,
     createMemberProfile,
     getMemberProfile,
     getMemberProfileCard,

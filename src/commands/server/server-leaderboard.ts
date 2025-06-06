@@ -1,7 +1,8 @@
 import { Readable } from 'stream';
 import { Command } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { type ApplicationCommandOptionData, ApplicationCommandOptionType, AttachmentBuilder } from 'discord.js';
+import { type ApplicationCommandOptionData, ApplicationCommandOptionType, AttachmentBuilder, MessageFlags } from 'discord.js';
+import { ImageProcessorErrorReference } from '#/lib/extensions/ImageProcessorError';
 
 @ApplyOptions<Command.Options>({
     description: 'Get information on a server member!'
@@ -52,11 +53,19 @@ export class ServerProfile extends Command {
             return;
         }
 
-        const card = await this.container.api.getGuildLeaderboard(interaction.guildId!, {
-            activity_type: leaderboard,
-            display: display
-        });
+        const card = await this.container.api.getGuildLeaderboardCard(interaction.guildId!, { activity_type: leaderboard, display });
+        if (card.isErr()) {
+            const err = card.error
 
+            if (err.reference === ImageProcessorErrorReference.StatusNotOK) {
+                await interaction.reply({
+                    content: 'Guild leaderboard card does not exist.',
+                    flags: [ MessageFlags.Ephemeral ],
+                });
+            }
+
+            return;
+        }
         const attachment = new AttachmentBuilder(Readable.from(card), { name: `${interaction.guildId!}_leaderboard.png` });
 
         return await interaction.editReply({
