@@ -65,7 +65,7 @@ export class ServerProfile extends Command {
 
             return;
         }
-        const attachment = new AttachmentBuilder(Readable.from(card), { name: `${interaction.guildId!}_leaderboard.png` });
+        const attachment = new AttachmentBuilder(Readable.from(card.value), { name: `${interaction.guildId!}_${display}-${leaderboard}-leaderboard.png` });
 
         return await interaction.editReply({
             files: [attachment]
