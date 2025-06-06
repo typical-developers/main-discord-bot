@@ -3,7 +3,7 @@ import RequestError from '#/lib/extensions/RequestError';
 
 export async function request<R = any, E = any>({ url, method, body, headers, query } :{
     url: URL,
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     body?: Record<string, any>,
     headers?: Record<string, any>,
     query?: Record<string, any>

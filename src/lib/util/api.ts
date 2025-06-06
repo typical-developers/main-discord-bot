@@ -72,15 +72,31 @@ type MemberProfileOpts = {
 type GuildLeaderbaordOpts = {
     activity_type: string;
     display: string;
-}
+};
 
 type IncrementActivityPointsOpts = {
     activity_type: "chat"
+};
+
+interface ActivitySettings {
+    enabled?: boolean | null;
+    cooldown?: number | null;
+    grant_amount?: number | null;
+};
+
+type ActivitySettingsOpts = {
+    chat_activity: ActivitySettings;
+};
+
+type ActivityRoleOpts = {
+    grant_type: string;
+    role_id: string;
+    required_points: number;
 }
 
 async function createGuildSettings(guildId: string) {
     return await request<GuildSettings, APIError>({
-        url: new URL(`/guild/${guildId}/create-settings`, BASE_URL),
+        url: new URL(`/guild/${guildId}/settings/create`, BASE_URL),
         method: 'POST',
         headers: AUTH_HEADERS
     });
@@ -107,8 +123,27 @@ async function getGuildSettings(guildId: string, { create }: GuildSettingsOpts =
     return settings;
 }
 
+async function updateGuildActivitySettings(guildId: string, settings: ActivitySettingsOpts) {
+    return await request<GuildSettings, APIError>({
+        url: new URL(`/guild/${guildId}/settings/update/activity`, BASE_URL),
+        method: 'PATCH',
+        body: settings
+    });
+}
+
+async function insertGuildActivityRole(guildId: string, role: ActivityRoleOpts) {
+    return await request<GuildSettings, APIError>({
+        url: new URL(`/guild/${guildId}/settings/update/add-activity-role`, BASE_URL),
+        method: 'POST',
+        body: role
+    });
+}
+
 async function getGuildLeaderboard(guildId: string, query: GuildLeaderbaordOpts) {
     const url = new URL(`/guild/${guildId}/activity-leaderboard/card`, BASE_URL);
+    for (const [key, value] of Object.entries(query)) {
+        url.searchParams.append(key, value);
+    }
     
     const img = await container.imageProcessor.draw({
         url: url.toString(),
@@ -119,7 +154,7 @@ async function getGuildLeaderboard(guildId: string, query: GuildLeaderbaordOpts)
 
 async function createMemberProfile(guildId: string, userId: string) {
     return await request<MemberProfile, APIError>({
-        url: new URL(`/guild/${guildId}/member/${userId}/create-profile`, BASE_URL),
+        url: new URL(`/guild/${guildId}/member/${userId}/profile/create`, BASE_URL),
         method: 'POST',
         headers: AUTH_HEADERS
     });
@@ -168,6 +203,8 @@ async function getMemberProfileCard(guildId: string, userId: string) {
 export const API = {
     createGuildSettings,
     getGuildSettings,
+    updateGuildActivitySettings,
+    insertGuildActivityRole,
     getGuildLeaderboard,
     createMemberProfile,
     getMemberProfile,
