@@ -19,7 +19,7 @@ export class PointsGrant extends Listener {
         const { chat_activity } = settings.value.data;
         if (!chat_activity.is_enabled) return;
 
-        const profile = await this.container.api.getMemberProfile(message.guildId!, message.author.id, { create: true });
+        const profile = await this.container.api.getMemberProfile(message.guildId!, message.author.id, { create: true, force: true });
         if (profile.isErr()) {
             // todo: error handling & logging
             return;

@@ -68,6 +68,10 @@ type MemberProfileOpts = {
      * Whether or not new member profile should be created if not found.
      */
     create?: boolean;
+    /**
+     * Prevents from fetching from the cache.
+     */
+    force?: boolean;
 };
 
 type GuildLeaderbaordOpts = {
@@ -198,7 +202,10 @@ async function createMemberProfile(guildId: string, userId: string) {
     return data;
 }
 
-async function getMemberProfile(guildId: string, userId: string, { create }: MemberProfileOpts = {}) {
+async function getMemberProfile(guildId: string, userId: string, { create ,force }: MemberProfileOpts = {}) {
+    const cached = await cache.jsonGet<MemberProfile>(`guild:${guildId}:member:${userId}:profile`);
+    if (cached.isOk() && !force) return cached;
+
     const profile = await request<MemberProfile, APIError>({
         url: new URL(`/guild/${guildId}/member/${userId}/profile`, BASE_URL),
         method: 'GET',
