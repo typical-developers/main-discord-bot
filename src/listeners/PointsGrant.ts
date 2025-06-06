@@ -26,13 +26,12 @@ export class PointsGrant extends Listener {
         }
 
         const { is_on_cooldown } = profile.value.data.chat_activity;
-        if (is_on_cooldown) {
-            return;
-        }
+        if (is_on_cooldown) return;
 
-        const updatedProfile = await this.container.api.incrementMemberActivityPoints(message.guildId!, message.author.id, {
-            activity_type: "chat"
-        });
+        const updatedProfile = await this.container.api.incrementMemberActivityPoints(
+            message.guildId!, message.author.id,
+            { activity_type: "chat"}
+        );
         if (updatedProfile.isErr()) {
             // todo: error handling & logging
             return;
@@ -45,8 +44,23 @@ export class PointsGrant extends Listener {
             .map((r) => r.role_id)
             .filter((r) => !memberRoles.includes(r));
 
+        /**
+         * This can happen when a member leaves and rejoins.
+         */
         if (missingRoles.length) {
             await message.member?.roles.add(missingRoles).catch(() => {});
+        }
+
+        /**
+         * If the length is 1, we'll congratulate the member.
+         */
+        if (missingRoles.length === 1) {
+            const roleInfo = message.guild?.roles.cache.get(missingRoles[0]);
+            if (!roleInfo) return;
+
+            await message.reply({
+                content: `<@${message.author.id}> Congratulations! You have reached ${updatedActivity.points} points and unlocked the ${inlineCode(roleInfo.name.toUpperCase())} activity role!` 
+            });
         }
     }
 }
