@@ -37,11 +37,14 @@ const envVariables = z.object({
 
     BOT_ENDPOINT_API_KEY: z.string(),
     EXPERIENCE_ENDPOINT_API_SECRET: z.string(),
-    BOT_ERROR_WEBHOOK_URL: z.string(),
+    BOT_ERROR_WEBHOOK_URL: z.string().url(),
 
     REDIS_USERNAME: z.string(),
     REDIS_PASSWORD: z.string(),
-    REDIS_HOST: z.string()
+    REDIS_HOST: z.string(),
+
+    API_URL: z.string().url(),
+    DEV_DEPLOYMENT: z.union([z.literal('true'), z.literal('false')]).default('false')
 });
 
 /**
