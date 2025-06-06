@@ -24,6 +24,8 @@ export class ServerProfile extends Command {
             description: "What leaderboard data should be displayed.",
             choices: [
                 { name: 'All Time', value: 'all' },
+                { name: 'This Month', value: 'monthly' },
+                { name: 'This Week', value: 'weekly' },
             ]
         }
     ];
