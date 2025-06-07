@@ -42,7 +42,7 @@ export class ServerProfile extends Command {
             return;
         }
 
-        if (!settings.value.data.chat_activity.is_enabled) {
+        if (!settings.value.chat_activity.is_enabled) {
             await interaction.reply({
                 content: 'No tracking is enabled for this server.',
                 flags: [ MessageFlags.Ephemeral ],

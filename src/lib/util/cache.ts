@@ -36,11 +36,15 @@ async function jsonGet<T>(key: string) {
 
 async function jsonSet<T>(key: string, value: T, selector: string, options?: SetOptions) {
     try {
-        await client?.call("JSON.SET", key, selector, JSON.stringify(value));
+        const multi = client?.multi();
+
+        multi?.call("JSON.SET", key, selector, JSON.stringify(value));
 
         if (options?.ttl) {
-            await client?.call("EXPIRE", key, options.ttl);
+            multi?.call("EXPIRE", key, options.ttl);
         }
+
+        await multi?.exec();
 
         return okAsync(true);
     } catch (e) {

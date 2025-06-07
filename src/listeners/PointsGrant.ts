@@ -16,7 +16,7 @@ export class PointsGrant extends Listener {
             return;
         }
 
-        const { chat_activity } = settings.value.data;
+        const { chat_activity } = settings.value;
         if (!chat_activity.is_enabled) return;
 
         const profile = await this.container.api.getMemberProfile(message.guildId!, message.author.id, { create: true, force: true });
@@ -25,7 +25,7 @@ export class PointsGrant extends Listener {
             return;
         }
 
-        const { is_on_cooldown } = profile.value.data.chat_activity;
+        const { is_on_cooldown } = profile.value.chat_activity;
         if (is_on_cooldown) return;
 
         const updatedProfile = await this.container.api.incrementMemberActivityPoints(
@@ -37,7 +37,7 @@ export class PointsGrant extends Listener {
             return;
         }
 
-        const updatedActivity = updatedProfile.value.data.chat_activity;
+        const updatedActivity = updatedProfile.value.data;
 
         const memberRoles = message.member?.roles.cache.map((r) => r.id) || [];
         const missingRoles = updatedActivity.roles.obtained
