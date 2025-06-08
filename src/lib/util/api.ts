@@ -41,7 +41,7 @@ type ActivityInfo = {
     }
 };
 
-type VoiceRoomLobby = {
+export type VoiceRoomLobby = {
     channel_id: string;
     user_limit: number;
     can_rename: boolean;
@@ -49,7 +49,17 @@ type VoiceRoomLobby = {
     can_adjust_limit: boolean;
 };
 
-type GuildVoiceRoomLobbies = APIResponse<Array<VoiceRoomLobby>>;
+export type VoiceRoom = {
+    origin_channel_id: string;
+    room_channel_id: string;
+    created_by_user_id: string;
+    current_owner_id: string;
+    is_locked: boolean;
+}
+
+type GuildVoiceRoomLobbies = APIResponse<VoiceRoomLobby>;
+
+type GuildVoiceRoom = APIResponse<VoiceRoom>;
 
 type APIError = APIResponse<{ message: string }>;
 
@@ -65,7 +75,9 @@ type GuildSettings = APIResponse<{
         is_enabled: boolean;
         activity_roles: Array<ActivityRole>;
     };
-    voice_rooms: Array<VoiceRoomLobby>;
+    voice_rooms: Array<VoiceRoomLobby & {
+        current_rooms: Array<VoiceRoom>;
+    }>;
 }>;
 
 type GuildActivityRoles = APIResponse<Array<ActivityRole>>;
@@ -120,6 +132,17 @@ type GuildVoiceRoomLobbyOpts = {
     can_rename?: boolean | null;
     can_lock?: boolean | null;
     can_adjust_limit?: boolean | null;
+};
+
+type RegisterVoiceRoomOpts = {
+    room_channel_id: string;
+    created_by_user_id: string;
+    current_owner_id: string;
+};
+
+type UpdateVoiceRoomOpts = {
+    current_owner_id?: string;
+    is_locked?: boolean;
 }
 
 async function createGuildSettings(guildId: string) {
@@ -224,7 +247,19 @@ async function updateGuildVoiceRoomLobby(guildId: string, channelId: string, con
     });
 
     if (data.isOk()) {
-        await cache.jsonSet(`guild:${guildId}:settings`, data.value.data, "$.voice_rooms");
+        if (!(await cache.jsonGet(`guild:${guildId}:settings`)).isOk()) {
+            await getGuildSettings(guildId);
+        } else {
+            const settings = await cache.jsonGet(`guild:${guildId}:settings`);
+            if (settings.isErr()) return data;
+
+            await cache.client?.call(
+                "JSON.MERGE",
+                `guild:${guildId}:settings`, 
+                `$.voice_rooms[?(@.channel_id=="${channelId}")]`,
+                JSON.stringify(data.value.data)
+            );
+        }
     }
 
     return data;
@@ -239,6 +274,82 @@ async function removeGuildVoiceRoomLobby(guildId: string, channelId: string) {
 
     if (data.isOk()) {
         await cache.jsonSet(`guild:${guildId}:settings`, data.value.data, "$.voice_rooms");
+    }
+
+    return data;
+}
+
+async function registerGuildVoiceRoom(guildId: string, channelId: string, room: RegisterVoiceRoomOpts) {
+    const data = await request<GuildVoiceRoom, APIError>({
+        url: new URL(`/guild/${guildId}/voice-room/lobby/${channelId}/register`, BASE_URL),
+        method: 'POST',
+        body: {
+            channel_id: channelId,
+            ...room
+        },
+        headers: AUTH_HEADERS
+    });
+
+    if (data.isOk()) {
+        if (!(await cache.jsonGet(`guild:${guildId}:settings`)).isOk()) {
+            await getGuildSettings(guildId);
+        } else {
+            await cache.client.call(
+                "JSON.ARRAPPEND",
+                `guild:${guildId}:settings`,
+                `$.voice_rooms[?(@.channel_id=="${channelId}")].current_rooms`,
+                JSON.stringify(data.value.data)
+            );
+        }
+    }
+
+    return data;
+}
+
+async function updateGuildVoiceRoom(guildId: string, originId: string, channelId: string, config: UpdateVoiceRoomOpts) {
+    const data = await request<GuildVoiceRoom, APIError>({
+        url: new URL(`/guild/${guildId}/voice-room/room/${channelId}/update`, BASE_URL),
+        method: 'PATCH',
+        body: {
+            channel_id: channelId,
+            ...config
+        },
+        headers: AUTH_HEADERS
+    });
+
+    if (data.isOk()) {
+        if (!(await cache.jsonGet(`guild:${guildId}:settings`)).isOk()) {
+            await getGuildSettings(guildId);
+        } else {
+            await cache.client.call(
+                "JSON.MERGE",
+                `guild:${guildId}:settings`,
+                `$.voice_rooms[?(@.channel_id=="${originId}")].current_rooms[?(@.room_channel_id=="${channelId}")]`,
+                JSON.stringify(data.value.data)
+            );
+        }
+    }
+
+    return data;
+}
+
+async function deleteGuildVoiceRoom(guildId: string, originId: string, channelId: string) {
+    const data = await request<{}, APIError>({
+        url: new URL(`/guild/${guildId}/voice-room/room/${channelId}/unregister`, BASE_URL),
+        method: 'DELETE',
+        headers: AUTH_HEADERS
+    });
+
+    if (data.isOk()) {
+        if (!(await cache.jsonGet(`guild:${guildId}:settings`)).isOk()) {
+            await getGuildSettings(guildId);
+        } else {
+            await cache.client.call(
+                "JSON.DEL",
+                `guild:${guildId}:settings`,
+                `$.voice_rooms[?(@.channel_id=="${originId}")].current_rooms[?(@.room_channel_id=="${channelId}")]`
+            );
+        }
     }
 
     return data;
@@ -332,6 +443,9 @@ export const API = {
     createGuildVoiceRoomLobby,
     updateGuildVoiceRoomLobby,
     removeGuildVoiceRoomLobby,
+    registerGuildVoiceRoom,
+    updateGuildVoiceRoom,
+    deleteGuildVoiceRoom,
     getGuildLeaderboardCard,
     createMemberProfile,
     getMemberProfile,

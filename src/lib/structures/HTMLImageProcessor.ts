@@ -7,10 +7,10 @@ interface DrawOptions<T> {
 }
 
 export default class HTMLImageProcessor {
-    private readonly _browser: Browser;
+    private browser: Browser;
 
     constructor(browser: Browser) {
-        this._browser = browser;
+        this.browser = browser;
     }
 
     /**
@@ -28,7 +28,7 @@ export default class HTMLImageProcessor {
      * @returns {Promise<void>}
      */
     public async close(): Promise<void> {
-        await this._browser.close();
+        await this.browser.close();
     }
 
     /**
@@ -37,7 +37,7 @@ export default class HTMLImageProcessor {
      * @returns {Promise<Buffer>} The image buffer.
      */
     public async draw<T extends any>(options: DrawOptions<T>) {
-        const page = await this._browser.newPage();
+        const page = await this.browser.newPage();
 
         const contents = await page.goto(options.url, { waitUntil: 'networkidle0' });
         if (!contents) {

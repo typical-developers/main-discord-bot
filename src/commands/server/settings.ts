@@ -91,6 +91,11 @@ export class ServerSettings extends Subcommand {
                     name: 'can-lock',
                     description: 'Whether or not the created voice room can be locked.',
                 },
+                {
+                    type: ApplicationCommandOptionType.Boolean,
+                    name: 'can-adjust-limit',
+                    description: 'Whether or not the created voice room can has its user limit adjusted.',
+                },
             ]
         },
         {
@@ -119,6 +124,11 @@ export class ServerSettings extends Subcommand {
                     type: ApplicationCommandOptionType.Boolean,
                     name: 'can-lock',
                     description: 'Whether or not the created voice room can be locked.',
+                },
+                {
+                    type: ApplicationCommandOptionType.Boolean,
+                    name: 'can-adjust-limit',
+                    description: 'Whether or not the created voice room can has its user limit adjusted.',
                 },
             ]
         },
@@ -222,11 +232,13 @@ export class ServerSettings extends Subcommand {
         const userLimit = interaction.options.getNumber('user-limit');
         const canRename = interaction.options.getBoolean('can-rename');
         const canLock = interaction.options.getBoolean('can-lock');
+        const canAdjustLimit = interaction.options.getBoolean('can-adjust-limit');
 
         const settings = await this.container.api.createGuildVoiceRoomLobby(interaction.guildId!, channel, {
             user_limit: userLimit,
             can_rename: canRename,
-            can_lock: canLock
+            can_lock: canLock,
+            can_adjust_limit: canAdjustLimit
         });
 
         if (settings.isErr()) {
@@ -252,11 +264,13 @@ export class ServerSettings extends Subcommand {
         const userLimit = interaction.options.getNumber('user-limit');
         const canRename = interaction.options.getBoolean('can-rename');
         const canLock = interaction.options.getBoolean('can-lock');
+        const canAdjustLimit = interaction.options.getBoolean('can-adjust-limit');
 
         const settings = await this.container.api.updateGuildVoiceRoomLobby(interaction.guildId!, channel, {
             user_limit: userLimit,
             can_rename: canRename,
-            can_lock: canLock
+            can_lock: canLock,
+            can_adjust_limit: canAdjustLimit
         });
 
         if (settings.isErr()) {

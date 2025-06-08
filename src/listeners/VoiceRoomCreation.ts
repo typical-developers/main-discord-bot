@@ -1,21 +1,64 @@
 import { Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { ChannelType, DiscordAPIError, Events, type VoiceBasedChannel, VoiceState, type DiscordErrorData } from 'discord.js';
+import { ChannelType, Events, type VoiceBasedChannel, VoiceState, MessageFlags } from 'discord.js';
+import { voiceRoomInfoCard } from '#/lib/util/voice-rooms';
 
 @ApplyOptions<Listener.Options>({
     event: Events.VoiceStateUpdate,
     once: false
 })
 export class VoiceRoomCreation extends Listener {
-    private async createNewVoiceRoom(state: VoiceState, settings: any) {
-    }
+    public override async run(_: VoiceState, current: VoiceState) {
+        if (current.channelId === null || current.member === null) return;
+        if (current.channel?.type !== ChannelType.GuildVoice) return;
 
-    private async removeOldVoiceRoom(channel: VoiceBasedChannel) {
-    }
+        const settings = await this.container.api.getGuildSettings(current.guild.id);
+        if (settings.isErr()) {
+            // todo: error handling & logging
+            return;
+        }
 
-    private async transferOwnership(channel: VoiceBasedChannel, userId: string) {
-    }
+        const lobbies = settings.value.voice_rooms.map((r) => r.channel_id);
+        const lobby = settings.value.voice_rooms.find((l) => l.channel_id === current.channelId);
+        if (lobbies.length === 0 || !lobbies.includes(current.channelId)) return;
 
-    public override async run(previous: VoiceState, current: VoiceState) {
+        const voiceRoom = current.guild.channels.cache.get(current.channelId) as VoiceBasedChannel;
+        const categoryId = voiceRoom.parentId;
+
+        try {
+            const room = await current.guild.channels.create({
+                type: ChannelType.GuildVoice,
+                parent: categoryId || null,
+                name: `@${current.member.user.username}'s Voice Room`,
+                userLimit: lobby!.user_limit,
+            });
+
+            const status = await this.container.api.registerGuildVoiceRoom(current.guild.id, current.channelId, {
+                room_channel_id: room.id,
+                created_by_user_id: current.member.user.id,
+                current_owner_id: current.member.user.id
+            });
+            if (status.isErr()) {
+                await room.delete();
+                await current.member.voice.setChannel(null);
+
+                await voiceRoom.send({
+                    content: `<@${current.member?.user.id}> there was an issue creating a voice room. Try again later.`
+                });
+
+                return;
+            }
+
+            const { current_rooms, ...settings } = lobby!;
+            const infoCard = voiceRoomInfoCard(settings, status.value.data);
+            await room.send({
+                components: infoCard,
+                flags: [ MessageFlags.IsComponentsV2 ]
+            });
+
+            await current.member.voice.setChannel(room);
+        } catch (e) {
+
+        }
     }
 }

@@ -52,10 +52,6 @@ export async function request<R = any, E = any>({ url, method, body, headers, qu
         case 'text/html':
             return okAsync(await res.text() as R);
         default:
-            return errAsync(new RequestError({
-                message: "response returned unspecified content type.",
-                response: res
-            }
-        ));
+            return okAsync(await res.text() as R);
     }
 }

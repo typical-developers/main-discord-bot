@@ -48,12 +48,12 @@ async function jsonSet<T>(key: string, value: T, selector: string, options?: Set
 
         return okAsync(true);
     } catch (e) {
-        console.log(e);
         return errAsync(e);
     }
 }
 
 export default {
+    client,
     jsonGet,
     jsonSet
 };

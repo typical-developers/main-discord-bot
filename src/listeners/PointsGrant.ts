@@ -47,20 +47,20 @@ export class PointsGrant extends Listener {
         /**
          * This can happen when a member leaves and rejoins.
          */
-        if (missingRoles.length) {
-            await message.member?.roles.add(missingRoles).catch(() => {});
-        }
+        // if (missingRoles.length) {
+        //     await message.member?.roles.add(missingRoles).catch(() => {});
+        // }
 
         /**
          * If the length is 1, we'll congratulate the member.
          */
-        if (missingRoles.length === 1) {
-            const roleInfo = message.guild?.roles.cache.get(missingRoles[0]);
-            if (!roleInfo) return;
+        // if (missingRoles.length === 1) {
+        //     const roleInfo = message.guild?.roles.cache.get(missingRoles[0]);
+        //     if (!roleInfo) return;
 
-            await message.reply({
-                content: `<@${message.author.id}> Congratulations! You have reached ${updatedActivity.points} points and unlocked the ${inlineCode(roleInfo.name.toUpperCase())} activity role!` 
-            });
-        }
+        //     await message.reply({
+        //         content: `<@${message.author.id}> Congratulations! You have reached ${updatedActivity.points} points and unlocked the ${inlineCode(roleInfo.name.toUpperCase())} activity role!` 
+        //     });
+        // }
     }
 }
