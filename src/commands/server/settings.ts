@@ -7,6 +7,9 @@ import { type ApplicationCommandSubCommandData, ApplicationCommandOptionType, Pe
     subcommands: [
         { name: 'chat-activity', type: 'method', chatInputRun: 'updateChatActivitySettings' },
         { name: 'add-activity-role', type: 'method', chatInputRun: 'addActivityRole' },
+        { name: 'add-voice-room-lobby', type: 'method', chatInputRun: 'addVoiceRoomLobby' },
+        { name: 'update-voice-room-lobby', type: 'method', chatInputRun: 'updateVoiceRoomLobby' },
+        { name: 'remove-voice-room-lobby', type: 'method', chatInputRun: 'removeVoiceRoomLobby' },
     ]
 })
 export class ServerSettings extends Subcommand {
@@ -60,7 +63,79 @@ export class ServerSettings extends Subcommand {
                     required: true,
                 }
             ]
-        }
+        },
+        {
+            type: ApplicationCommandOptionType.Subcommand,
+            name: 'add-voice-room-lobby',
+            description: 'Create a new lobby for creating voice rooms.',
+            options: [
+                {
+                    type: ApplicationCommandOptionType.String,
+                    name: 'channel',
+                    description: 'The channel that will be considered the lobby.',
+                    required: true,
+                    autocomplete: true,
+                },
+                {
+                    type: ApplicationCommandOptionType.Number,
+                    name: 'user-limit',
+                    description: 'How many users can join the created voice room.',
+                },
+                {
+                    type: ApplicationCommandOptionType.Boolean,
+                    name: 'can-rename',
+                    description: 'Whether or not the created voice room can be renamed.',
+                },
+                {
+                    type: ApplicationCommandOptionType.Boolean,
+                    name: 'can-lock',
+                    description: 'Whether or not the created voice room can be locked.',
+                },
+            ]
+        },
+        {
+            type: ApplicationCommandOptionType.Subcommand,
+            name: 'update-voice-room-lobby',
+            description: 'Update a lobby for creating voice rooms.',
+            options: [
+                {
+                    type: ApplicationCommandOptionType.String,
+                    name: 'channel',
+                    description: 'The channel that will be considered the lobby.',
+                    required: true,
+                    autocomplete: true,
+                },
+                {
+                    type: ApplicationCommandOptionType.Number,
+                    name: 'user-limit',
+                    description: 'How many users can join the created voice room.',
+                },
+                {
+                    type: ApplicationCommandOptionType.Boolean,
+                    name: 'can-rename',
+                    description: 'Whether or not the created voice room can be renamed.',
+                },
+                {
+                    type: ApplicationCommandOptionType.Boolean,
+                    name: 'can-lock',
+                    description: 'Whether or not the created voice room can be locked.',
+                },
+            ]
+        },
+        {
+            type: ApplicationCommandOptionType.Subcommand,
+            name: 'remove-voice-room-lobby',
+            description: 'Remove a lobby for creating voice rooms.',
+            options: [
+                {
+                    type: ApplicationCommandOptionType.String,
+                    name: 'channel',
+                    description: 'The channel that will be considered the lobby.',
+                    required: true,
+                    autocomplete: true,
+                },
+            ]
+        },
     ];
 
     public override async registerApplicationCommands(registry: Subcommand.Registry) {
@@ -77,6 +152,11 @@ export class ServerSettings extends Subcommand {
 
     public async updateChatActivitySettings(interaction: Subcommand.ChatInputCommandInteraction) {
         await interaction.deferReply({ withResponse: true, flags: [ 'Ephemeral' ] })
+
+        /**
+         * Makes sure that the guild settings are created and cached.
+         */
+        await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
 
         const toggle = interaction.options.getBoolean('toggle');
         const cooldown = interaction.options.getNumber('cooldown');
@@ -104,6 +184,11 @@ export class ServerSettings extends Subcommand {
     public async addActivityRole(interaction: Subcommand.ChatInputCommandInteraction) {
         await interaction.deferReply({ withResponse: true, flags: [ 'Ephemeral' ] })
 
+        /**
+         * Makes sure that the guild settings are created and cached.
+         */
+        await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
+
         const type = interaction.options.getString('grant-type', true);
         const role = interaction.options.getRole('role', true);
         const requiredPoints = interaction.options.getNumber('required-points', true);
@@ -122,6 +207,89 @@ export class ServerSettings extends Subcommand {
 
         return interaction.editReply({
             content: 'Successfully added role to activity role list.',
+        });
+    }
+
+    public async addVoiceRoomLobby(interaction: Subcommand.ChatInputCommandInteraction) {
+        await interaction.deferReply({ withResponse: true, flags: [ 'Ephemeral' ] })
+
+        /**
+         * Makes sure that the guild settings are created and cached.
+         */
+        await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
+
+        const channel = interaction.options.getString('channel', true);
+        const userLimit = interaction.options.getNumber('user-limit');
+        const canRename = interaction.options.getBoolean('can-rename');
+        const canLock = interaction.options.getBoolean('can-lock');
+
+        const settings = await this.container.api.createGuildVoiceRoomLobby(interaction.guildId!, channel, {
+            user_limit: userLimit,
+            can_rename: canRename,
+            can_lock: canLock
+        });
+
+        if (settings.isErr()) {
+            return interaction.editReply({
+                content: settings.error.message,
+            });
+        }
+
+        return interaction.editReply({
+            content: 'Successfully created voice room lobby.',
+        });
+    }
+
+    public async updateVoiceRoomLobby(interaction: Subcommand.ChatInputCommandInteraction) {
+        await interaction.deferReply({ withResponse: true, flags: [ 'Ephemeral' ] })
+
+        /**
+         * Makes sure that the guild settings are created and cached.
+         */
+        await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
+
+        const channel = interaction.options.getString('channel', true);
+        const userLimit = interaction.options.getNumber('user-limit');
+        const canRename = interaction.options.getBoolean('can-rename');
+        const canLock = interaction.options.getBoolean('can-lock');
+
+        const settings = await this.container.api.updateGuildVoiceRoomLobby(interaction.guildId!, channel, {
+            user_limit: userLimit,
+            can_rename: canRename,
+            can_lock: canLock
+        });
+
+        if (settings.isErr()) {
+            return interaction.editReply({
+                content: settings.error.message,
+            });
+        }
+
+        return interaction.editReply({
+            content: 'Successfully updated voice room lobby.',
+        });
+    }
+
+
+    public async removeVoiceRoomLobby(interaction: Subcommand.ChatInputCommandInteraction) {
+        await interaction.deferReply({ withResponse: true, flags: [ 'Ephemeral' ] })
+
+        /**
+         * Makes sure that the guild settings are created and cached.
+         */
+        await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
+
+        const channel = interaction.options.getString('channel', true);
+        const lobbies = await this.container.api.removeGuildVoiceRoomLobby(interaction.guildId!, channel);
+
+        if (lobbies.isErr()) {
+            return interaction.editReply({
+                content: lobbies.error.message,
+            });
+        }
+
+        return interaction.editReply({
+            content: 'Successfully removed voice room lobby.',
         });
     }
 }

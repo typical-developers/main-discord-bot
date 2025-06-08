@@ -21,12 +21,42 @@ interface APIResponse<T> {
     data: T;
 };
 
-type APIError = APIResponse<{ message: string }>;
 
 type ActivityRole = {
     role_id: string;
     required_points: number;
 };
+
+type ActivityInfo = {
+    rank: number;
+    points: number;
+    is_on_cooldown: boolean;
+    last_grant: string;
+    roles: {
+        next: ActivityRole & {
+            progress: number;
+            remaining_points: number;
+        }
+        obtained: Array<ActivityRole>;
+    }
+};
+
+type VoiceRoomLobby = {
+    channel_id: string;
+    user_limit: number;
+    can_rename: boolean;
+    can_lock: boolean;
+    can_adjust_limit: boolean;
+};
+
+type GuildVoiceRoomLobbies = APIResponse<Array<VoiceRoomLobby>>;
+
+type APIError = APIResponse<{ message: string }>;
+
+type MemberProfile = APIResponse<{
+    card_style: number;
+    chat_activity: ActivityInfo;
+}>;
 
 type GuildSettings = APIResponse<{
     chat_activity: {
@@ -35,27 +65,7 @@ type GuildSettings = APIResponse<{
         is_enabled: boolean;
         activity_roles: Array<ActivityRole>;
     };
-}>;
-
-type ActivityInfo = {
-    rank: number;
-    points: number;
-    is_on_cooldown: boolean;
-    last_grant: string;
-    roles: {
-        next: {
-            progress: number;
-            remaining_points: number;
-            required_points: number;
-            role_id: string;
-        };
-        obtained: Array<ActivityRole>;
-    }
-};
-
-type MemberProfile = APIResponse<{
-    card_style: number;
-    chat_activity: ActivityInfo;
+    voice_rooms: Array<VoiceRoomLobby>;
 }>;
 
 type GuildActivityRoles = APIResponse<Array<ActivityRole>>;
@@ -103,6 +113,13 @@ type ActivityRoleOpts = {
     grant_type: string;
     role_id: string;
     required_points: number;
+};
+
+type GuildVoiceRoomLobbyOpts = {
+    user_limit?: number | null;
+    can_rename?: boolean | null;
+    can_lock?: boolean | null;
+    can_adjust_limit?: boolean | null;
 }
 
 async function createGuildSettings(guildId: string) {
@@ -179,6 +196,54 @@ async function insertGuildActivityRole(guildId: string, role: ActivityRoleOpts) 
     return data;
 }
 
+async function createGuildVoiceRoomLobby(guildId: string, channelId: string, config: GuildVoiceRoomLobbyOpts) {
+    const data = await request<GuildVoiceRoomLobbies, APIError>({
+        url: new URL(`/guild/${guildId}/voice-room/lobby/${channelId}/create`, BASE_URL),
+        method: 'POST',
+        body: {
+            channel_id: channelId,
+            ...config
+        }
+    });
+
+    if (data.isOk()) {
+        await cache.jsonSet(`guild:${guildId}:settings`, data.value.data, "$.voice_rooms");
+    }
+
+    return data;
+}
+
+async function updateGuildVoiceRoomLobby(guildId: string, channelId: string, config: GuildVoiceRoomLobbyOpts) {
+    const data = await request<GuildVoiceRoomLobbies, APIError>({
+        url: new URL(`/guild/${guildId}/voice-room/lobby/${channelId}/update`, BASE_URL),
+        method: 'PATCH',
+        body: {
+            channel_id: channelId,
+            ...config
+        }
+    });
+
+    if (data.isOk()) {
+        await cache.jsonSet(`guild:${guildId}:settings`, data.value.data, "$.voice_rooms");
+    }
+
+    return data;
+}
+
+async function removeGuildVoiceRoomLobby(guildId: string, channelId: string) {
+    const data = await request<GuildVoiceRoomLobbies, APIError>({
+        url: new URL(`/guild/${guildId}/voice-room/lobby/${channelId}/delete`, BASE_URL),
+        method: 'DELETE',
+        headers: AUTH_HEADERS
+    });
+
+    if (data.isOk()) {
+        await cache.jsonSet(`guild:${guildId}:settings`, data.value.data, "$.voice_rooms");
+    }
+
+    return data;
+}
+
 async function getGuildLeaderboardCard(guildId: string, query: GuildLeaderbaordOpts) {
     const url = new URL(`/guild/${guildId}/activity-leaderboard/card`, BASE_URL);
     for (const [key, value] of Object.entries(query)) {
@@ -199,7 +264,9 @@ async function createMemberProfile(guildId: string, userId: string) {
 
     if (data.isErr()) return data;
 
-    await cache.jsonSet(`guild:${guildId}:member:${userId}:profile`, data.value.data, "$");
+    await cache.jsonSet(`guild:${guildId}:member:${userId}:profile`, data.value.data, "$", {
+        ttl: 60 * 60 * 12
+    });
 
     return okAsync(data.value.data);
 }
@@ -225,7 +292,9 @@ async function getMemberProfile(guildId: string, userId: string, { create ,force
         return profile;
     }
 
-    await cache.jsonSet(`guild:${guildId}:member:${userId}:profile`, profile.value.data, "$");
+    await cache.jsonSet(`guild:${guildId}:member:${userId}:profile`, profile.value.data, "$", {
+        ttl: 60 * 60 * 12
+    });
 
     return okAsync(profile.value.data);
 }
@@ -260,9 +329,12 @@ export const API = {
     getGuildSettings,
     updateGuildActivitySettings,
     insertGuildActivityRole,
+    createGuildVoiceRoomLobby,
+    updateGuildVoiceRoomLobby,
+    removeGuildVoiceRoomLobby,
     getGuildLeaderboardCard,
     createMemberProfile,
     getMemberProfile,
     getMemberProfileCard,
-    incrementMemberActivityPoints
+    incrementMemberActivityPoints,
 };
