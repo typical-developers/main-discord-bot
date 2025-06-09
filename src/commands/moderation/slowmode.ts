@@ -29,7 +29,7 @@ export class ModerationSlowmode extends Command {
         registry.registerChatInputCommand({
             name: this.name,
             description: this.description,
-            defaultMemberPermissions: [ PermissionFlagsBits.ManageMessages ],
+            defaultMemberPermissions: [ PermissionFlagsBits.AddReactions ],
             options: this._commandOptions,
             dmPermission: false
         });

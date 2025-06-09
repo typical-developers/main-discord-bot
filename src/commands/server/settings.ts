@@ -153,9 +153,7 @@ export class ServerSettings extends Subcommand {
             name: this.name,
             description: this.description,
             options: this._options,
-            defaultMemberPermissions: [
-                PermissionFlagsBits.ManageGuild
-            ],
+            defaultMemberPermissions: [ PermissionFlagsBits.Administrator ],
             dmPermission: false,
             contexts: [
                 InteractionContextType.Guild
