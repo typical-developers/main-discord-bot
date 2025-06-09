@@ -4,7 +4,7 @@ import { ApplicationCommandOptionType, ChannelType, ChatInputCommandInteraction,
 
 @ApplyOptions<Command.Options>({
     description: 'Set a slowmode for a chennl.',
-    requiredUserPermissions: [ PermissionFlagsBits.AddReactions ],
+    requiredUserPermissions: [ PermissionFlagsBits.ManageMessages ],
     enabled: false
 })
 export class ModerationSlowmode extends Command {
@@ -31,7 +31,7 @@ export class ModerationSlowmode extends Command {
         registry.registerChatInputCommand({
             name: this.name,
             description: this.description,
-            defaultMemberPermissions: [ PermissionFlagsBits.AddReactions ],
+            defaultMemberPermissions: [ PermissionFlagsBits.ManageMessages ],
             options: this._commandOptions,
             dmPermission: false
         });

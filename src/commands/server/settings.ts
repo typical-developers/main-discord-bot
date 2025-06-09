@@ -1,6 +1,6 @@
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { ApplyOptions } from '@sapphire/decorators';
-import { type ApplicationCommandSubCommandData, ApplicationCommandOptionType, InteractionContextType, PermissionFlagsBits } from 'discord.js';
+import { type ApplicationCommandSubCommandData, ApplicationCommandOptionType, InteractionContextType, MessageFlags, PermissionFlagsBits } from 'discord.js';
 
 @ApplyOptions<Subcommand.Options>({
     description: 'Manage server settings.',
@@ -161,7 +161,7 @@ export class ServerSettings extends Subcommand {
     }
 
     public async updateChatActivitySettings(interaction: Subcommand.ChatInputCommandInteraction) {
-        await interaction.deferReply({ withResponse: true, flags: [ 'Ephemeral' ] })
+        await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
 
         /**
          * Makes sure that the guild settings are created and cached.
