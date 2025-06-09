@@ -1,9 +1,10 @@
-import { Command, type Awaitable, type ChatInputCommand } from '@sapphire/framework';
+import { Command } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { ApplicationCommandOptionType, ChannelType, ChatInputCommandInteraction, PermissionFlagsBits, TextChannel, type APIApplicationCommandChannelOption, type ApplicationCommandData, type ApplicationCommandOptionData } from 'discord.js';
+import { ApplicationCommandOptionType, ApplicationIntegrationType, ChannelType, ChatInputCommandInteraction, InteractionContextType, MessageFlags, PermissionFlagsBits, TextChannel, type APIApplicationCommandChannelOption, type ApplicationCommandData, type ApplicationCommandOptionData } from 'discord.js';
 
 @ApplyOptions<Command.Options>({
-    description: 'Set a slowmode for a chennl.'
+    description: 'Set a slowmode for a chennl.',
+    requiredUserPermissions: [ PermissionFlagsBits.ManageMessages ]
 })
 export class ModerationSlowmode extends Command {
     private readonly _commandOptions: ApplicationCommandOptionData[] = [
@@ -31,7 +32,9 @@ export class ModerationSlowmode extends Command {
             description: this.description,
             defaultMemberPermissions: [ PermissionFlagsBits.ManageMessages ],
             options: this._commandOptions,
-            dmPermission: false
+            dmPermission: false,
+            contexts: [ InteractionContextType.Guild ],
+            integrationTypes: [ ApplicationIntegrationType.GuildInstall ],
         });
     }
 
@@ -59,10 +62,10 @@ export class ModerationSlowmode extends Command {
         if (interaction.channel.type !== ChannelType.GuildText) 
             return await interaction.reply({
                 content: "Unable to set the duration for the provided channel.",
-                ephemeral: true,
+                flags: [ MessageFlags.Ephemeral ],
             });
 
-        await interaction.deferReply({ fetchReply: true, ephemeral: true });
+        await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
 
         const setChannel = interaction.options.getChannel<ChannelType.GuildText>('channel', false);
         const duration = interaction.options.getNumber('duration', true);

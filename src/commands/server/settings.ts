@@ -1,268 +1,329 @@
-import type { GuildSettingsInput } from '@typical-developers/api-types/graphql';
-import { ApplicationCommandOptionType, PermissionFlagsBits, type ApplicationCommandSubCommandData } from 'discord.js';
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { ApplyOptions } from '@sapphire/decorators';
-import { UserError } from '@sapphire/framework';
+import { type ApplicationCommandSubCommandData, ApplicationCommandOptionType, ApplicationIntegrationType, InteractionContextType, MessageFlags, PermissionFlagsBits } from 'discord.js';
 
 @ApplyOptions<Subcommand.Options>({
-    description: 'Manage settings for the current guild.',
+    description: 'Manage server settings.',
     subcommands: [
-        { name: 'activity-defaults', chatInputRun: 'updateActivityDefaults' },
-        { name: 'activity-role-add', chatInputRun: 'addActivityRole' },
-        { name: 'activity-role-remove', chatInputRun: 'removeActivityRole' },
-        { name: 'voice-room-add', chatInputRun: 'addVoiceRoom' },
-        { name: 'voice-room-remove', chatInputRun: 'removeVoiceRoom' }
-    ]
+        { name: 'chat-activity', type: 'method', chatInputRun: 'updateChatActivitySettings' },
+        { name: 'add-activity-role', type: 'method', chatInputRun: 'addActivityRole' },
+        { name: 'add-voice-room-lobby', type: 'method', chatInputRun: 'addVoiceRoomLobby' },
+        { name: 'update-voice-room-lobby', type: 'method', chatInputRun: 'updateVoiceRoomLobby' },
+        { name: 'remove-voice-room-lobby', type: 'method', chatInputRun: 'removeVoiceRoomLobby' },
+    ],
+    requiredUserPermissions: [ PermissionFlagsBits.Administrator ]
 })
-export class Settings extends Subcommand {
+export class ServerSettings extends Subcommand {
     private readonly _options: ApplicationCommandSubCommandData[] = [
         {
             type: ApplicationCommandOptionType.Subcommand,
-            name: 'activity-defaults',
-            description: 'Manage the activity settings for the guild.',
+            name: 'chat-activity',
+            description: 'Manage the chat activity defaults.',
             options: [
                 {
                     type: ApplicationCommandOptionType.Boolean,
                     name: 'toggle',
-                    description: 'Toggle activity points granting on/off.'
+                    description: 'Toggle chat activity points granting on/off.'
                 },
                 {
                     type: ApplicationCommandOptionType.Number,
                     name: 'cooldown',
-                    description: 'Set the duration between activity grants in seconds.'
+                    description: 'Set the duration between chat activity grants in seconds.'
                 },
                 {
                     type: ApplicationCommandOptionType.Number,
                     name: 'amount',
-                    description: 'Set the total amount of points granted each grant.'
+                    description: 'Set the total amount of chat points granted.'
                 }
             ]
         },
         {
             type: ApplicationCommandOptionType.Subcommand,
-            name: 'activity-role-add',
-            description: 'Add a new activity role.',
+            name: 'add-activity-role',
+            description: 'Add a role to the list of roles that grant chat activity points.',
             options: [
+                {
+                    type: ApplicationCommandOptionType.String,
+                    name: 'grant-type',
+                    description: 'The type of chat activity to grant points for.',
+                    required: true,
+                    choices: [
+                        { name: 'Chat', value: 'chat' },
+                    ],
+                },
                 {
                     type: ApplicationCommandOptionType.Role,
                     name: 'role',
-                    description: 'The activity role to add.',
-                    required: true
+                    description: 'The role to add to the list of roles that grant chat activity points.',
+                    required: true,
                 },
                 {
                     type: ApplicationCommandOptionType.Number,
                     name: 'required-points',
-                    description: 'The amount of points required to obtain this role.',
-                    required: true
+                    description: 'The amount of chat points required to grant the role.',
+                    required: true,
                 }
             ]
         },
         {
             type: ApplicationCommandOptionType.Subcommand,
-            name: 'activity-role-remove',
-            description: 'Remove an existing activity role.',
-            options: [
-                {
-                    type: ApplicationCommandOptionType.Role,
-                    name: 'role',
-                    description: 'The activity role to remove.',
-                    required: true
-                }
-            ]
-        },
-        {
-            type: ApplicationCommandOptionType.Subcommand,
-            name: 'voice-room-add',
-            description: 'Adds a guild voice room.',
+            name: 'add-voice-room-lobby',
+            description: 'Create a new lobby for creating voice rooms.',
             options: [
                 {
                     type: ApplicationCommandOptionType.String,
                     name: 'channel',
-                    description: 'The channel id to add as a voice room.',
-                    required: true
+                    description: 'The channel that will be considered the lobby.',
+                    required: true,
+                    autocomplete: true,
                 },
                 {
                     type: ApplicationCommandOptionType.Number,
-                    name: 'limit',
-                    description: 'The amount of people that can join a created voice room from this channel.',
+                    name: 'user-limit',
+                    description: 'How many users can join the created voice room.',
                 },
                 {
                     type: ApplicationCommandOptionType.Boolean,
-                    name: 'renaming',
-                    description: 'Allow the owner to rename the channel.',
+                    name: 'can-rename',
+                    description: 'Whether or not the created voice room can be renamed.',
                 },
                 {
                     type: ApplicationCommandOptionType.Boolean,
-                    name: 'locking',
-                    description: 'Allow the owner to lock the channel.',
+                    name: 'can-lock',
+                    description: 'Whether or not the created voice room can be locked.',
                 },
                 {
                     type: ApplicationCommandOptionType.Boolean,
-                    name: 'adjust-limit',
-                    description: 'Allow the owner to adjust the user limit for the channel.',
+                    name: 'can-adjust-limit',
+                    description: 'Whether or not the created voice room can has its user limit adjusted.',
                 },
             ]
         },
         {
             type: ApplicationCommandOptionType.Subcommand,
-            name: 'voice-room-remove',
-            description: 'Removes a guild voice room.',
+            name: 'update-voice-room-lobby',
+            description: 'Update a lobby for creating voice rooms.',
             options: [
                 {
                     type: ApplicationCommandOptionType.String,
                     name: 'channel',
-                    description: 'The channel id to add as a voice room.',
-                    required: true
-                }
+                    description: 'The channel that will be considered the lobby.',
+                    required: true,
+                    autocomplete: true,
+                },
+                {
+                    type: ApplicationCommandOptionType.Number,
+                    name: 'user-limit',
+                    description: 'How many users can join the created voice room.',
+                },
+                {
+                    type: ApplicationCommandOptionType.Boolean,
+                    name: 'can-rename',
+                    description: 'Whether or not the created voice room can be renamed.',
+                },
+                {
+                    type: ApplicationCommandOptionType.Boolean,
+                    name: 'can-lock',
+                    description: 'Whether or not the created voice room can be locked.',
+                },
+                {
+                    type: ApplicationCommandOptionType.Boolean,
+                    name: 'can-adjust-limit',
+                    description: 'Whether or not the created voice room can has its user limit adjusted.',
+                },
             ]
-        }
+        },
+        {
+            type: ApplicationCommandOptionType.Subcommand,
+            name: 'remove-voice-room-lobby',
+            description: 'Remove a lobby for creating voice rooms.',
+            options: [
+                {
+                    type: ApplicationCommandOptionType.String,
+                    name: 'channel',
+                    description: 'The channel that will be considered the lobby.',
+                    required: true,
+                    autocomplete: true,
+                },
+            ]
+        },
     ];
 
-    /**
-     * Remove null settings values from an object.
-     * @param options The object of options/
-     * @returns 
-     */
-    private removeNullSettingOptions(options: object) {
-        const settings = Object.entries(options)
-            .reduce((acc, [k, v]) => {
-                if (v !== null) {
-                    acc[k as keyof Partial<GuildSettingsInput>] = v;
-                }
-
-                return acc;
-            }, {} as Partial<GuildSettingsInput>);
-
-        if (!Object.keys(settings).length) {
-            throw new UserError({
-                identifier: 'NO_SETTINGS',
-                message: 'Please provide some settings to update.'
-            });
-        }
-
-        return settings;
-    }
-
     public override async registerApplicationCommands(registry: Subcommand.Registry) {
-        registry
-            .registerChatInputCommand({
-                name: this.name,
-                description: this.description,
-                options: this._options,
-                defaultMemberPermissions: [PermissionFlagsBits.Administrator],
-                dmPermission: false
-            });
-    }
-
-    public async updateActivityDefaults(interaction: Subcommand.ChatInputCommandInteraction) {
-        if (!interaction.guild) return;
-
-        const settings = await this.container.api.bot.updateGuildSettings(interaction.guildId!, this.removeNullSettingOptions({
-            activity_tracking: interaction.options.getBoolean('toggle'),
-            activity_tracking_cooldown: interaction.options.getNumber('cooldown'),
-            activity_tracking_grant: interaction.options.getNumber('amount')
-        }));
-
-        if (!settings) {
-            throw new Error('Unable to update guild activity settings.');
-        }
-
-        return await interaction.reply({
-            content: 'Successfully updated activity settings.',
-            ephemeral: true
+        registry.registerChatInputCommand({
+            name: this.name,
+            description: this.description,
+            options: this._options,
+            defaultMemberPermissions: [ PermissionFlagsBits.Administrator ],
+            dmPermission: false,
+            contexts: [ InteractionContextType.Guild ],
+            integrationTypes: [ ApplicationIntegrationType.GuildInstall ],
         });
     }
 
-    /**
-     * TODO:
-     * The activity role endpoint *does* support bulk adding/removing, though, figuring out the flow is incredibly hard.
-     * Good idea to revisit this when Discord does add more bot capabilities (based on stuff I've seen that's in-dev)!!!!
-     */
+    public async updateChatActivitySettings(interaction: Subcommand.ChatInputCommandInteraction) {
+        await interaction.deferReply({ withResponse: true });
+
+        /**
+         * Makes sure that the guild settings are created and cached.
+         */
+        await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
+
+        const toggle = interaction.options.getBoolean('toggle');
+        const cooldown = interaction.options.getNumber('cooldown');
+        const amount = interaction.options.getNumber('amount');
+
+        const settings = await this.container.api.updateGuildActivitySettings(interaction.guildId!, {
+            chat_activity: {
+                enabled: toggle,
+                cooldown: cooldown,
+                grant_amount: amount
+            }
+        });
+
+        if (settings.isErr()) {
+            this.container.logger.error(settings.error);
+
+            await interaction.editReply({
+                content: `Failed to update chat activity settings. This has been forwarded to the developers.`
+            });
+
+            return;
+        }
+
+        return interaction.editReply({
+            content: 'Successfully updated chat activity settings.',
+        });
+    }
 
     public async addActivityRole(interaction: Subcommand.ChatInputCommandInteraction) {
-        if (!interaction.guildId) return;
+        await interaction.deferReply({ withResponse: true });
 
-        const response = await this.container.api.bot.updateGuildActivityRoles(interaction.guildId, { add: [{
-            role_id: interaction.options.getRole('role', true).id,
-            required_points: interaction.options.getNumber('required-points', true)
-        }]});
+        /**
+         * Makes sure that the guild settings are created and cached.
+         */
+        await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
 
-        if (!response) {
-            throw new Error(`Failed to add role for ${interaction.guildId}.`);
+        const type = interaction.options.getString('grant-type', true);
+        const role = interaction.options.getRole('role', true);
+        const requiredPoints = interaction.options.getNumber('required-points', true);
+
+        const settings = await this.container.api.insertGuildActivityRole(interaction.guildId!, {
+            grant_type: type,
+            role_id: role.id,
+            required_points: requiredPoints
+        });
+
+        if (settings.isErr()) {
+            this.container.logger.error(settings.error);
+
+            await interaction.editReply({
+                content: `Failed to add role to activity role list. This has been forwarded to the developers.`
+            });
+
+            return;
         }
 
-        return await interaction.reply({
-            content: 'Successfully added new activity role!',
-            ephemeral: true
+        return interaction.editReply({
+            content: 'Successfully added role to activity role list.',
         });
     }
 
-    public async removeActivityRole(interaction: Subcommand.ChatInputCommandInteraction) {
-        if (!interaction.guildId) return;
+    public async addVoiceRoomLobby(interaction: Subcommand.ChatInputCommandInteraction) {
+        await interaction.deferReply({ withResponse: true });
 
-        const roleId = interaction.options.getRole('role', true).id;
+        /**
+         * Makes sure that the guild settings are created and cached.
+         */
+        await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
 
-        const response = await this.container.api.bot.updateGuildActivityRoles(interaction.guildId, { remove: [roleId] });
-        if (!response) {
-            throw new Error(`Failed to remove role for ${interaction.guildId}.`);
+        const channel = interaction.options.getString('channel', true);
+        const userLimit = interaction.options.getNumber('user-limit');
+        const canRename = interaction.options.getBoolean('can-rename');
+        const canLock = interaction.options.getBoolean('can-lock');
+        const canAdjustLimit = interaction.options.getBoolean('can-adjust-limit');
+
+        const settings = await this.container.api.createGuildVoiceRoomLobby(interaction.guildId!, channel, {
+            user_limit: userLimit,
+            can_rename: canRename,
+            can_lock: canLock,
+            can_adjust_limit: canAdjustLimit
+        });
+
+        if (settings.isErr()) {
+            this.container.logger.error(settings.error);
+
+            await interaction.editReply({
+                content: `Failed to create voice room lobby. This has been forwarded to the developers.`
+            });
+
+            return;
         }
 
-        return await interaction.reply({
-            content: 'Successfully remove the activity role!',
-            ephemeral: true
+        return interaction.editReply({
+            content: 'Successfully created voice room lobby.',
         });
     }
 
-    //--
+    public async updateVoiceRoomLobby(interaction: Subcommand.ChatInputCommandInteraction) {
+        await interaction.deferReply({ withResponse: true });
 
-    public async addVoiceRoom(interaction: Subcommand.ChatInputCommandInteraction) {
-        if (!interaction.guildId) return;
+        /**
+         * Makes sure that the guild settings are created and cached.
+         */
+        await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
 
-        const roomId = interaction.options.getString('channel', true);
+        const channel = interaction.options.getString('channel', true);
+        const userLimit = interaction.options.getNumber('user-limit');
+        const canRename = interaction.options.getBoolean('can-rename');
+        const canLock = interaction.options.getBoolean('can-lock');
+        const canAdjustLimit = interaction.options.getBoolean('can-adjust-limit');
 
-        if (!interaction.guild?.channels.cache.get(roomId)?.isVoiceBased()) {
-            throw new UserError({ identifier: 'IS_NOT_A_VOICE_CHANNEL', message: 'Please provide a valid voice channel id.' });
-        }
-
-        // makes sure the room isn't an active voice room
-        if (await this.container.api.bot.getVoiceRoom(interaction.guildId, roomId)) {
-            throw new UserError({ identifier: 'IS_ACTIVE_VOICE_ROOM', message: 'The channel id provided is an active voice room channel.' });
-        }
-
-        const response = await this.container.api.bot.addVoiceRoom(interaction.guildId, roomId, {
-            user_limit: interaction.options.getNumber('limit') || 0,
-            can_rename: interaction.options.getBoolean('renaming') || false,
-            can_lock: interaction.options.getBoolean('locking')|| false,
-            can_adjust_limit: interaction.options.getBoolean('adjust-limit') || false
+        const settings = await this.container.api.updateGuildVoiceRoomLobby(interaction.guildId!, channel, {
+            user_limit: userLimit,
+            can_rename: canRename,
+            can_lock: canLock,
+            can_adjust_limit: canAdjustLimit
         });
 
-        if (!response) {
-            throw new Error(`Failed to add voice room for ${interaction.guildId}.`);
+        if (settings.isErr()) {
+            this.container.logger.error(settings.error);
+
+            await interaction.editReply({
+                content: `Failed to update voice room lobby. This has been forwarded to the developers.`
+            });
+
+            return;
         }
 
-        return await interaction.reply({
-            content: 'Successfully added new voice room!',
-            ephemeral: true
+        return interaction.editReply({
+            content: 'Successfully updated voice room lobby.',
         });
     }
 
-    public async removeVoiceRoom(interaction: Subcommand.ChatInputCommandInteraction) {
-        if (!interaction.guildId) return;
+    public async removeVoiceRoomLobby(interaction: Subcommand.ChatInputCommandInteraction) {
+        await interaction.deferReply({ withResponse: true });
 
-        const roomId = interaction.options.getString('channel', true);
-        
-        if (!interaction.guild?.channels.cache.get(roomId)?.isVoiceBased()) {
-            throw new UserError({ identifier: 'IS_NOT_A_VOICE_CHANNEL', message: 'Please provide a valid voice channel id.' });
+        /**
+         * Makes sure that the guild settings are created and cached.
+         */
+        await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
+
+        const channel = interaction.options.getString('channel', true);
+        const lobbies = await this.container.api.removeGuildVoiceRoomLobby(interaction.guildId!, channel);
+
+        if (lobbies.isErr()) {
+            this.container.logger.error(lobbies.error);
+
+            await interaction.editReply({
+                content: `Failed to remove voice room lobby. This has been forwarded to the developers.`
+            });
+
+            return;
         }
 
-        const response = await this.container.api.bot.removeVoiceRoom(interaction.guildId, roomId);
-        if (!response) {
-            throw new Error(`Failed to remove voice room for ${interaction.guildId}.`);
-        }
-
-        return await interaction.reply({
-            content: 'Successfully remove voice room!',
-            ephemeral: true
+        return interaction.editReply({
+            content: 'Successfully removed voice room lobby.',
         });
     }
 }

@@ -7,7 +7,7 @@
   "module": "./src/index.ts",
   "type": "module",
   "imports": {
-    "@/*": "./src/*"
+    "#/*": "./src/*"
   },
   "scripts": {
     "format": "prettier --write \"src/**/*.ts\"",
@@ -15,29 +15,26 @@
     "deploy:dev": "tsc --noEmit && DEV_DEPLOYMENT=true bun ."
   },
   "dependencies": {
-    "@sapphire/discord-utilities": "~3.3.0",
-    "@sapphire/discord.js-utilities": "~7.3.0",
-    "@sapphire/framework": "~5.3.1",
-    "@sapphire/pieces": "^4.4.0",
-    "@sapphire/plugin-scheduled-tasks": "~10.0.2",
-    "@sapphire/plugin-subcommands": "~6.0.3",
-    "discord.js": "~14.16.3",
-    "gql-query-builder": "~3.8.0",
-    "graphql": "~16.8.2",
-    "handlebars": "~4.7.8",
-    "openblox": "~1.0.59",
-    "puppeteer": "23.3.0",
-    "puppeteer-cluster": "~0.24.0",
-    "redis": "~4.6.14"
+    "@sapphire/discord-utilities": "3.5.0",
+    "@sapphire/discord.js-utilities": "7.3.3",
+    "@sapphire/framework": "~5.3.6",
+    "@sapphire/pieces": "^4.4.1",
+    "@sapphire/plugin-logger": "^4.0.2",
+    "@sapphire/plugin-scheduled-tasks": "^10.0.3",
+    "@sapphire/plugin-subcommands": "7.0.1",
+    "discord.js": "14.19.3",
+    "handlebars": "^4.7.8",
+    "ioredis": "^5.6.1",
+    "neverthrow": "^8.2.0",
+    "openblox": "~1.0.62",
+    "puppeteer": "24.10.0",
+    "puppeteer-cluster-connect": "^0.0.8"
   },
   "devDependencies": {
-    "@sapphire/decorators": "~6.1.0",
-    "@types/node": "~20.14.4",
-    "@typical-developers/api-types": "~0.1.19",
-    "dotenv": "~16.4.5",
-    "prettier": "~3.3.2",
-    "rimraf": "~5.0.7",
-    "typescript": "5.4.5"
+    "@sapphire/decorators": "6.1.1",
+    "@types/bun": "latest",
+    "dotenv": "16.5.0",
+    "typescript": "5.8.3"
   },
   "engines": {
     "node": "22.1.0"

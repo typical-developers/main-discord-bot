@@ -1,4 +1,3 @@
-import type { ActivityRoleDetails } from '@typical-developers/api-types/graphql';
 import { Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { Events, Message, inlineCode } from 'discord.js';
@@ -9,39 +8,58 @@ import { Events, Message, inlineCode } from 'discord.js';
 })
 export class PointsGrant extends Listener {
     public override async run(message: Message) {
-        if (message.author.bot || message.system) return;
-        if (!message.guildId) return;
+        if (message.author.bot) return;
 
-        const { activity_tracking, activity_tracking_grant, activity_tracking_cooldown } = await this.container.api.bot.getGuildSettings(message.guildId);
-        if (!activity_tracking) return;
-
-        const currentProfile = await this.container.api.bot.getMemberProfile(message.guildId, message.author.id);
-        const time = Math.floor(new Date().getTime() / 1000);
-
-        if (!currentProfile) return;
-        if (currentProfile.activity_info.last_grant_epoch > time) return;
-
-        const updatedProfile = await this.container.api.bot.incrementActivityPoints(message.guildId, message.author.id, activity_tracking_grant, activity_tracking_cooldown);
-        if (!updatedProfile) return;
-        if (!updatedProfile.activity_info.progression.current_roles.length) return;
-
-        const memberRoles = message.member?.roles.cache.map((r) => r.id) || [];
-        const missingActivityRoles = updatedProfile.activity_info.progression.current_roles
-            .map((r: ActivityRoleDetails) => r.role_id)
-            .filter((r: string | null) => r !== null)
-            .filter((r: string) => !memberRoles.includes(r)) as string[];
-
-        if (missingActivityRoles.length) {
-            const added = await message.member?.roles.add(missingActivityRoles).catch(() => false).then(() => true);
-            if (!added) return;
+        const settings = await this.container.api.getGuildSettings(message.guildId!, { create: true });
+        if (settings.isErr()) {
+            // todo: error handling & logging
+            return;
         }
 
-        if (missingActivityRoles.length === 1) {
-            const role = message.guild?.roles.cache.get(missingActivityRoles[0]);
-            if (!role) return;
+        const { chat_activity } = settings.value;
+        if (!chat_activity.is_enabled) return;
 
-            message.reply({
-                content: `You have unlocked the ${inlineCode(role.name)} activity role!`
+        const profile = await this.container.api.getMemberProfile(message.guildId!, message.author.id, { create: true, force: true });
+        if (profile.isErr()) {
+            // todo: error handling & logging
+            return;
+        }
+
+        const { is_on_cooldown } = profile.value.chat_activity;
+        if (is_on_cooldown) return;
+
+        const updatedProfile = await this.container.api.incrementMemberActivityPoints(
+            message.guildId!, message.author.id,
+            { activity_type: "chat"}
+        );
+        if (updatedProfile.isErr()) {
+            // todo: error handling & logging
+            return;
+        }
+
+        const updatedActivity = updatedProfile.value.data;
+
+        const memberRoles = message.member?.roles.cache.map((r) => r.id) || [];
+        const missingRoles = updatedActivity.roles.obtained
+            .map((r) => r.role_id)
+            .filter((r) => !memberRoles.includes(r));
+
+        /**
+         * This can happen when a member leaves and rejoins.
+         */
+        if (missingRoles.length) {
+            await message.member?.roles.add(missingRoles).catch(() => {});
+        }
+
+        /**
+         * If the length is 1, we'll congratulate the member.
+         */
+        if (missingRoles.length === 1) {
+            const roleInfo = message.guild?.roles.cache.get(missingRoles[0]);
+            if (!roleInfo) return;
+
+            await message.reply({
+                content: `<@${message.author.id}> Congratulations! You have reached ${updatedActivity.points} points and unlocked the ${inlineCode(roleInfo.name.toUpperCase())} activity role!` 
             });
         }
     }
