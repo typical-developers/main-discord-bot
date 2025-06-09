@@ -174,7 +174,7 @@ async function getGuildSettings(guildId: string, { create }: GuildSettingsOpts =
     if (settings.isErr()) {
         const err = settings.error;
 
-        if (err.response.status === 404 && create) {
+        if (err.response?.status === 404 && create) {
             const created = await createGuildSettings(guildId);
             return created;
         }
@@ -396,7 +396,7 @@ async function getMemberProfile(guildId: string, userId: string, { create ,force
     if (profile.isErr()) {
         const err = profile.error;
 
-        if (err.response.status === 404 && create) {
+        if (err.response?.status === 404 && create) {
             const created = await createMemberProfile(guildId, userId);
             return created;
         }

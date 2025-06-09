@@ -42,7 +42,12 @@ export class ServerProfile extends Command {
          */
         const settings = await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
         if (settings.isErr()) {
-            // todo: error handling & logging
+            this.container.logger.error(settings.error);
+
+            await interaction.editReply({
+                content: `Failed to fetch member's card. This has been forwarded to the developers.`
+            });
+
             return;
         }
 
@@ -64,6 +69,11 @@ export class ServerProfile extends Command {
             if (err.reference === ImageProcessorErrorReference.StatusNotOK) {
                 await interaction.editReply({
                     content: 'Member profile does not exist.',
+                });
+            } else {
+                this.container.logger.error(err);
+                await interaction.editReply({
+                    content: `Failed to fetch member's card. This has been forwarded to the developers.`,
                 });
             }
 

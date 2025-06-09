@@ -22,36 +22,43 @@ export async function request<R = any, E = any>({ url, method, body, headers, qu
 
     url.search = params.toString();
 
-    const res = await fetch(url, {
-        method,
-        headers: {
-            'Content-Type': 'application/json',
-            ...headers,
-        },
-        body: JSON.stringify(body)
-    });
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                ...headers,
+            },
+            body: JSON.stringify(body),
+        });
 
-    const contentType = res.headers.get('content-type');
+        const contentType = res.headers.get('content-type');
 
-    if (!res.ok) {
-        let payload = {} as E;
-        if (contentType === 'application/json') {
-           payload = await res.json();
+        if (!res.ok) {
+            let payload = {} as E;
+            if (contentType === 'application/json') {
+            payload = await res.json();
+            }
+
+            return errAsync(new RequestError<E>({
+                message: "response was not ok.",
+                response: res,
+                payload
+            }));
+        };
+
+        switch (contentType) {
+            case 'application/json':
+                return okAsync(await res.json() as R);
+            case 'text/html':
+                return okAsync(await res.text() as R);
+            default:
+                return okAsync(await res.text() as R);
         }
-
-        return errAsync(new RequestError<E>({
-            message: "response was not ok.",
-            response: res,
-            payload
+    } catch (e) {
+        return errAsync(new RequestError({
+            message: "request failed.",
+            error: e
         }));
-    };
-
-    switch (contentType) {
-        case 'application/json':
-            return okAsync(await res.json() as R);
-        case 'text/html':
-            return okAsync(await res.text() as R);
-        default:
-            return okAsync(await res.text() as R);
     }
 }

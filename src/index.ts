@@ -1,3 +1,4 @@
+import '@sapphire/plugin-logger/register';
 import '@sapphire/plugin-scheduled-tasks/register'
 import '#/lib/setup/initialize';
 

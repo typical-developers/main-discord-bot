@@ -182,9 +182,13 @@ export class ServerSettings extends Subcommand {
         });
 
         if (settings.isErr()) {
-            return interaction.editReply({
-                content: settings.error.message,
+            this.container.logger.error(settings.error);
+
+            await interaction.editReply({
+                content: `Failed to update chat activity settings. This has been forwarded to the developers.`
             });
+
+            return;
         }
 
         return interaction.editReply({
@@ -211,9 +215,13 @@ export class ServerSettings extends Subcommand {
         });
 
         if (settings.isErr()) {
-            return interaction.editReply({
-                content: settings.error.message,
+            this.container.logger.error(settings.error);
+
+            await interaction.editReply({
+                content: `Failed to add role to activity role list. This has been forwarded to the developers.`
             });
+
+            return;
         }
 
         return interaction.editReply({
@@ -243,9 +251,13 @@ export class ServerSettings extends Subcommand {
         });
 
         if (settings.isErr()) {
-            return interaction.editReply({
-                content: settings.error.message,
+            this.container.logger.error(settings.error);
+
+            await interaction.editReply({
+                content: `Failed to create voice room lobby. This has been forwarded to the developers.`
             });
+
+            return;
         }
 
         return interaction.editReply({
@@ -275,16 +287,19 @@ export class ServerSettings extends Subcommand {
         });
 
         if (settings.isErr()) {
-            return interaction.editReply({
-                content: settings.error.message,
+            this.container.logger.error(settings.error);
+
+            await interaction.editReply({
+                content: `Failed to update voice room lobby. This has been forwarded to the developers.`
             });
+
+            return;
         }
 
         return interaction.editReply({
             content: 'Successfully updated voice room lobby.',
         });
     }
-
 
     public async removeVoiceRoomLobby(interaction: Subcommand.ChatInputCommandInteraction) {
         await interaction.deferReply({ withResponse: true });
@@ -298,9 +313,13 @@ export class ServerSettings extends Subcommand {
         const lobbies = await this.container.api.removeGuildVoiceRoomLobby(interaction.guildId!, channel);
 
         if (lobbies.isErr()) {
-            return interaction.editReply({
-                content: lobbies.error.message,
+            this.container.logger.error(lobbies.error);
+
+            await interaction.editReply({
+                content: `Failed to remove voice room lobby. This has been forwarded to the developers.`
             });
+
+            return;
         }
 
         return interaction.editReply({
