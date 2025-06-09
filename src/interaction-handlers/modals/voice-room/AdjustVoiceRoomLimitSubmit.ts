@@ -19,7 +19,10 @@ export class AdjustVoiceRoomLimitSubmit extends InteractionHandler {
 
     public async run(interaction: ModalSubmitInteraction, limit: number) {
         const voiceRoom = await getVoiceRoom(interaction.guildId!, interaction.channelId!);
-        if (voiceRoom.isErr()) return this.none();
+        if (voiceRoom.isErr()) {
+            this.container.logger.error(voiceRoom.error);
+            return this.none();
+        };
 
         const { settings, room } = voiceRoom.value;
         const channel = interaction.channel as VoiceBasedChannel;

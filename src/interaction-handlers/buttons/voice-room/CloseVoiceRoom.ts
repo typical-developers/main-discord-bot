@@ -1,4 +1,4 @@
-import { ButtonInteraction, MessageFlags, type VoiceBasedChannel } from 'discord.js';
+import { ButtonInteraction, ChannelType, MessageFlags, type VoiceBasedChannel } from 'discord.js';
 import { InteractionHandler, InteractionHandlerTypes, } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import type { VoiceRoom, VoiceRoomLobby } from '#/lib/util/api';
@@ -33,16 +33,20 @@ export class CloseVoiceRoom extends InteractionHandler {
     }
 
     public async run(interaction: ButtonInteraction, { room }: { settings: VoiceRoomLobby, room: VoiceRoom }) {
-        try {
-            const channel = interaction.guild?.channels.cache.get(room.room_channel_id) as VoiceBasedChannel;
+        const channel = interaction.guild?.channels.cache.get(room.room_channel_id);
+        if (channel?.type !== ChannelType.GuildVoice) return;
+        const status = await this.container.api.deleteGuildVoiceRoom(interaction.guildId!, room.origin_channel_id, room.room_channel_id);
+        
+        if (status.isErr()) {
+            this.container.logger.error(status.error);
 
-            await channel.delete(`Automated Action - Owner has closed the voice room.`);
-            await this.container.api.deleteGuildVoiceRoom(interaction.guildId!, room.origin_channel_id, room.room_channel_id);
-        } catch (e) {
             await interaction.reply({
                 content: 'Failed to close the voice room. Try again in a bit.',
                 flags: [ MessageFlags.Ephemeral ],
             });
+
+            return;
         }
+        await channel.delete(`Automated Action - Owner has closed the voice room.`);
     }
 }

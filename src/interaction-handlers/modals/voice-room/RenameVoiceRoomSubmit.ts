@@ -18,7 +18,10 @@ export class RenameVoiceRoomSubmit extends InteractionHandler {
 
     public async run(interaction: ModalSubmitInteraction, name: string) {
         const voiceRoom = await getVoiceRoom(interaction.guildId!, interaction.channelId!);
-        if (voiceRoom.isErr()) return this.none();
+        if (voiceRoom.isErr()) {
+            this.container.logger.error(voiceRoom.error);
+            return this.none();
+        }
 
         const { room } = voiceRoom.value;
         const channel = interaction.channel as VoiceBasedChannel;

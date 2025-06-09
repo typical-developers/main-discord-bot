@@ -43,6 +43,8 @@ export class LockVoiceRoom extends InteractionHandler {
         });
 
         if (status.isErr()) {
+            this.container.logger.error(status.error);
+
             await interaction.reply({
                 content: 'Failed to toggle the lock state. Try again in a bit.',
                 flags: [ MessageFlags.Ephemeral ],

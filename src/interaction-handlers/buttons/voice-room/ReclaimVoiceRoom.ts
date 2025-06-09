@@ -47,6 +47,8 @@ export class ReclaimVoiceRoom extends InteractionHandler {
         });
 
         if (status.isErr()) {
+            this.container.logger.error(status.error);
+
             await interaction.reply({
                 content: 'Failed to reclaim the voice room. Try again in a bit.',
                 flags: [ MessageFlags.Ephemeral ],
