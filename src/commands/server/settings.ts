@@ -11,7 +11,8 @@ import { type ApplicationCommandSubCommandData, ApplicationCommandOptionType, In
         { name: 'update-voice-room-lobby', type: 'method', chatInputRun: 'updateVoiceRoomLobby' },
         { name: 'remove-voice-room-lobby', type: 'method', chatInputRun: 'removeVoiceRoomLobby' },
     ],
-    requiredUserPermissions: [ PermissionFlagsBits.Administrator ]
+    requiredUserPermissions: [ PermissionFlagsBits.Administrator ],
+    enabled: false
 })
 export class ServerSettings extends Subcommand {
     private readonly _options: ApplicationCommandSubCommandData[] = [

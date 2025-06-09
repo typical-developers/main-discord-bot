@@ -4,7 +4,8 @@ import { ApplicationCommandOptionType, ChannelType, ChatInputCommandInteraction,
 
 @ApplyOptions<Command.Options>({
     description: 'Set a slowmode for a chennl.',
-    requiredUserPermissions: [ PermissionFlagsBits.AddReactions ]
+    requiredUserPermissions: [ PermissionFlagsBits.AddReactions ],
+    enabled: false
 })
 export class ModerationSlowmode extends Command {
     private readonly _commandOptions: ApplicationCommandOptionData[] = [
