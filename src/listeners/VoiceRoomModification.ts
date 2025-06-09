@@ -15,7 +15,7 @@ export class VoiceRoomModification extends Listener {
 
         const guildSettings = await this.container.api.getGuildSettings(previous.guild.id);
         if (guildSettings.isErr()) {
-            // todo: error handling & logging
+            this.container.logger.error(guildSettings.error);
             return;
         }
 
@@ -30,7 +30,7 @@ export class VoiceRoomModification extends Listener {
         if (!previous.channel.members.size) {
             const status = await this.container.api.deleteGuildVoiceRoom(previous.guild.id, room.origin_channel_id, room.room_channel_id);
             if (status.isErr()) {
-                // todo: error handling & logging
+                this.container.logger.error(status.error);
                 return;
             }
 

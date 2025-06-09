@@ -14,7 +14,7 @@ export class VoiceRoomCreation extends Listener {
 
         const settings = await this.container.api.getGuildSettings(current.guild.id);
         if (settings.isErr()) {
-            // todo: error handling & logging
+            this.container.logger.error(settings.error);
             return;
         }
 
@@ -39,6 +39,8 @@ export class VoiceRoomCreation extends Listener {
                 current_owner_id: current.member.user.id
             });
             if (status.isErr()) {
+                this.container.logger.error(status.error);
+
                 await room.delete();
                 await current.member.voice.setChannel(null);
 
@@ -58,7 +60,7 @@ export class VoiceRoomCreation extends Listener {
 
             await current.member.voice.setChannel(room);
         } catch (e) {
-
+            this.container.logger.error(e);
         }
     }
 }
