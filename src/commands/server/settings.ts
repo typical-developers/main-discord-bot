@@ -1,6 +1,6 @@
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { ApplyOptions } from '@sapphire/decorators';
-import { type ApplicationCommandSubCommandData, ApplicationCommandOptionType, InteractionContextType, MessageFlags, PermissionFlagsBits } from 'discord.js';
+import { type ApplicationCommandSubCommandData, ApplicationCommandOptionType, ApplicationIntegrationType, InteractionContextType, MessageFlags, PermissionFlagsBits } from 'discord.js';
 
 @ApplyOptions<Subcommand.Options>({
     description: 'Manage server settings.',
@@ -156,6 +156,8 @@ export class ServerSettings extends Subcommand {
             options: this._options,
             defaultMemberPermissions: [ PermissionFlagsBits.Administrator ],
             dmPermission: false,
+            contexts: [ InteractionContextType.Guild ],
+            integrationTypes: [ ApplicationIntegrationType.GuildInstall ],
         });
     }
 

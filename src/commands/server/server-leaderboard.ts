@@ -1,7 +1,7 @@
 import { Readable } from 'stream';
 import { Command } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { type ApplicationCommandOptionData, ApplicationCommandOptionType, AttachmentBuilder, InteractionContextType, MessageFlags } from 'discord.js';
+import { type ApplicationCommandOptionData, ApplicationCommandOptionType, ApplicationIntegrationType, AttachmentBuilder, InteractionContextType, MessageFlags } from 'discord.js';
 import { ImageProcessorErrorReference } from '#/lib/extensions/ImageProcessorError';
 
 @ApplyOptions<Command.Options>({
@@ -38,6 +38,8 @@ export class ServerProfile extends Command {
                 description: this.description,
                 options: this._options,
                 dmPermission: false,
+                contexts: [ InteractionContextType.Guild ],
+                integrationTypes: [ ApplicationIntegrationType.GuildInstall ],
             });
     }
 

@@ -1,6 +1,6 @@
 import { Command } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { ApplicationCommandOptionType, ChannelType, ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits, TextChannel, type APIApplicationCommandChannelOption, type ApplicationCommandData, type ApplicationCommandOptionData } from 'discord.js';
+import { ApplicationCommandOptionType, ApplicationIntegrationType, ChannelType, ChatInputCommandInteraction, InteractionContextType, MessageFlags, PermissionFlagsBits, TextChannel, type APIApplicationCommandChannelOption, type ApplicationCommandData, type ApplicationCommandOptionData } from 'discord.js';
 
 @ApplyOptions<Command.Options>({
     description: 'Set a slowmode for a chennl.',
@@ -32,7 +32,9 @@ export class ModerationSlowmode extends Command {
             description: this.description,
             defaultMemberPermissions: [ PermissionFlagsBits.ManageMessages ],
             options: this._commandOptions,
-            dmPermission: false
+            dmPermission: false,
+            contexts: [ InteractionContextType.Guild ],
+            integrationTypes: [ ApplicationIntegrationType.GuildInstall ],
         });
     }
 
