@@ -15,7 +15,6 @@ const client = (REDIS_HOST && REDIS_PORT && REDIS_CACHE_DB
 )
 
 if (!client) {
-    console.log(process.env);
     throw new Error("Unable to create Redis client.");
 }
 
