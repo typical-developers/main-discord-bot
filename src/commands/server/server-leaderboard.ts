@@ -38,9 +38,6 @@ export class ServerProfile extends Command {
                 description: this.description,
                 options: this._options,
                 dmPermission: false,
-                contexts: [
-                    InteractionContextType.Guild
-                ],
             });
     }
 

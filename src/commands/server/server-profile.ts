@@ -24,17 +24,11 @@ export class ServerProfile extends Command {
                 description: this.description,
                 options: this._options,
                 dmPermission: false,
-                contexts: [
-                    InteractionContextType.Guild
-                ],
             })
             .registerContextMenuCommand({
                 type: ApplicationCommandType.User,
                 name: "Get User's Profile",
                 dmPermission: false,
-                contexts: [
-                    InteractionContextType.Guild
-                ],
             });
     }
 
