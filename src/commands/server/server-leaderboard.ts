@@ -1,7 +1,7 @@
 import { Readable } from 'stream';
 import { Command } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { type ApplicationCommandOptionData, ApplicationCommandOptionType, AttachmentBuilder, MessageFlags } from 'discord.js';
+import { type ApplicationCommandOptionData, ApplicationCommandOptionType, AttachmentBuilder, InteractionContextType, MessageFlags } from 'discord.js';
 import { ImageProcessorErrorReference } from '#/lib/extensions/ImageProcessorError';
 
 @ApplyOptions<Command.Options>({
@@ -37,8 +37,11 @@ export class ServerProfile extends Command {
                 name: this.name,
                 description: this.description,
                 options: this._options,
-                dmPermission: false
-            })
+                dmPermission: false,
+                contexts: [
+                    InteractionContextType.Guild
+                ],
+            });
     }
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {

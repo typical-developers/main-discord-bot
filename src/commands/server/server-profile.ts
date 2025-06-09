@@ -1,7 +1,7 @@
 import { Readable } from 'stream';
 import { Command } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { type ApplicationCommandOptionData, GuildMember, ApplicationCommandOptionType, ApplicationCommandType, AttachmentBuilder, MessageFlags } from 'discord.js';
+import { type ApplicationCommandOptionData, GuildMember, ApplicationCommandOptionType, ApplicationCommandType, AttachmentBuilder, MessageFlags, InteractionContextType } from 'discord.js';
 import { ImageProcessorErrorReference } from '#/lib/extensions/ImageProcessorError';
 
 @ApplyOptions<Command.Options>({
@@ -23,12 +23,18 @@ export class ServerProfile extends Command {
                 name: this.name,
                 description: this.description,
                 options: this._options,
-                dmPermission: false
+                dmPermission: false,
+                contexts: [
+                    InteractionContextType.Guild
+                ],
             })
             .registerContextMenuCommand({
                 type: ApplicationCommandType.User,
                 name: "Get User's Profile",
-                dmPermission: false
+                dmPermission: false,
+                contexts: [
+                    InteractionContextType.Guild
+                ],
             });
     }
 
