@@ -162,7 +162,7 @@ export class ServerSettings extends Subcommand {
     }
 
     public async updateChatActivitySettings(interaction: Subcommand.ChatInputCommandInteraction) {
-        await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
+        await interaction.deferReply({ withResponse: true });
 
         /**
          * Makes sure that the guild settings are created and cached.
@@ -193,7 +193,7 @@ export class ServerSettings extends Subcommand {
     }
 
     public async addActivityRole(interaction: Subcommand.ChatInputCommandInteraction) {
-        await interaction.deferReply({ withResponse: true, flags: [ 'Ephemeral' ] })
+        await interaction.deferReply({ withResponse: true });
 
         /**
          * Makes sure that the guild settings are created and cached.
@@ -222,7 +222,7 @@ export class ServerSettings extends Subcommand {
     }
 
     public async addVoiceRoomLobby(interaction: Subcommand.ChatInputCommandInteraction) {
-        await interaction.deferReply({ withResponse: true, flags: [ 'Ephemeral' ] })
+        await interaction.deferReply({ withResponse: true });
 
         /**
          * Makes sure that the guild settings are created and cached.
@@ -254,7 +254,7 @@ export class ServerSettings extends Subcommand {
     }
 
     public async updateVoiceRoomLobby(interaction: Subcommand.ChatInputCommandInteraction) {
-        await interaction.deferReply({ withResponse: true, flags: [ 'Ephemeral' ] })
+        await interaction.deferReply({ withResponse: true });
 
         /**
          * Makes sure that the guild settings are created and cached.
@@ -287,7 +287,7 @@ export class ServerSettings extends Subcommand {
 
 
     public async removeVoiceRoomLobby(interaction: Subcommand.ChatInputCommandInteraction) {
-        await interaction.deferReply({ withResponse: true, flags: [ 'Ephemeral' ] })
+        await interaction.deferReply({ withResponse: true });
 
         /**
          * Makes sure that the guild settings are created and cached.
