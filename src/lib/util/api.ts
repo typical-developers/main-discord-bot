@@ -363,6 +363,7 @@ async function getGuildLeaderboardCard(guildId: string, query: GuildLeaderbaordO
     
     return await container.imageProcessor.draw({
         url: url.toString(),
+        headers: AUTH_HEADERS,
     });
 }
 
@@ -432,6 +433,7 @@ async function getMemberProfileCard(guildId: string, userId: string) {
     
     return await container.imageProcessor.draw({
         url: url.toString(),
+        headers: AUTH_HEADERS,
     });
 }
 

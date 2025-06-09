@@ -4,6 +4,7 @@ import ImageProcessorError, { ImageProcessorErrorReference } from "#/lib/extensi
 
 interface DrawOptions<T> {
     url: string;
+    headers?: Record<string, string>;
 }
 
 export default class HTMLImageProcessor {
@@ -38,6 +39,9 @@ export default class HTMLImageProcessor {
      */
     public async draw<T extends any>(options: DrawOptions<T>) {
         const page = await this.browser.newPage();
+        if (options.headers) {
+            await page.setExtraHTTPHeaders(options.headers);
+        }
 
         const contents = await page.goto(options.url, { waitUntil: 'networkidle0' });
         if (!contents) {

@@ -22,6 +22,11 @@ export async function request<R = any, E = any>({ url, method, body, headers, qu
 
     url.search = params.toString();
 
+    console.log("Headers Sent:", {
+        'Content-Type': 'application/json',
+        ...headers,
+    });
+
     const res = await fetch(url, {
         method,
         headers: {
