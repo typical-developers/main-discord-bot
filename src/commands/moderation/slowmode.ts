@@ -3,7 +3,8 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { ApplicationCommandOptionType, ChannelType, ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits, TextChannel, type APIApplicationCommandChannelOption, type ApplicationCommandData, type ApplicationCommandOptionData } from 'discord.js';
 
 @ApplyOptions<Command.Options>({
-    description: 'Set a slowmode for a chennl.'
+    description: 'Set a slowmode for a chennl.',
+    requiredUserPermissions: [ PermissionFlagsBits.AddReactions ]
 })
 export class ModerationSlowmode extends Command {
     private readonly _commandOptions: ApplicationCommandOptionData[] = [
