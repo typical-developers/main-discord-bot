@@ -4,8 +4,6 @@ import '#/lib/setup/initialize';
 import { ApplicationCommandRegistries, LogLevel, RegisterBehavior, SapphireClient } from '@sapphire/framework';
 import { GatewayIntentBits, Partials } from 'discord.js';
 
-console.log(process.env);
-
 const client = new SapphireClient({
     logger: { level: LogLevel.Info },
     loadDefaultErrorListeners: false,
