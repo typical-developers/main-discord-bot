@@ -5,8 +5,7 @@ import { type ApplicationCommandOptionData, ApplicationCommandOptionType, Attach
 import { ImageProcessorErrorReference } from '#/lib/extensions/ImageProcessorError';
 
 @ApplyOptions<Command.Options>({
-    description: 'Get information on a server member!',
-    enabled: false
+    description: 'Get information on a server member!'
 })
 export class ServerProfile extends Command {
     readonly _options: ApplicationCommandOptionData[] = [
