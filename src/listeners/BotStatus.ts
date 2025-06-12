@@ -8,7 +8,7 @@ import { BotStatusCycle, ExperienceUniverseID } from '#/lib/types/enums';
 	once: true
 })
 export class BotStatus extends Listener {
-    private activity: ActivityOptions = { type: ActivityType.Watching, name: '' };
+    private activity: ActivityOptions = { type: ActivityType.Custom, name: '' };
     private playingCache: { [key: string]: number } = {};
     private currentStatus: BotStatusCycle = BotStatusCycle.OaklandsPlaying;
 
