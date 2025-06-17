@@ -1,36 +1,17 @@
-import Handlebars from "handlebars";
-import { type PuppeteerLaunchOptions } from "puppeteer";
-import { Cluster } from "puppeteer-cluster";
+import { errAsync, okAsync } from "neverthrow";
+import puppeteer, { Browser, type ConnectOptions } from "puppeteer";
+import ImageProcessorError, { ImageProcessorErrorReference } from "#/lib/extensions/ImageProcessorError";
 
 interface DrawOptions<T> {
-    html: string;
-    handlebars?: T;
-    transparency?: boolean;
-    savePath?: string;
+    url: string;
+    headers?: Record<string, string>;
 }
 
 export default class HTMLImageProcessor {
-    private _cluster: Cluster;
+    private browser: Browser;
 
-    constructor(cluster: Cluster) {
-        this._cluster = cluster;
-
-        this._cluster.task(async ({ page, data: { html, transparency, savePath } }) => {
-            await page.setContent(html, { waitUntil: 'load' });
-
-            const element = await page.$('body');
-
-            if (!element) {
-                throw new Error('No body element was found to screenshot.');
-            }
-
-            return await element.screenshot({
-                type: 'png',
-                optimizeForSpeed: true,
-                omitBackground: transparency,
-                path: savePath
-            });
-        });
+    constructor(browser: Browser) {
+        this.browser = browser;
     }
 
     /**
@@ -38,14 +19,9 @@ export default class HTMLImageProcessor {
      * @param options The custom options you want for puppeteer.
      * @returns {Promise<HTMLImageProcessor>}
      */
-    static async launch(options?: PuppeteerLaunchOptions): Promise<HTMLImageProcessor> {
-        const cluster = await Cluster.launch({
-            concurrency: Cluster.CONCURRENCY_PAGE,
-            maxConcurrency: 5,
-            puppeteerOptions: options,
-        });
-
-        return new this(cluster);
+    static async launch(options: ConnectOptions = {}): Promise<HTMLImageProcessor> {
+        const browser = await puppeteer.connect(options);
+        return new this(browser);
     }
 
     /**
@@ -53,7 +29,7 @@ export default class HTMLImageProcessor {
      * @returns {Promise<void>}
      */
     public async close(): Promise<void> {
-        await this._cluster.close();
+        await this.browser.close();
     }
 
     /**
@@ -61,14 +37,43 @@ export default class HTMLImageProcessor {
      * @param options The HTML and Handlebars content you want.
      * @returns {Promise<Buffer>} The image buffer.
      */
-    public async draw<T extends any>(options: DrawOptions<T>): Promise<Buffer> {
-        const template = Handlebars.compile<T>(options.html);
-        const result = template(options.handlebars || {} as T);
+    public async draw<T extends any>(options: DrawOptions<T>) {
+        const page = await this.browser.newPage();
+        if (options.headers) {
+            await page.setExtraHTTPHeaders(options.headers);
+        }
 
-        const { html, handlebars, ...payload } = options;
-        const image: Uint8Array = await this._cluster.execute({ html: result, ...payload });
+        const contents = await page.goto(options.url, { waitUntil: 'networkidle0' });
+        if (!contents) {
+            return errAsync(new ImageProcessorError({
+                message: 'There was an issue when loading the contents of the page.',
+                reference: ImageProcessorErrorReference.ScreenshotFailed,
+            }));
+        }
 
-        await this._cluster.idle();
-        return Buffer.from(image);
+        const status = contents.status();
+        if (status < 200 || status >= 300) {
+            return errAsync(new ImageProcessorError({
+                message: `Status code ${contents.status()} was returned.`,
+                reference: ImageProcessorErrorReference.StatusNotOK,
+            }));
+        }
+
+        const element = await page.$('body');
+        if (!element) {
+            return errAsync(new ImageProcessorError({
+                message: `No body element was found to screenshot.`,
+                reference: ImageProcessorErrorReference.ScreenshotFailed,
+            }));
+        }
+
+        const image = Buffer.from(await element.screenshot({
+            type: 'png',
+            omitBackground: true
+        }))
+
+        await page.close();
+        
+        return okAsync(image);
     }
 }

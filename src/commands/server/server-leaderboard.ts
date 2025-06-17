@@ -1,129 +1,86 @@
-import { ApplicationCommandOptionType, AttachmentBuilder, type ApplicationCommandSubCommandData } from 'discord.js';
-import { Subcommand } from '@sapphire/plugin-subcommands';
+import { Readable } from 'stream';
+import { Command, container } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { UserError } from '@sapphire/framework';
-import { LeaderboardStats } from '@/lib/extensions/LeaderboardStats';
+import { type ApplicationCommandOptionData, ApplicationCommandOptionType, ApplicationIntegrationType, AttachmentBuilder, InteractionContextType, MessageFlags } from 'discord.js';
+import { ImageProcessorErrorReference } from '#/lib/extensions/ImageProcessorError';
 
-@ApplyOptions<Subcommand.Options>({
-    description: 'Leaderboards relating to server statistics.',
-    subcommands: [
-        {
-            name: 'activity',
-            chatInputRun: 'getGuildActivityLeaderboard'
-        }
-    ]
+@ApplyOptions<Command.Options>({
+    description: 'Get information on a server member!'
 })
-export class ServerLeaderboard extends Subcommand {
-    private readonly _groupOptions: ApplicationCommandSubCommandData[] = [
+export class ServerProfile extends Command {
+    readonly _options: ApplicationCommandOptionData[] = [
         {
-            type: ApplicationCommandOptionType.Subcommand,
-            name: 'activity',
-            description: 'Fetch activity leaderboard information for this server.',
-            options: [
-                {
-                    type: ApplicationCommandOptionType.String,
-                    name: 'type',
-                    description: 'The leaderboard type. Default is all time.',
-                    choices: [
-                        { name: 'All Time', value: 'all' },
-                        { name: 'This Month', value: 'monthly' },
-                        { name: 'This Week', value: 'weekly' }
-                    ]
-                }
+            type: ApplicationCommandOptionType.String,
+            required: true,
+            name: 'leaderboard',
+            description: "The leaderboard you'd like to see.",
+            choices: [
+                { name: 'Chat Activity', value: 'chat' }
+            ]
+        },
+        {
+            type: ApplicationCommandOptionType.String,
+            required: true,
+            name: 'display',
+            description: "What leaderboard data should be displayed.",
+            choices: [
+                { name: 'All Time', value: 'all' },
+                { name: 'This Month', value: 'monthly' },
+                { name: 'This Week', value: 'weekly' },
             ]
         }
     ];
 
-    public override async registerApplicationCommands(registry: Subcommand.Registry) {
+    public override async registerApplicationCommands(registry: Command.Registry) {
         registry
             .registerChatInputCommand({
                 name: this.name,
                 description: this.description,
-                options: this._groupOptions,
-                dmPermission: false
+                options: this._options,
+                dmPermission: false,
+                contexts: [ InteractionContextType.Guild ],
+                integrationTypes: [ ApplicationIntegrationType.GuildInstall ],
             });
     }
 
-    private leaderboardResetTime(time: Date) {
-        return `Resets on ` +
-                new Intl.DateTimeFormat('en-US', { dateStyle: 'short' }).format(time) +
-                ` @ ` +
-                new Intl.DateTimeFormat('en-US', { timeStyle: 'long' }).format(time)
-    }
+    public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+        await interaction.deferReply({ withResponse: true });
 
-    private leaderboardHeaders(type: string) {
-        const today = new Date();
-        today.setUTCHours(0, 0, 0, 0);
+        const leaderboard = interaction.options.getString('leaderboard', true);
+        const display = interaction.options.getString('display', true);
 
-        switch (type) {
-            case 'weekly': 
-                const weekLastDay = new Date(today);
-                weekLastDay.setUTCDate(today.getUTCDate() - today.getUTCDay() + (today.getUTCDay() === 0 ? 1 : 8));
-                
-                return {
-                    describeHeader: 'Weekly Activity Leaderboard',
-                    otherHeader:  this.leaderboardResetTime(weekLastDay)
-                }
-            case 'monthly':
-                const monthLastDay = new Date(today);
-                monthLastDay.setUTCMonth(monthLastDay.getUTCMonth() + 1, 1);
+        const settings = await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
+        if (settings.isErr()) {
+            this.container.logger.error(settings.error);
 
-                return {
-                    describeHeader: 'Monthly Activity Leaderboard',
-                    otherHeader:  this.leaderboardResetTime(monthLastDay)
-                }
-            default: return {
-                describeHeader: 'Top Activity Leaderboard',
+            await interaction.editReply({
+                content: `Failed to fetch the server leaderboard. This has been forwarded to the developers.`
+            });
+
+            return;
+        }
+
+        const card = await this.container.api.getGuildLeaderboardCard(interaction.guildId!, { activity_type: leaderboard, display });
+        if (card.isErr()) {
+            const err = card.error;
+
+            if (err.reference === ImageProcessorErrorReference.StatusNotOK) {
+                await interaction.editReply({
+                    content: 'Guild leaderboard card does not exist.',
+                });
+            } else {
+                this.container.logger.error(err);
+                await interaction.editReply({
+                    content: `Failed to fetch the server leaderboard. This has been forwarded to the developers.`,
+                });
             }
-        }
-    }
 
-    public async getGuildActivityLeaderboard(interaction: Subcommand.ChatInputCommandInteraction) {
-        if (!interaction.guild) return;
-
-        await interaction.deferReply({ fetchReply: true });
-
-        const type = interaction.options.getString('type') || 'all';
-        const { activity_tracking } = await this.container.api.bot.getGuildSettings(interaction.guild.id);
-        if (!activity_tracking) {
-            throw new UserError({
-                identifier: 'TRACKING_DISBALED',
-                message: 'Activity tracking is not enabled for this guild.'
-            });
+            return;
         }
 
-        const leaderboardStats = await this.container.api.bot.getActivityLeaderboard(interaction.guild.id, '', type);
-        if (!leaderboardStats) {
-            throw new UserError({
-                identifier: 'NO_LEADEARBOARD',
-                message: 'There is no activity leaderboard available for this guild.'
-            });
-        }
-
-        const leaderboard = new AttachmentBuilder(
-            await new LeaderboardStats({
-                headerImage: interaction.guild.iconURL({ forceStatic: true, size: 64 }) || '',
-                mainHeader: interaction.guild.name,
-                ...this.leaderboardHeaders(type),
-                fields: {
-                    holder: 'Member',
-                    value: 'Activity Points'
-                },
-                stats: await Promise.all(leaderboardStats.map(async (s) => {
-                    const member = await this.container.client.users.fetch(s.member_id, { force: true });
-        
-                    return {
-                        rank: s.rank,
-                        holder: `@${member.username}` || '? ? ?',
-                        value: s.value
-                    }
-                })),
-                pageNumber: 1,
-                lastUpdated: new Date()
-            }).draw(),
-            { name: 'leaderboard.png' }
-        );
-
-        await interaction.editReply({ files: [leaderboard] });
+        const attachment = new AttachmentBuilder(Readable.from(card.value), { name: `${interaction.guildId!}_${display}-${leaderboard}-leaderboard.png` });
+        return await interaction.editReply({
+            files: [attachment]
+        });
     }
 }

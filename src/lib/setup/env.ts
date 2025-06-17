@@ -33,43 +33,83 @@ export function Env<T extends ZodTypeAny>(schema: T, env: Record<string, unknown
 }
 
 const envVariables = z.object({
+    /* The current deployment environment that the bot is running on.
+     * @default 'production' This is the default to prevent accidents.
+     */
+    ENVIRONMENT: z.union([z.literal('production'), z.literal('development')]),
+
+    /**
+     * The Discord token for the bot.
+     */
     DISCORD_TOKEN: z.string(),
 
-    BOT_ENDPOINT_API_KEY: z.string(),
-    EXPERIENCE_ENDPOINT_API_SECRET: z.string(),
-    BOT_ERROR_WEBHOOK_URL: z.string().url(),
+    /**
+     * The Discord webhook url to push error information to.
+     */
+    BOT_ERROR_WEBHOOK_URL: z.string(),
 
-    REDIS_USERNAME: z.string(),
-    REDIS_PASSWORD: z.string(),
+    /**
+     * The base url for the public experience api.
+     */
+    PUBLIC_API_URL: z.string(),
+
+    /**
+     * The base url for the bot's internal api.
+     */
+    BOT_API_URL: z.string(),
+
+    /**
+     * The authorization for `BOT_API_URL`.
+     */
+    BOT_ENDPOINT_API_KEY: z.string(),
+
+    /**
+     * The host for the Redis connection.
+     */
     REDIS_HOST: z.string(),
 
-    API_URL: z.string().url(),
-    DEV_DEPLOYMENT: z.union([z.literal('true'), z.literal('false')]).default('false')
+    /**
+     * The port for the Redis connection.
+     */
+    REDIS_PORT: z.string(),
+
+    /**
+     * The username to connect to the Redis instance.
+     */
+    REDIS_USERNAME: z.string(),
+
+    /**
+     * The password, if nay, to connect to the Redis instance.
+     * If there is no password, leave empty or put `nopass`.
+     */
+    REDIS_PASSWORD: z.string().optional(),
+
+    /**
+     * The DB that should be used for caching.
+     */
+    REDIS_CACHE_DB: z.string(),
+
+    /**
+     * The DB that should be used for @sapphire/plugin-scheduled-tasks
+     */
+    REDIS_TASKS_DB: z.string(),
+
+    /**
+     * The chrome websocket connection url.
+     */
+    CHROME_WS_URL: z.string()
 });
 
 /**
  * Currently using process.env only to maintain compatibility with existing files
  *
- * TODO: Consider refactoring to use the typed env object directly for better type safety
+ * TODO: Consider refactoring to use the typed env object directly for better type safety and getting the jsdoc comments
  * const env = Env(envVariables);
  * console.log(env.DISCORD_TOKEN); // Fully typed access to env vars
  */
-
 Env(envVariables);
 
 // Typed proccess.env
-declare global {
-    namespace NodeJS {
-        interface ProcessEnv extends z.infer<typeof envVariables> {}
-    }
+declare module 'bun' {
+    interface Env extends z.infer<typeof envVariables> {}
 }
-
-/**
- * If you prefer to use bun instead of node, you can use this instead:
- *
- * ```typescript
- * declare module 'bun' {
- *   interface Env extends z.infer<typeof envVariables> {}
- * }
- * ```
- */

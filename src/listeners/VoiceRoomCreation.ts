@@ -1,129 +1,66 @@
-import { type VoiceRoomSettingsDetails } from '@typical-developers/api-types/graphql';
 import { Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { ChannelType, DiscordAPIError, Events, type VoiceBasedChannel, VoiceState, type DiscordErrorData } from 'discord.js';
-import { voiceRoomInfoEmbed } from '@/lib/util/voice-rooms';
+import { ChannelType, Events, type VoiceBasedChannel, VoiceState, MessageFlags } from 'discord.js';
+import { voiceRoomInfoCard } from '#/lib/util/voice-rooms';
 
 @ApplyOptions<Listener.Options>({
     event: Events.VoiceStateUpdate,
     once: false
 })
 export class VoiceRoomCreation extends Listener {
-    public cooldown: string[] = [];
-    public api = this.container.api.bot;
+    public override async run(_: VoiceState, current: VoiceState) {
+        if (current.channelId === null || current.member === null) return;
+        if (current.channel?.type !== ChannelType.GuildVoice) return;
 
-    private async createNewVoiceRoom(state: VoiceState, settings: VoiceRoomSettingsDetails) {
-        if (this.cooldown.includes(state.member!.id)) {
-            state.channel?.send(`<@${state.member!.id}> you're creating voice rooms too quickly!`).catch(() => null);
-            return await state.member?.voice.disconnect();
+        const settings = await this.container.api.getGuildSettings(current.guild.id);
+        if (settings.isErr()) {
+            this.container.logger.error(settings.error);
+            return;
         }
 
-        const room = await state.guild.channels.create({
-            type: ChannelType.GuildVoice,
-            parent: state.channel?.parent,
-            name: `@${state.member?.user.username}\'s Channel`,
-            userLimit: settings.user_limit
-        }).catch(() => null);
+        const lobbies = settings.value.voice_rooms.map((r) => r.channel_id);
+        const lobby = settings.value.voice_rooms.find((l) => l.channel_id === current.channelId);
+        if (lobbies.length === 0 || !lobbies.includes(current.channelId)) return;
+
+        const voiceRoom = current.guild.channels.cache.get(current.channelId) as VoiceBasedChannel;
+        const categoryId = voiceRoom.parentId;
 
         try {
-            // The room was not created.
-            if (!room) {
-                await state.member?.voice.disconnect();
-                return;
-            }
+            const room = await current.guild.channels.create({
+                type: ChannelType.GuildVoice,
+                parent: categoryId || null,
+                name: `@${current.member.user.username}'s Voice Room`,
+                userLimit: lobby!.user_limit,
+            });
 
-            const data = await this.api.createVoiceRoom(state.guild.id, settings.voice_channel_id, room.id, state.member!.id);
-            if (!data) {
-                // The API did not return the data it wanted back.
+            const status = await this.container.api.registerGuildVoiceRoom(current.guild.id, current.channelId, {
+                room_channel_id: room.id,
+                created_by_user_id: current.member.user.id,
+                current_owner_id: current.member.user.id
+            });
+            if (status.isErr()) {
+                this.container.logger.error(status.error);
+
                 await room.delete();
-                await state.member?.voice.disconnect();
-                return;
-            };
+                await current.member.voice.setChannel(null);
 
-            const updatedState = (await state.member?.voice.setChannel(room))?.voice;
-            await room.send(voiceRoomInfoEmbed(data, settings));
-            
-            if (!updatedState?.channelId || updatedState.channelId !== room.id) {
-                await this.removeOldVoiceRoom(room);
+                await voiceRoom.send({
+                    content: `<@${current.member?.user.id}> there was an issue creating a voice room. Try again later.`
+                });
+
                 return;
             }
 
-            this.cooldown.push(state.member!.id);
-            setTimeout(() => {
-                const index = this.cooldown.findIndex((id) => id === state.member!.id);
-                this.cooldown.splice(index, 1);
-            }, 1000 * 15);
-        }
-        catch (e) {
-            // just to make sure the remove is removed.
-            if (!room) throw e;
+            const { current_rooms, ...settings } = lobby!;
+            const infoCard = voiceRoomInfoCard(settings, status.value.data);
+            await room.send({
+                components: infoCard,
+                flags: [ MessageFlags.IsComponentsV2 ]
+            });
 
-            state.channel?.send(`<@${state.member!.id}> something went wrong with voice channel creation, try creating one again.`).catch(() => null);
-
-            await this.removeOldVoiceRoom(room);
-            throw e;
-        }
-    }
-
-    private async removeOldVoiceRoom(channel: VoiceBasedChannel) {
-        if (!channel.deletable) return;
-
-        const isDeleted = await channel.delete().catch((err) => {
-            if (err instanceof DiscordAPIError) {
-                // this means the channel does not exist to begin with.
-                if ((err.rawError as DiscordErrorData).code === 10003) return true;
-                
-                return false;
-            };
-
-            return true;
-        });
-
-        if (!isDeleted) return;
-
-        await this.api.deleteVoiceRoom(channel.guildId, channel.id);
-    }
-
-    private async transferOwnership(channel: VoiceBasedChannel, userId: string) {
-        const settings = await this.api.updateVoiceRoom(channel.guild.id, channel.id, { current_owner_id: userId });
-        
-        if (settings) {
-            return channel.send({ content: `The new owner of this voice chat is <@${userId}>` }).catch(() => null);
-        }
-    }
-
-    public override async run(previous: VoiceState, current: VoiceState) {
-        if (!current.member) return;
-        if (!previous.guild.id && !current.guild.id) return;
-
-        const settings = await this.api.getGuildSettings(current.guild.id);
-        if (!settings.voice_rooms.length) return;
-
-        const { voice_rooms } = settings;
-        const ids = voice_rooms.map((v) => v.voice_channel_id);
-
-        if (current.channelId !== null && ids.includes(current.channelId)) {
-            const settings = voice_rooms.find(({ voice_channel_id }) => voice_channel_id === current.channelId);
-            if (!settings) return;
-
-            await this.createNewVoiceRoom(current, settings);
-        }
-        
-        if (previous.channelId !== null) {
-            const info = await this.api.getVoiceRoom(previous.guild.id, previous.channelId);
-            if (!info) return;
-
-            const memberIds = previous.channel?.members.map(({ id }) => id) || [];
-            if (previous.channel && !memberIds?.length) {
-                await this.removeOldVoiceRoom(previous.channel);
-            }
-
-            if (previous.channel && memberIds?.length || 0 >= 1) {
-                if (memberIds.includes(info.current_owner_id)) return;
-
-                const firstMemberId = memberIds[0];
-                await this.transferOwnership(previous.channel!, firstMemberId);
-            }
+            await current.member.voice.setChannel(room);
+        } catch (e) {
+            this.container.logger.error(e);
         }
     }
 }
