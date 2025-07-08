@@ -1,3 +1,5 @@
+import { container } from '@sapphire/framework';
+
 import { errAsync, okAsync } from "neverthrow";
 import puppeteer, { Browser, type ConnectOptions } from "puppeteer";
 import ImageProcessorError, { ImageProcessorErrorReference } from "#/lib/extensions/ImageProcessorError";
@@ -9,9 +11,31 @@ interface DrawOptions<T> {
 
 export default class HTMLImageProcessor {
     private browser: Browser;
+    private opts: ConnectOptions = {};
 
-    constructor(browser: Browser) {
+    constructor(browser: Browser, opts: ConnectOptions = {}) {
         this.browser = browser;
+        this.opts = opts;
+
+        this.browser.once('disconnected', async () => {
+            container.logger.warn('HTMLImageProcessor: The process has been disconnected. Automatically reconnecting in 5 seconds.');
+            await new Promise(async (res) =>
+                setTimeout(() => res(this.reconnect()), 5000)
+            );
+        });
+    }
+
+    private static async connect(options: ConnectOptions = {}) {
+        const browser = await puppeteer.connect(options).catch(() => null);
+
+        if (!browser) {
+            return errAsync(new ImageProcessorError({
+                message: 'There was an issue establishing a connection to the browser.',
+                reference: ImageProcessorErrorReference.ConnectFailed
+            }));
+        }
+
+        return okAsync(browser);
     }
 
     /**
@@ -20,8 +44,43 @@ export default class HTMLImageProcessor {
      * @returns {Promise<HTMLImageProcessor>}
      */
     static async launch(options: ConnectOptions = {}): Promise<HTMLImageProcessor> {
-        const browser = await puppeteer.connect(options);
-        return new this(browser);
+        // No container.logger can be used here because it's not accessible since everything is still starting up.
+        // Need to figure out a way to initalize it first to be properly used.
+
+        const browser = await HTMLImageProcessor.connect(options);
+
+        if (!browser.isOk()) {
+            return new Promise(async (res) =>
+                setTimeout(() => res(HTMLImageProcessor.launch(options)), 5_000)
+           );
+        }
+
+        return new this(browser.value, options);
+    }
+
+    /**
+     * Reconnects the browser.
+     */
+    private async reconnect() {
+        const browser = await puppeteer.connect(this.opts).catch(() => null);
+        if (!browser) {
+            container.logger.warn('HTMLImageProcessor: The process failed to reconnect. Automatically attempting to reconnect in 5 seconds.');
+
+            return await new Promise(async (res) =>
+                setTimeout(() => res(this.reconnect()), 5000)
+            );
+        }
+
+        container.logger.info('HTMLImageProcessor: The process has been reconnected.');
+
+        browser.once('disconnected', async () => {
+            container.logger.warn('HTMLImageProcessor: The process has been disconnected. Automatically reconnecting in 5 seconds.');
+            await new Promise(async (res) =>
+                setTimeout(() => res(this.reconnect()), 5000)
+            );
+        });
+
+        this.browser = browser;
     }
 
     /**

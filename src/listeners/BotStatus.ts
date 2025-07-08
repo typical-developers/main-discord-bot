@@ -33,11 +33,13 @@ export class BotStatus extends Listener {
     }
 
     public async statusRun(client: Client) {
-        await this.recachePlayers([ExperienceUniverseID.Oaklands, ExperienceUniverseID.DisasterDefense, ExperienceUniverseID.SprayPaintDeluxe]);
+        await this.recachePlayers([
+            ExperienceUniverseID.Oaklands, ExperienceUniverseID.VoxelBlockBuilder
+        ]);
 
         switch (this.currentStatus) {
             case BotStatusCycle.OaklandsPlaying:
-                this.currentStatus = BotStatusCycle.DisasterDefensePlayng;
+                this.currentStatus = BotStatusCycle.VoxelBlockBuilderPlaying;
                 
                 const oaklandsPlayers = this.playingCache[ExperienceUniverseID.Oaklands];
                 if (!oaklandsPlayers) break;
@@ -45,22 +47,13 @@ export class BotStatus extends Listener {
                 this.activity.name = `Oaklands・${oaklandsPlayers} playing`;
 
                 break;
-            case BotStatusCycle.DisasterDefensePlayng:
-                this.currentStatus = BotStatusCycle.SprayPaintDeluxePlaying;
-                
-                const ddPlayers = this.playingCache[ExperienceUniverseID.DisasterDefense];
-                if (!ddPlayers) break;
-
-                this.activity.name = `Disaster Defense・${ddPlayers} playing`;
-
-                break;
-            case BotStatusCycle.SprayPaintDeluxePlaying:
+            case BotStatusCycle.VoxelBlockBuilderPlaying:
                 this.currentStatus = BotStatusCycle.OaklandsPlaying;
 
-                const sprayPaintPlayers = this.playingCache[ExperienceUniverseID.SprayPaintDeluxe];
-                if (!sprayPaintPlayers) break;
+                const voxelBlockBuilderPlayers = this.playingCache[ExperienceUniverseID.VoxelBlockBuilder];
+                if (!voxelBlockBuilderPlayers) break;
 
-                this.activity.name = `Spray Paint Deluxe・${sprayPaintPlayers} playing`;
+                this.activity.name = `Voxel Block Builder・${voxelBlockBuilderPlayers} playing`;
 
                 break;
         }
