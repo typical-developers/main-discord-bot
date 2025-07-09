@@ -193,7 +193,8 @@ async function updateGuildActivitySettings(guildId: string, settings: ActivitySe
     const data = await request<GuildSettings, APIError>({
         url: new URL(`/guild/${guildId}/settings/update/activity`, BASE_URL),
         method: 'PATCH',
-        body: settings
+        body: settings,
+        headers: AUTH_HEADERS
     });
 
     if (data.isOk()) {
@@ -209,7 +210,8 @@ async function insertGuildActivityRole(guildId: string, role: ActivityRoleOpts) 
     const data = await request<GuildActivityRoles, APIError>({
         url: new URL(`/guild/${guildId}/settings/update/add-activity-role`, BASE_URL),
         method: 'POST',
-        body: role
+        body: role,
+        headers: AUTH_HEADERS
     });
 
     if (data.isOk()) {
@@ -226,7 +228,8 @@ async function createGuildVoiceRoomLobby(guildId: string, channelId: string, con
         body: {
             channel_id: channelId,
             ...config
-        }
+        },
+        headers: AUTH_HEADERS
     });
 
     if (data.isOk()) {
@@ -243,7 +246,8 @@ async function updateGuildVoiceRoomLobby(guildId: string, channelId: string, con
         body: {
             channel_id: channelId,
             ...config
-        }
+        },
+        headers: AUTH_HEADERS
     });
 
     if (data.isOk()) {
