@@ -1,4 +1,4 @@
-import { ChannelType, Colors, EmbedBuilder, type GuildBasedChannel, GuildMember, Message, PermissionFlagsBits } from "discord.js";
+import { type Channel, ChannelType, Colors, EmbedBuilder, Guild, type GuildBasedChannel, GuildMember, Message, PermissionFlagsBits, User } from "discord.js";
 import { MessageLinkRegex } from '@sapphire/discord-utilities';
 import { container } from "@sapphire/pieces";
 import { isGuildBasedChannel } from "@sapphire/discord.js-utilities";
@@ -12,13 +12,45 @@ const { client } = container;
  * @returns {boolean} If the member can access the channel.
  */
 function canViewChannel(memberInfo: GuildMember, channel: GuildBasedChannel): boolean {
-    const hasPermission = channel
+    return channel
         .permissionsFor(memberInfo)
         .has([ PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory ]);
+}
 
-    if (!hasPermission) return false;
+/**
+ * Gets the most appropriate username for the author.
+ * @param author 
+ * @returns {string}
+ */
+function getAuthorUsername(author: User): string {
+    if (author.discriminator !== '0') {
+        return author.tag;
+    }
 
-    return true;
+    if (author.globalName !== null) {
+        return `${author.globalName} (@${author.username})`;
+    }
+
+    return `@${author.username}`;
+}
+
+/**
+ * Formats the guild + channel name depending on the channel type.
+ * @param channel The channel to get the name for.
+ * @returns {string}
+ */
+function getGuildChannelName(channel: Channel): string {
+    if (!isGuildBasedChannel(channel)) return `${channel.id}`;
+
+    switch (channel.type) {
+        case ChannelType.GuildText:
+        case ChannelType.GuildAnnouncement:
+        case ChannelType.GuildVoice:
+        case ChannelType.GuildStageVoice:
+            return `${channel.guild.name + ' -' || ''} #${channel.name}`
+        default:
+            return `${channel.guild.name + ' -' || ''} ${channel.name}`
+    }
 }
 
 /**
@@ -55,30 +87,12 @@ export async function createMessageEmbed(message: Message): Promise<EmbedBuilder
     const embed = new EmbedBuilder({
         color: author.accentColor || Colors.White,
         author: {
-            name: ( author.discriminator !== '0'
-                ? author.tag
-                : (author.globalName !== null
-                    ? `${author.globalName} (@${author.username})`
-                    : `@${author.username}`
-                )
-            ),
+            name: getAuthorUsername(author),
             iconURL: author.displayAvatarURL({ extension: 'png', size: 256 }) || author.defaultAvatarURL
         },
         description: content,
         footer: {
-            text: (() => {
-                if (!isGuildBasedChannel(channel)) return `${channel.id}`;
-
-                switch (channel.type) {
-                    case ChannelType.GuildText:
-                    case ChannelType.GuildAnnouncement:
-                    case ChannelType.GuildVoice:
-                    case ChannelType.GuildStageVoice:
-                        return `${guild?.name + ' -' || ''} #${channel.name}`
-                    default:
-                        return `${guild?.name + ' -' || ''} ${channel.name}`
-                }
-            })(),
+            text: getGuildChannelName(channel),
             iconURL: guild?.iconURL() || undefined
         },
         timestamp: createdTimestamp
