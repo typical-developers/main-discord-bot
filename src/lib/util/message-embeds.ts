@@ -29,7 +29,10 @@ function canViewChannel(memberInfo: GuildMember, channel: GuildBasedChannel): bo
  */
 export async function getMessageContent(memberInfo: GuildMember, messageDetails: { guildId: string, channelId: string, messageId: string }): Promise<Message | null> {
     const guild = await client.guilds.fetch(messageDetails.guildId);
-    if (!guild) return null;
+    if (!guild) {
+        container.logger.info(`Guild ${messageDetails.guildId} could not be fetched.`);
+        return null;
+    };
 
     const channel = await guild.channels.fetch(messageDetails.channelId);
     
@@ -50,7 +53,12 @@ export async function getMessageContent(memberInfo: GuildMember, messageDetails:
     };
 
     const message = await channel.messages.fetch(messageDetails.messageId).catch(() => null);
-    if (!message || !message.content.length && !message.attachments.size) return null;
+    if (!message || !message.content.length && !message.attachments.size) {
+        container.logger.info(`Message ${messageDetails.messageId} could not be fetched.`);
+        return null;
+    };
+
+    container.logger.info(`Message ${messageDetails.messageId} was fetched.`);
 
     return message;
 }
