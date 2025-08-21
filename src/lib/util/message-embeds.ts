@@ -29,36 +29,16 @@ function canViewChannel(memberInfo: GuildMember, channel: GuildBasedChannel): bo
  */
 export async function getMessageContent(memberInfo: GuildMember, messageDetails: { guildId: string, channelId: string, messageId: string }): Promise<Message | null> {
     const guild = await client.guilds.fetch(messageDetails.guildId);
-    if (!guild) {
-        container.logger.info(`Guild ${messageDetails.guildId} could not be fetched.`);
-        return null;
-    };
+    if (!guild) return null;
 
     const channel = await guild.channels.fetch(messageDetails.channelId);
     
-    if (!channel) {
-        container.logger.info(`Channel ${messageDetails.channelId} could not be fetched.`);
-        return null;
-    };
-    if (!channel.isTextBased() && !channel.isThread()) {
-        container.logger.info(`Channel ${messageDetails.channelId} is not text based.`);
-        return null;
-    };
-    if (!canViewChannel(memberInfo, channel)) {
-        container.logger.info(
-            `Member ${memberInfo.id} does not have permission to view channel ${messageDetails.channelId}.` +
-            `${channel.permissionsFor(memberInfo).toArray().join(', ')}`
-        );
-        return null
-    };
+    if (!channel) return null
+    if (!channel.isTextBased() && !channel.isThread()) return null
+    if (!canViewChannel(memberInfo, channel)) return null
 
     const message = await channel.messages.fetch(messageDetails.messageId).catch(() => null);
-    if (!message || !message.content.length && !message.attachments.size) {
-        container.logger.info(`Message ${messageDetails.messageId} could not be fetched.`);
-        return null;
-    };
-
-    container.logger.info(`Message ${messageDetails.messageId} was fetched.`);
+    if (!message || !message.content.length && !message.attachments.size) return null;
 
     return message;
 }
