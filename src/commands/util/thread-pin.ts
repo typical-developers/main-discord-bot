@@ -3,7 +3,7 @@ import { Command } from "@sapphire/framework";
 import { type ApplicationCommandOptionData, InteractionContextType, ApplicationIntegrationType, ApplicationCommandType, ApplicationCommandOptionType, MessageFlags, ThreadChannel } from "discord.js";
 
 @ApplyOptions<Command.Options>({
-    description: 'Pin a message to a forum thread.'
+    description: 'Pin a message to a thread.'
 })
 export class ForumPin extends Command {
     readonly _options: ApplicationCommandOptionData[] = [
