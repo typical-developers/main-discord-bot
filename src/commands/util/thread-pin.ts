@@ -22,12 +22,14 @@ export class ForumPin extends Command {
                 description: this.description,
                 options: this._options,
                 dmPermission: false,
+                contexts: [ InteractionContextType.Guild ],
                 integrationTypes: [ ApplicationIntegrationType.GuildInstall ],
             })
             .registerContextMenuCommand({
                 type: ApplicationCommandType.Message,
                 name: "Pin Message to Thread",
                 dmPermission: false,
+                contexts: [ InteractionContextType.Guild ],
                 integrationTypes: [ ApplicationIntegrationType.GuildInstall ],
             })
     }
