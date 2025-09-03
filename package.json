@@ -11,8 +11,8 @@
   },
   "scripts": {
     "format": "prettier --write \"src/**/*.ts\"",
-    "deploy": "bun .",
-    "deploy:dev": "tsc --noEmit && DEV_DEPLOYMENT=true bun ."
+    "deploy": "bun --env-file=.env .",
+    "deploy:dev": "tsc --noEmit && DEV_DEPLOYMENT=true bun --env-file=.env ."
   },
   "dependencies": {
     "@sapphire/discord-utilities": "3.5.0",
