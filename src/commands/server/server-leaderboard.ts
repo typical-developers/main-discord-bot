@@ -44,43 +44,5 @@ export class ServerProfile extends Command {
     }
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
-        await interaction.deferReply({ withResponse: true });
-
-        const leaderboard = interaction.options.getString('leaderboard', true);
-        const display = interaction.options.getString('display', true);
-
-        const settings = await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
-        if (settings.isErr()) {
-            this.container.logger.error(settings.error);
-
-            await interaction.editReply({
-                content: `Failed to fetch the server leaderboard. This has been forwarded to the developers.`
-            });
-
-            return;
-        }
-
-        const card = await this.container.api.getGuildLeaderboardCard(interaction.guildId!, { activity_type: leaderboard, display });
-        if (card.isErr()) {
-            const err = card.error;
-
-            if (err.reference === ImageProcessorErrorReference.StatusNotOK) {
-                await interaction.editReply({
-                    content: 'Guild leaderboard card does not exist.',
-                });
-            } else {
-                this.container.logger.error(err);
-                await interaction.editReply({
-                    content: `Failed to fetch the server leaderboard. This has been forwarded to the developers.`,
-                });
-            }
-
-            return;
-        }
-
-        const attachment = new AttachmentBuilder(Readable.from(card.value), { name: `${interaction.guildId!}_${display}-${leaderboard}-leaderboard.png` });
-        return await interaction.editReply({
-            files: [attachment]
-        });
     }
 }

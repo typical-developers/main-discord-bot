@@ -162,168 +162,17 @@ export class ServerSettings extends Subcommand {
     }
 
     public async updateChatActivitySettings(interaction: Subcommand.ChatInputCommandInteraction) {
-        await interaction.deferReply({ withResponse: true });
-
-        /**
-         * Makes sure that the guild settings are created and cached.
-         */
-        await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
-
-        const toggle = interaction.options.getBoolean('toggle');
-        const cooldown = interaction.options.getNumber('cooldown');
-        const amount = interaction.options.getNumber('amount');
-
-        const settings = await this.container.api.updateGuildActivitySettings(interaction.guildId!, {
-            chat_activity: {
-                enabled: toggle,
-                cooldown: cooldown,
-                grant_amount: amount
-            }
-        });
-
-        if (settings.isErr()) {
-            this.container.logger.error(settings.error);
-
-            await interaction.editReply({
-                content: `Failed to update chat activity settings. This has been forwarded to the developers.`
-            });
-
-            return;
-        }
-
-        return interaction.editReply({
-            content: 'Successfully updated chat activity settings.',
-        });
     }
 
     public async addActivityRole(interaction: Subcommand.ChatInputCommandInteraction) {
-        await interaction.deferReply({ withResponse: true });
-
-        /**
-         * Makes sure that the guild settings are created and cached.
-         */
-        await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
-
-        const type = interaction.options.getString('grant-type', true);
-        const role = interaction.options.getRole('role', true);
-        const requiredPoints = interaction.options.getNumber('required-points', true);
-
-        const settings = await this.container.api.insertGuildActivityRole(interaction.guildId!, {
-            grant_type: type,
-            role_id: role.id,
-            required_points: requiredPoints
-        });
-
-        if (settings.isErr()) {
-            this.container.logger.error(settings.error);
-
-            await interaction.editReply({
-                content: `Failed to add role to activity role list. This has been forwarded to the developers.`
-            });
-
-            return;
-        }
-
-        return interaction.editReply({
-            content: 'Successfully added role to activity role list.',
-        });
     }
 
     public async addVoiceRoomLobby(interaction: Subcommand.ChatInputCommandInteraction) {
-        await interaction.deferReply({ withResponse: true });
-
-        /**
-         * Makes sure that the guild settings are created and cached.
-         */
-        await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
-
-        const channel = interaction.options.getString('channel', true);
-        const userLimit = interaction.options.getNumber('user-limit');
-        const canRename = interaction.options.getBoolean('can-rename');
-        const canLock = interaction.options.getBoolean('can-lock');
-        const canAdjustLimit = interaction.options.getBoolean('can-adjust-limit');
-
-        const settings = await this.container.api.createGuildVoiceRoomLobby(interaction.guildId!, channel, {
-            user_limit: userLimit,
-            can_rename: canRename,
-            can_lock: canLock,
-            can_adjust_limit: canAdjustLimit
-        });
-
-        if (settings.isErr()) {
-            this.container.logger.error(settings.error);
-
-            await interaction.editReply({
-                content: `Failed to create voice room lobby. This has been forwarded to the developers.`
-            });
-
-            return;
-        }
-
-        return interaction.editReply({
-            content: 'Successfully created voice room lobby.',
-        });
     }
 
     public async updateVoiceRoomLobby(interaction: Subcommand.ChatInputCommandInteraction) {
-        await interaction.deferReply({ withResponse: true });
-
-        /**
-         * Makes sure that the guild settings are created and cached.
-         */
-        await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
-
-        const channel = interaction.options.getString('channel', true);
-        const userLimit = interaction.options.getNumber('user-limit');
-        const canRename = interaction.options.getBoolean('can-rename');
-        const canLock = interaction.options.getBoolean('can-lock');
-        const canAdjustLimit = interaction.options.getBoolean('can-adjust-limit');
-
-        const settings = await this.container.api.updateGuildVoiceRoomLobby(interaction.guildId!, channel, {
-            user_limit: userLimit,
-            can_rename: canRename,
-            can_lock: canLock,
-            can_adjust_limit: canAdjustLimit
-        });
-
-        if (settings.isErr()) {
-            this.container.logger.error(settings.error);
-
-            await interaction.editReply({
-                content: `Failed to update voice room lobby. This has been forwarded to the developers.`
-            });
-
-            return;
-        }
-
-        return interaction.editReply({
-            content: 'Successfully updated voice room lobby.',
-        });
     }
 
     public async removeVoiceRoomLobby(interaction: Subcommand.ChatInputCommandInteraction) {
-        await interaction.deferReply({ withResponse: true });
-
-        /**
-         * Makes sure that the guild settings are created and cached.
-         */
-        await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
-
-        const channel = interaction.options.getString('channel', true);
-        const lobbies = await this.container.api.removeGuildVoiceRoomLobby(interaction.guildId!, channel);
-
-        if (lobbies.isErr()) {
-            this.container.logger.error(lobbies.error);
-
-            await interaction.editReply({
-                content: `Failed to remove voice room lobby. This has been forwarded to the developers.`
-            });
-
-            return;
-        }
-
-        return interaction.editReply({
-            content: 'Successfully removed voice room lobby.',
-        });
     }
 }
