@@ -1,6 +1,7 @@
 import { Subcommand } from '@sapphire/plugin-subcommands';
 import { ApplyOptions } from '@sapphire/decorators';
 import { type ApplicationCommandSubCommandData, ApplicationCommandOptionType, ApplicationIntegrationType, InteractionContextType, MessageFlags, PermissionFlagsBits } from 'discord.js';
+import RequestError from '#/lib/extensions/RequestError';
 
 @ApplyOptions<Subcommand.Options>({
     description: 'Manage server settings.',
@@ -227,10 +228,18 @@ export class ServerSettings extends Subcommand {
         });
 
         if (data.isErr()) {
-            this.container.logger.error(data.error);
+            if (data.error instanceof RequestError && data.error.response.status !== 409) {
+                this.container.logger.error(data.error);
+
+                await interaction.editReply({
+                    content: 'There was an error creating the activity role.',
+                });
+
+                return;
+            }
             
             await interaction.editReply({
-                content: 'There was an error creating the activity role.',
+                content: 'The activity role already exists.',
             });
 
             return;
