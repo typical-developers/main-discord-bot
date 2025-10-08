@@ -1,64 +1,54 @@
 import { okAsync, errAsync } from 'neverthrow';
 import RequestError from '#/lib/extensions/RequestError';
 
-export async function request<R = any, E = any>({ url, method, body, headers, query } :{
+export async function request<ResponseData = any, ErrorData = any>({
+    url, method, body, headers = {}, query = {}
+}: {
     url: URL,
     method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     body?: Record<string, any>,
     headers?: Record<string, any>,
-    query?: Record<string, any>
+    query?: Record<string, any>,
 }) {
-    const params = new URLSearchParams();
-    if (query && Object.keys(query).length) {
+    if (Object.keys(query).length) {
         for (const [key, value] of Object.entries(query)) {
             if (typeof value === 'object') {
-                params.set(key, JSON.stringify(value));
+                url.searchParams.set(key, JSON.stringify(value));
                 continue;
             }
 
-            params.set(key, value.toString());
+            url.searchParams.set(key, value.toString());
         }
     }
-
-    url.search = params.toString();
 
     try {
         const res = await fetch(url, {
             method,
             headers: {
                 'Content-Type': 'application/json',
-                ...headers,
+                ...headers
             },
-            body: JSON.stringify(body),
+            body: JSON.stringify(body)
         });
 
         const contentType = res.headers.get('content-type');
 
         if (!res.ok) {
-            let payload = {} as E;
+            let payload = {} as ErrorData;
+
             if (contentType === 'application/json') {
-            payload = await res.json();
+                payload = await res.json() as ErrorData;
             }
 
-            return errAsync(new RequestError<E>({
-                message: "response was not ok.",
+            return errAsync(new RequestError<ErrorData>({
+                message: `Request failed with status code ${res.status}.`,
                 response: res,
                 payload
             }));
-        };
-
-        switch (contentType) {
-            case 'application/json':
-                return okAsync(await res.json() as R);
-            case 'text/html':
-                return okAsync(await res.text() as R);
-            default:
-                return okAsync(await res.text() as R);
         }
+
+        return okAsync(await res.json() as ResponseData);
     } catch (e) {
-        return errAsync(new RequestError({
-            message: "request failed.",
-            error: e
-        }));
+        return errAsync(e);
     }
 }
