@@ -167,6 +167,8 @@ export class ServerSettings extends Subcommand {
         await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
         const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
         if (settings.isErr()) {
+            this.container.logger.error(settings.error);
+
             await interaction.editReply({
                 content: 'Something went wrong fetching the guild\'s settings. Please try again later.',
             });
@@ -186,6 +188,8 @@ export class ServerSettings extends Subcommand {
         });
 
         if (data.isErr()) {
+            this.container.logger.error(data.error);
+
             await interaction.editReply({
                 content: 'There was an error updating the chat activity settings.',
             });
@@ -204,6 +208,8 @@ export class ServerSettings extends Subcommand {
         await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
         const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
         if (settings.isErr()) {
+            this.container.logger.error(settings.error);
+
             await interaction.editReply({
                 content: 'Something went wrong fetching the guild\'s settings. Please try again later.',
             });
@@ -221,6 +227,8 @@ export class ServerSettings extends Subcommand {
         });
 
         if (data.isErr()) {
+            this.container.logger.error(data.error);
+            
             await interaction.editReply({
                 content: 'There was an error creating the activity role.',
             });
