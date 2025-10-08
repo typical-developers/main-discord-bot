@@ -162,6 +162,34 @@ export class ServerSettings extends Subcommand {
     }
 
     public async updateChatActivitySettings(interaction: Subcommand.ChatInputCommandInteraction) {
+        if (interaction.guild == null) return;
+
+        await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
+        await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
+
+        const toggle = interaction.options.getBoolean('toggle') ?? undefined;
+        const cooldown = interaction.options.getNumber('cooldown') ?? undefined;
+        const amount = interaction.options.getNumber('amount') ?? undefined;
+
+        const data = await this.container.api.guilds.updateGuildActivitySettings(interaction.guild.id, {
+            chat_activity: {
+                is_enabled: toggle,
+                grant_amount: amount,
+                cooldown: cooldown
+            }
+        });
+
+        if (data.isErr()) {
+            await interaction.editReply({
+                content: 'There was an error updating the chat activity settings.',
+            });
+
+            return;
+        }
+
+        await interaction.editReply({
+            content: 'The chat activity settings have been updated.',
+        });
     }
 
     public async addActivityRole(interaction: Subcommand.ChatInputCommandInteraction) {
