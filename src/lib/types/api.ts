@@ -44,3 +44,7 @@ export type GuildSettings = {
     chat_activity: GuildActivityTracking;
     voice_room_lobbies: Array<GuildVoiceRoomLobby>;
 };
+
+export type GuildActivityTrackingUpdate = {
+    chat_activity?: Partial<GuildActivityTracking>;
+};
