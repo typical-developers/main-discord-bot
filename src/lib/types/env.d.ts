@@ -57,8 +57,8 @@ declare module Bun {
         REDIS_TASKS_DB: string;
 
         /**
-         * The chrome websocket connection url.
+         * The URL for the browserless instance
          */
-        CHROME_WS_URL: string;
+        BROWSERLESS_URL: string;
     }
 }

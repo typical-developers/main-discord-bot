@@ -2,7 +2,6 @@ import { Readable } from 'stream';
 import { Command, container } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { type ApplicationCommandOptionData, ApplicationCommandOptionType, ApplicationIntegrationType, AttachmentBuilder, InteractionContextType, MessageFlags } from 'discord.js';
-import { ImageProcessorErrorReference } from '#/lib/extensions/ImageProcessorError';
 
 @ApplyOptions<Command.Options>({
     description: 'Get information on a server member!'
