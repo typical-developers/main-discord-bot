@@ -165,12 +165,18 @@ export class ServerSettings extends Subcommand {
         if (interaction.guild == null) return;
 
         await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
-        await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
+        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
+        if (settings.isErr()) {
+            await interaction.editReply({
+                content: 'Something went wrong fetching the guild\'s settings. Please try again later.',
+            });
+
+            return;
+        }
 
         const toggle = interaction.options.getBoolean('toggle') ?? undefined;
         const cooldown = interaction.options.getNumber('cooldown') ?? undefined;
         const amount = interaction.options.getNumber('amount') ?? undefined;
-
         const data = await this.container.api.guilds.updateGuildActivitySettings(interaction.guild.id, {
             chat_activity: {
                 is_enabled: toggle,
