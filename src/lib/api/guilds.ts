@@ -1,5 +1,5 @@
 import { okAsync, errAsync } from 'neverthrow';
-import type { APIResponse, GuildSettings, GuildActivityTrackingUpdate } from '#/lib/types/api';
+import type { APIResponse, GuildSettings, GuildActivityTrackingUpdate, GuildActivityRoleCreate } from '#/lib/types/api';
 import { request } from '#/lib/util/request';
 
 const { BOT_API_URL, BOT_ENDPOINT_API_KEY } = process.env
@@ -44,6 +44,19 @@ export async function updateGuildActivitySettings(guildId: string, settings: Gui
             Authorization: BOT_ENDPOINT_API_KEY
         },
         body: settings
+    });
+
+    return res;
+}
+
+export async function createAcitivtyRole(guildId: string, options: GuildActivityRoleCreate) {
+    const res = await request<APIResponse<GuildSettings>>({
+        url: new URL(`/v1/guild/${guildId}/settings/activity-roles`, BOT_API_URL),
+        method: 'POST',
+        headers: {
+            Authorization: BOT_ENDPOINT_API_KEY
+        },
+        body: options
     });
 
     return res;

@@ -48,3 +48,9 @@ export type GuildSettings = {
 export type GuildActivityTrackingUpdate = {
     chat_activity?: Partial<GuildActivityTracking>;
 };
+
+export type GuildActivityRoleCreate = {
+    activity_type: string;
+    role_id: string;
+    required_points: number;
+};

@@ -199,6 +199,38 @@ export class ServerSettings extends Subcommand {
     }
 
     public async addActivityRole(interaction: Subcommand.ChatInputCommandInteraction) {
+        if (interaction.guild == null) return;
+
+        await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
+        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
+        if (settings.isErr()) {
+            await interaction.editReply({
+                content: 'Something went wrong fetching the guild\'s settings. Please try again later.',
+            });
+
+            return;
+        }
+
+        const grantType = interaction.options.getString('grant-type', true);
+        const role = interaction.options.getRole('role', true);
+        const requiredPoints = interaction.options.getNumber('required-points', true);
+        const data = await this.container.api.guilds.createAcitivtyRole(interaction.guild.id, {
+            activity_type: grantType,
+            role_id: role.id,
+            required_points: requiredPoints
+        });
+
+        if (data.isErr()) {
+            await interaction.editReply({
+                content: 'There was an error creating the activity role.',
+            });
+
+            return;
+        }
+
+        await interaction.editReply({
+            content: 'The activity role has been created.',
+        });
     }
 
     public async addVoiceRoomLobby(interaction: Subcommand.ChatInputCommandInteraction) {
