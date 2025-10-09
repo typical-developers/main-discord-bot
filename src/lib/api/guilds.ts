@@ -3,7 +3,7 @@ import type { APIResponse, APIError, GuildSettings, GuildActivityTrackingUpdate,
 import { request } from '#/lib/util/request';
 import RequestError from '#/lib/extensions/RequestError';
 
-const { BOT_API_URL, BOT_ENDPOINT_API_KEY } = process.env
+const { BOT_API_URL, BOT_ENDPOINT_API_KEY } = process.env;
 
 export async function createGuildSettings(guildId: string) {
     const res = await request<APIResponse<GuildSettings>, APIError>({
