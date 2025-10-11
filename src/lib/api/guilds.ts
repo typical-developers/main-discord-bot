@@ -14,9 +14,7 @@ export async function createGuildSettings(guildId: string) {
         }
     });
 
-    if (res.isErr()) return res;
-
-    return okAsync(res.value.data);
+    return res
 }
 
 export async function getGuildSettings(guildId: string, { create }: { create?: boolean } = {}) {
@@ -42,7 +40,7 @@ export async function getGuildSettings(guildId: string, { create }: { create?: b
         return res;
     }
 
-    return okAsync(res.value.data);
+    return res
 }
 
 export async function updateGuildActivitySettings(guildId: string, settings: GuildActivityTrackingUpdate) {
