@@ -71,6 +71,9 @@ export async function createAcitivtyRole(guildId: string, options: GuildActivity
 
 export async function generateGuildActivityLeaderboardCard(guildId: string, query: GuildActivityLeaderboardQuery) {
     const url = new URL(`/v1/guild/${guildId}/activity-leaderboard-card`, BOT_API_URL);
+    const params = new URLSearchParams(query);
+    url.search = params.toString();
+
     const browserlessUrl = new URL("/screenshot", BROWSERLESS_URL);
 
     const data = {
