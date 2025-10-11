@@ -43,5 +43,26 @@ export class ServerProfile extends Command {
     }
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+        if (!interaction.guild) return;
+
+        await interaction.deferReply({ withResponse: true });
+
+        const activityType = interaction.options.getString('leaderboard', true);
+        const displayType = interaction.options.getString('display', true);
+
+        const res = await container.api.guilds.generateGuildActivityLeaderboardCard(interaction.guild.id, {
+            activity_type: activityType,
+            time_period: displayType
+        });
+
+        if (res.isErr()) {
+            return await interaction.editReply({
+                content: 'Something went wrong while generating the leaderboard card.',
+            });
+        }
+
+        const attachment = new AttachmentBuilder(res.value, { name: 'leaderboard.png' });
+
+        return await interaction.editReply({ files: [ attachment ] });
     }
 }

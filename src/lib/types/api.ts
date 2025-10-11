@@ -55,6 +55,11 @@ export type GuildActivityRoleCreate = {
     required_points: number;
 };
 
+export type GuildActivityLeaderboardQuery = {
+    activity_type?: string;
+    time_period?: string;
+}
+
 export type MemberActivity = {
     rank: number;
     points: number;
