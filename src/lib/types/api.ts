@@ -54,3 +54,32 @@ export type GuildActivityRoleCreate = {
     role_id: string;
     required_points: number;
 };
+
+export type MemberActivity = {
+    rank: number;
+    points: number;
+    is_on_cooldown: boolean;
+
+    current_activity_role_ids: Array<string>;
+
+    current_activity_role: {
+        role_id: string;
+        accent: string;
+        name: string;
+        required_points: number;
+    } | null;
+
+    next_activity_role: {
+        current_progress: number;
+        required_points: number;
+    } | null;
+};
+
+export type MemberProfile = {
+    display_name: string;
+    username: string;
+    avatar_url: string;
+
+    card_url: number;
+    chat_activity: MemberActivity;
+};

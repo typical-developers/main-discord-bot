@@ -1,7 +1,74 @@
 import { okAsync, errAsync } from 'neverthrow';
+import { request } from '#/lib/util/request';
 import RequestError from '#/lib/extensions/RequestError';
+import type { APIResponse, APIError, MemberProfile } from '../types/api';
 
 const { BOT_API_URL, BOT_ENDPOINT_API_KEY, BROWSERLESS_URL } = process.env;
+
+export async function getMemberProfile(guildId: string, userId: string, { create }: { create?: boolean } = {}) {
+    const res = await request<APIResponse<MemberProfile>, APIError>({
+        url: new URL(`/v1/guild/${guildId}/member/${userId}`, BOT_API_URL),
+        method: 'GET',
+        headers: {
+            Authorization: BOT_ENDPOINT_API_KEY
+        }
+    });
+
+    if (res.isErr()) {
+        if (!(res.error instanceof RequestError)) {
+            return res;
+        }
+
+        if (res.error.response.status === 404) {
+            if (!create) return res;
+
+            return createMemberProfile(guildId, userId);
+        }
+
+        return res;
+    }
+
+    return res
+}
+
+export async function createMemberProfile(guildId: string, userId: string) {
+    const res = await request<APIResponse<MemberProfile>, APIError>({
+        url: new URL(`/v1/guild/${guildId}/member/${userId}`, BOT_API_URL),
+        method: 'POST',
+        headers: {
+            Authorization: BOT_ENDPOINT_API_KEY
+        }
+    });
+
+    return res;
+}
+
+export async function incrementChatActivity(guildId: string, userId: string, { create }: { create?: boolean } = {}) {
+    const res = await request<APIResponse<MemberProfile>, APIError>({
+        url: new URL(`/v1/guild/${guildId}/member/${userId}/chat-activity`, BOT_API_URL),
+        method: 'PATCH',
+        headers: {
+            Authorization: BOT_ENDPOINT_API_KEY
+        }
+    });
+
+    if (res.isErr()) {
+        if (!(res.error instanceof RequestError)) {
+            return res;
+        }
+
+        if (res.error.response.status === 404) {
+            if (!create) return res;
+
+            const created = await createMemberProfile(guildId, userId);
+            if (created.isErr()) return created;
+
+            return incrementChatActivity(guildId, userId, { create: false });
+        }
+    }
+
+    return res;
+}
 
 export async function generateProfileCard(guildId: string, userId: string) {
     const url = new URL(`/v1/guild/${guildId}/member/${userId}/profile-card`, BOT_API_URL);
