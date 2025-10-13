@@ -60,7 +60,7 @@ export class MigrateMemberProfile extends Command {
         }
 
         return await interaction.editReply({
-            content: `Successfully migrated the member profile: <@${fromUser.id}> (${fromUser.id}) -> <@${toUser.id}> (${fromUser.id}).`,
+            content: `Successfully migrated the member profile: <@${fromUser.id}> (${fromUser.id}) -> <@${toUser.id}> (${toUser.id}).`,
         });
     }
 }
