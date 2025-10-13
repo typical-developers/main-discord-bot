@@ -88,3 +88,7 @@ export type MemberProfile = {
     card_url: number;
     chat_activity: MemberActivity;
 };
+
+export type MemberProfileMigrate = {
+    to_member_id: string;
+};

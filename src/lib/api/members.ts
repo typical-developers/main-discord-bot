@@ -1,7 +1,7 @@
 import { okAsync, errAsync } from 'neverthrow';
 import { request } from '#/lib/util/request';
 import RequestError from '#/lib/extensions/RequestError';
-import type { APIResponse, APIError, MemberProfile } from '../types/api';
+import type { APIResponse, APIError, MemberProfile, MemberProfileMigrate } from '../types/api';
 
 const { BOT_API_URL, BOT_ENDPOINT_API_KEY, BROWSERLESS_URL } = process.env;
 
@@ -139,4 +139,17 @@ export async function generateProfileCard(guildId: string, userId: string) {
     } catch (e) {
         return errAsync(e);
     }
+}
+
+export async function migrateMemberProfile(guildId: string, userId: string, body: MemberProfileMigrate) {
+    const res = await request<APIResponse<{}>, APIError>({
+        url: new URL(`/v1/guild/${guildId}/member/${userId}/migrate`, BOT_API_URL),
+        method: 'POST',
+        headers: {
+            Authorization: BOT_ENDPOINT_API_KEY
+        },
+        body
+    });
+
+    return res;
 }
