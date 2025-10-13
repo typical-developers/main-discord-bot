@@ -41,8 +41,8 @@ export class MigrateMemberProfile extends Command {
          * The member having their profile migrated to *should* be in the guild.
          * It doesn't make sense to migrate to a user that isn't in the guild.
          */
-        const isInGuild = await interaction.guild.members.fetch(toUser.id).catch(() => undefined);
-        if (!isInGuild) {
+        const toGuildMember = await interaction.guild.members.fetch(toUser.id).catch(() => undefined);
+        if (!toGuildMember) {
             return await interaction.reply({
                 content: 'The user attempting to migrate to is not in the guild.',
                 flags: [ MessageFlags.Ephemeral ],
@@ -59,8 +59,25 @@ export class MigrateMemberProfile extends Command {
             });
         }
 
+        /**
+         * Attempt to remove the activity roles that were granted to the old user.
+         * It's not a big issue if they fail to remove.
+         */
+        let removedOldRoles = true; // assumes they either have none to remove or the attempt succeeded
+        const fromGuildMember = await interaction.guild.members.fetch(fromUser.id).catch(() => undefined);
+        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id);
+        if (fromGuildMember && !settings.isErr()) {
+            const activityRoleIds = settings.value.data.chat_activity.activity_roles.map((a) => a.role_id);
+            const removeRoles = activityRoleIds.filter((id) => fromGuildMember.roles.cache.has((id)));
+            
+            if (removeRoles.length) {
+                await fromGuildMember.roles.remove(removeRoles, 'Automated Action - Member profile was migrated to another user.')
+                    .catch(() => removedOldRoles = false);
+            }
+        }
+
         return await interaction.editReply({
-            content: `Successfully migrated the member profile: <@${fromUser.id}> (${fromUser.id}) -> <@${toUser.id}> (${toUser.id}).`,
+            content: `Successfully migrated the member profile: <@${fromUser.id}> (${fromUser.id}) -> <@${toUser.id}> (${toUser.id}). ${!removedOldRoles && 'Old roles could not be removed from the user. Please manually remove them.'}`,
         });
     }
 }
