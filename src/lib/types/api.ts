@@ -32,12 +32,20 @@ export interface GuildActivityTracking {
     deny_roles: Array<string>;
 };
 
+export interface GuildVoiceRoom {
+    channel_id: string;
+    created_by_user_id: string;
+    current_owner_id: string;
+}
+
 export interface GuildVoiceRoomLobby {
     channel_id: string;
     user_limit: number;
     can_rename: boolean;
     can_lock: boolean;
     can_adjust_limit: boolean;
+
+    voice_rooms: Array<GuildVoiceRoom>;
 };
 
 export type GuildSettings = {
@@ -58,7 +66,14 @@ export type GuildActivityRoleCreate = {
 export type GuildActivityLeaderboardQuery = {
     activity_type?: string;
     time_period?: string;
-}
+};
+
+export type VoiceRoomSettings = {
+    user_limit: number;
+    can_rename: boolean;
+    can_lock: boolean;
+    can_adjust_limit: boolean;
+};
 
 export type MemberActivity = {
     rank: number;
