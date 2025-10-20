@@ -1,5 +1,5 @@
 import { okAsync, errAsync } from 'neverthrow';
-import type { APIResponse, APIError, GuildSettings, GuildActivityTrackingUpdate, GuildActivityRoleCreate, GuildActivityLeaderboardQuery, VoiceRoomSettings } from '#/lib/types/api';
+import type { APIResponse, APIError, GuildSettings, GuildActivityTrackingUpdate, GuildActivityRoleCreate, GuildActivityLeaderboardQuery, VoiceRoomLobbySettings, VoiceRoomRegister, VoiceRoom, VoiceRoomUpdate } from '#/lib/types/api';
 import { request } from '#/lib/util/request';
 import RequestError from '#/lib/extensions/RequestError';
 
@@ -143,7 +143,7 @@ export async function generateGuildActivityLeaderboardCard(guildId: string, quer
     }
 }
 
-export async function createVoiceRoomLobby(guildId: string, originChannelId: string, options: Partial<VoiceRoomSettings>) {
+export async function createVoiceRoomLobby(guildId: string, originChannelId: string, options: Partial<VoiceRoomLobbySettings>) {
     const res = await request<APIResponse<{}>, APIError>({
         url: new URL(`/v1/guild/${guildId}/voice-room-lobby/${originChannelId}`, BOT_API_URL),
         method: 'POST',
@@ -156,7 +156,7 @@ export async function createVoiceRoomLobby(guildId: string, originChannelId: str
     return res;
 }
 
-export async function updateVoiceRoomLobby(guildId: string, originChannelId: string, options: Partial<VoiceRoomSettings>) {
+export async function updateVoiceRoomLobby(guildId: string, originChannelId: string, options: Partial<VoiceRoomLobbySettings>) {
     const res = await request<APIResponse<{}>, APIError>({
         url: new URL(`/v1/guild/${guildId}/voice-room-lobby/${originChannelId}`, BOT_API_URL),
         method: 'PATCH',
@@ -179,4 +179,54 @@ export async function deleteVoiceRoomLobby(guildId: string, originChannelId: str
     });
 
     return res;
+}
+
+export async function registerVoiceRoom(guildId: string, originChannelId: string, options: VoiceRoomRegister) {
+    const res = await request<APIResponse<VoiceRoom>, APIError>({
+        url: new URL(`/v1/guild/${guildId}/voice-room-lobby/${originChannelId}/register`, BOT_API_URL),
+        method: 'POST',
+        headers: {
+            Authorization: BOT_ENDPOINT_API_KEY
+        },
+        body: options
+    });
+
+    return res;
+}
+
+export async function getVoiceRoom(guildId: string, voiceChannelId: string) {
+    const res = await request<APIResponse<VoiceRoom>, APIError>({
+        url: new URL(`/v1/guild/${guildId}/voice-room/${voiceChannelId}`, BOT_API_URL),
+        method: 'GET',
+        headers: {
+            Authorization: BOT_ENDPOINT_API_KEY
+        }
+    });
+
+    return res;
+}
+
+export async function updateVoiceRoom(guildId: string, voiceChannelId: string, options: Partial<VoiceRoomUpdate>) {
+    const res = await request<APIResponse<{}>, APIError>({
+        url: new URL(`/v1/guild/${guildId}/voice-room/${voiceChannelId}`, BOT_API_URL),
+        method: 'PATCH',
+        headers: {
+            Authorization: BOT_ENDPOINT_API_KEY
+        },
+        body: options
+    });
+
+    return res;
+}
+
+export async function deleteVoiceRoom(guildId: string, voiceChannelId: string) {
+    const res = await request<APIResponse<{}>, APIError>({
+        url: new URL(`/v1/guild/${guildId}/voice-room/${voiceChannelId}`, BOT_API_URL),
+        method: 'DELETE',
+        headers: {
+            Authorization: BOT_ENDPOINT_API_KEY
+        }
+    });
+
+    return res
 }

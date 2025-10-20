@@ -68,11 +68,30 @@ export type GuildActivityLeaderboardQuery = {
     time_period?: string;
 };
 
-export type VoiceRoomSettings = {
+export type VoiceRoomLobbySettings = {
     user_limit: number;
     can_rename: boolean;
     can_lock: boolean;
     can_adjust_limit: boolean;
+};
+
+export type VoiceRoom = {
+    origin_channel_id: string;
+    creator_id: string;
+    current_owner_id: string;
+    is_locked: boolean;
+
+    settings: VoiceRoomLobbySettings;
+};
+
+export type VoiceRoomRegister = {
+    creator_id: string;
+    channel_id: string;
+};
+
+export type VoiceRoomUpdate = {
+    current_owner_id: string;
+    is_locked: boolean;
 };
 
 export type MemberActivity = {
