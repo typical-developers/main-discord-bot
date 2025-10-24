@@ -23,12 +23,8 @@
     "@sapphire/plugin-scheduled-tasks": "^10.0.4",
     "@sapphire/plugin-subcommands": "7.0.1",
     "discord.js": "14.23.2",
-    "handlebars": "^4.7.8",
-    "ioredis": "^5.8.1",
     "neverthrow": "^8.2.0",
-    "openblox": "~1.0.62",
-    "puppeteer": "24.10.0",
-    "puppeteer-cluster-connect": "^0.0.8"
+    "openblox": "~1.0.62"
   },
   "devDependencies": {
     "@sapphire/decorators": "6.1.1",
