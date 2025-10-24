@@ -45,7 +45,7 @@ export interface GuildVoiceRoomLobby {
     can_lock: boolean;
     can_adjust_limit: boolean;
 
-    voice_rooms: Array<GuildVoiceRoom>;
+    opened_rooms: Array<string>;
 };
 
 export type GuildSettings = {

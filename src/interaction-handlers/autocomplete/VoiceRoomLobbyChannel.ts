@@ -31,7 +31,7 @@ export class VoiceRoomLobbyChannel extends InteractionHandler {
         switch (command) {
             case 'add':
                 const existingLobbies = voice_room_lobbies.map((v) => v.channel_id);
-                const existingRooms = voice_room_lobbies.map((v) => v.voice_rooms.map((r) => r.channel_id)).flat();
+                const existingRooms = voice_room_lobbies.map((v) => v.opened_rooms).flat();
 
                 const filteredChannels = interaction.guild.channels.cache
                     .filter((c) => c.type === ChannelType.GuildVoice)

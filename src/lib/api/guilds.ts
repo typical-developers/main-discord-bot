@@ -52,7 +52,7 @@ export async function updateGuildActivitySettings(guildId: string, settings: Gui
         },
         body: settings
     });
-
+    
     return res;
 }
 

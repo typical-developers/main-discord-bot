@@ -1,7 +1,6 @@
 import { Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { Events, VoiceState } from 'discord.js';
-import type { GuildVoiceRoom } from '#/lib/types/api';
 
 @ApplyOptions<Listener.Options>({
     event: Events.VoiceStateUpdate,
