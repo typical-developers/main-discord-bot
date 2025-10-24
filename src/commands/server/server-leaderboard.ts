@@ -2,6 +2,7 @@ import { Readable } from 'stream';
 import { Command, container } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { type ApplicationCommandOptionData, ApplicationCommandOptionType, ApplicationIntegrationType, AttachmentBuilder, InteractionContextType, MessageFlags } from 'discord.js';
+import RequestError from '#/lib/extensions/RequestError';
 
 @ApplyOptions<Command.Options>({
     description: 'Get information on a server member!'
@@ -56,13 +57,13 @@ export class ServerProfile extends Command {
         });
 
         if (res.isErr()) {
+            this.container.logger.error(res.error);
             return await interaction.editReply({
                 content: 'Something went wrong while generating the leaderboard card.',
             });
         }
 
         const attachment = new AttachmentBuilder(res.value, { name: 'leaderboard.png' });
-
         return await interaction.editReply({ files: [ attachment ] });
     }
 }
