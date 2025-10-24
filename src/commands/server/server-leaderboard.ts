@@ -48,8 +48,19 @@ export class ServerProfile extends Command {
 
         await interaction.deferReply({ withResponse: true });
 
+        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
+        if (settings.isErr()) {
+            this.container.logger.error(settings.error);
+            return await interaction.editReply({ content: 'Something went wrong while generating the leaderboard card.' });
+        }
+
         const activityType = interaction.options.getString('leaderboard', true);
         const displayType = interaction.options.getString('display', true);
+        const { chat_activity } = settings.value.data;
+
+        if (activityType === 'chat' && !chat_activity.is_enabled) {
+            return await interaction.editReply({ content: 'Chat activity tracking is not enabled for this guild.' });
+        }
 
         const res = await container.api.guilds.generateGuildActivityLeaderboardCard(interaction.guild.id, {
             activity_type: activityType,
