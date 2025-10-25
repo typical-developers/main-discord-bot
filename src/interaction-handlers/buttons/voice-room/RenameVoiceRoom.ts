@@ -9,6 +9,7 @@ export class RenameVoiceRoom extends InteractionHandler {
     public override async parse(interaction: ButtonInteraction) {
         if (!interaction.guildId || !interaction.channelId) return this.none();
         if (interaction.customId !== 'voice_room.rename') return this.none();
+        if (!interaction.channel?.isVoiceBased()) return this.none();
 
         const room = await this.container.api.guilds.getVoiceRoom(interaction.guildId, interaction.channelId);
         if (room.isErr()) return this.none();

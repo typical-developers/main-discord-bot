@@ -11,6 +11,7 @@ export class LockVoiceRoom extends InteractionHandler {
     public override async parse(interaction: ButtonInteraction) {
         if (!interaction.guildId || !interaction.channelId) return this.none();
         if (interaction.customId !== 'voice_room.toggle_lock') return this.none();
+        if (!interaction.channel?.isVoiceBased()) return this.none();
 
         await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
 
