@@ -119,7 +119,7 @@ export type MemberProfile = {
     username: string;
     avatar_url: string;
 
-    card_url: number;
+    card_style: number;
     chat_activity: MemberActivity;
 };
 
