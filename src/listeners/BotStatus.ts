@@ -39,6 +39,15 @@ export class BotStatus extends Listener {
                 this.activity.name = `Voxel Block Builder・${voxelBlockBuilderPlayers} playing`;
 
                 break;
+            case BotStatusCycle.BuildWithBlocksPlaying:
+                this.currentStatus = BotStatusCycle.OaklandsPlaying;
+
+                const buildWithBlocksPlayers = await this.fetchPlayers(ExperienceUniverseID.BuildWithBlocks);
+                if (!buildWithBlocksPlayers) break;
+
+                this.activity.name = `Build With Blocks・${buildWithBlocksPlayers} playing`;
+
+                break;
         }
 
         if (client.user?.presence.activities[0]?.name !== this.activity.name) {
