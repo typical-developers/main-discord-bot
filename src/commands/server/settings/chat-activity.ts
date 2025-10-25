@@ -8,7 +8,7 @@ import RequestError from '#/lib/extensions/RequestError';
     subcommands: [
         { name: 'settings', type: 'method', chatInputRun: 'updateChatActivitySettings' },
         {
-            name: 'activity-role', type: 'group',
+            name: 'role', type: 'group',
             entries: [
                 { name: 'add', type: 'method', chatInputRun: 'addActivityRole' },
             ]
@@ -42,7 +42,7 @@ export class ChatActivitySettings extends Subcommand {
         },
         {
             type: ApplicationCommandOptionType.SubcommandGroup,
-            name: 'activity-role',
+            name: 'role',
             description: 'Add a role to the list of roles that grant chat activity points.',
             options: [
                 {
