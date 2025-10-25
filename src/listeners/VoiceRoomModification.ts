@@ -13,9 +13,16 @@ export class VoiceRoomModification extends Listener {
         const settings = await this.container.api.guilds.getGuildSettings(current.guild.id);
         if (settings.isErr()) return;
 
+        const { voice_room_lobbies } = settings.value.data;
         const channel = await previous.channel.fetch();
-        const room = await this.container.api.guilds.getVoiceRoom(current.guild.id, previous.channel.id);
-        if (room.isErr()) return;
+        const isRegistered = voice_room_lobbies.find((l) => l.opened_rooms.includes(channel.id));
+        if (!isRegistered) return;
+
+        const room = await this.container.api.guilds.getVoiceRoom(current.guild.id, channel.id);
+        if (room.isErr()) {
+            this.container.logger.error(room.error);
+            return;
+        };
 
         // If there are no more members in the voice room, delete the room.
         if (channel.members.size <= 0) {
