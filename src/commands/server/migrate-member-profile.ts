@@ -3,7 +3,7 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { type ApplicationCommandOptionData, ApplicationCommandOptionType, InteractionContextType, ApplicationIntegrationType, PermissionFlagsBits, MessageFlags, GuildMember } from 'discord.js';
 
 @ApplyOptions<Command.Options>({
-    description: 'Get information on a server member!'
+    description: 'Migrate the profile of a server member to another member.'
 })
 export class MigrateMemberProfile extends Command {
     readonly _options: ApplicationCommandOptionData[] = [
@@ -33,6 +33,13 @@ export class MigrateMemberProfile extends Command {
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
         if (!interaction.guild) return;
+
+        if (interaction.user.id !== '399416615742996480') {
+            return await interaction.reply({
+                content: 'Only <@399416615742996480> can run this command at this time.',
+                flags: [ MessageFlags.Ephemeral ],
+            });
+        }
 
         const fromUser = interaction.options.getUser('from-user', true);
         const toUser = interaction.options.getUser('to-user', true);
