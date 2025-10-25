@@ -1,66 +1,79 @@
 import { Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { ChannelType, Events, type VoiceBasedChannel, VoiceState, MessageFlags } from 'discord.js';
-import { voiceRoomInfoCard } from '#/lib/util/voice-rooms';
+import { voiceRoomDetailsEmbed } from '#/lib/util/voice-rooms';
 
 @ApplyOptions<Listener.Options>({
     event: Events.VoiceStateUpdate,
     once: false
 })
 export class VoiceRoomCreation extends Listener {
-    public override async run(_: VoiceState, current: VoiceState) {
-        if (current.channelId === null || current.member === null) return;
-        if (current.channel?.type !== ChannelType.GuildVoice) return;
+    private _creationCooldown: Array<string> = [];
 
-        const settings = await this.container.api.getGuildSettings(current.guild.id);
-        if (settings.isErr()) {
-            this.container.logger.error(settings.error);
+    private _setCreationCooldown(memberId: string) {
+        this._creationCooldown.push(memberId);
+
+        setTimeout(() => {
+            this._creationCooldown.splice(this._creationCooldown.indexOf(memberId), 1);
+        }, 30 * 1_000);
+    }
+
+    private async _notifyFailedCreation(channel: VoiceBasedChannel, memberId: string) {
+        return await channel.send({ content: `<@${memberId}> failed to create a voice room. Please try again later.`, });
+    }
+
+    public override async run(_: VoiceState, current: VoiceState) {
+        if (!current.member) return;
+        if (!current.channel) {
             return;
         }
 
-        const lobbies = settings.value.voice_rooms.map((r) => r.channel_id);
-        const lobby = settings.value.voice_rooms.find((l) => l.channel_id === current.channelId);
-        if (lobbies.length === 0 || !lobbies.includes(current.channelId)) return;
+        const settings = await this.container.api.guilds.getGuildSettings(current.guild.id);
+        if (settings.isErr()) return;
 
-        const voiceRoom = current.guild.channels.cache.get(current.channelId) as VoiceBasedChannel;
-        const categoryId = voiceRoom.parentId;
+        const { voice_room_lobbies } = settings.value.data;
+        const lobby = voice_room_lobbies.find((l) => l.channel_id === current.channel!.id);
+        if (!lobby) return;
+
+        if (this._creationCooldown.includes(current.member.id)) {
+            await current.channel.send({ content: `<@${current.member.id}> you are on a cooldown, please try again in a bit.` })
+            await current.member.voice.disconnect();
+            return;
+        };
 
         try {
             const room = await current.guild.channels.create({
                 type: ChannelType.GuildVoice,
-                parent: categoryId || null,
-                name: `@${current.member.user.username}'s Voice Room`,
-                userLimit: lobby!.user_limit,
+                parent: current.channel.parentId,
+                name: `${current.member.displayName}\'s Voice Room`,
+                userLimit: lobby.user_limit,
             });
 
-            const status = await this.container.api.registerGuildVoiceRoom(current.guild.id, current.channelId, {
-                room_channel_id: room.id,
-                created_by_user_id: current.member.user.id,
-                current_owner_id: current.member.user.id
+            const registeredRoom = await this.container.api.guilds.registerVoiceRoom(current.guild.id, lobby.channel_id, {
+                channel_id: room.id,
+                creator_id: current.member.id
             });
-            if (status.isErr()) {
-                this.container.logger.error(status.error);
+            if (registeredRoom.isErr()) {
+                this.container.logger.error(registeredRoom.error);
 
                 await room.delete();
-                await current.member.voice.setChannel(null);
-
-                await voiceRoom.send({
-                    content: `<@${current.member?.user.id}> there was an issue creating a voice room. Try again later.`
-                });
+                await this._notifyFailedCreation(current.channel, current.member.id);
+                await current.member.voice.disconnect();
 
                 return;
             }
 
-            const { current_rooms, ...settings } = lobby!;
-            const infoCard = voiceRoomInfoCard(settings, status.value.data);
-            await room.send({
-                components: infoCard,
-                flags: [ MessageFlags.IsComponentsV2 ]
-            });
-
+            this._setCreationCooldown(current.member.id);
             await current.member.voice.setChannel(room);
+
+            await room.send({
+                components: [voiceRoomDetailsEmbed(registeredRoom.value.data)],
+                flags: [ MessageFlags.IsComponentsV2 ]
+            })
         } catch (e) {
             this.container.logger.error(e);
+            await this._notifyFailedCreation(current.channel, current.member.id);
+            await current.member.voice.disconnect();
         }
     }
 }

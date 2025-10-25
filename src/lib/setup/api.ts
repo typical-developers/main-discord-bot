@@ -1,4 +1,4 @@
 import { container } from '@sapphire/framework';
-import { API } from '#/lib/util/api';
+import { api } from '#/lib/api';
 
-container.api = API;
+container.api = api;

@@ -9,57 +9,49 @@ import { Events, Message, inlineCode } from 'discord.js';
 export class PointsGrant extends Listener {
     public override async run(message: Message) {
         if (message.author.bot) return;
+        if (!message.guild) return;
 
-        const settings = await this.container.api.getGuildSettings(message.guildId!, { create: true });
+        const settings = await this.container.api.guilds.getGuildSettings(message.guild.id, { create: true });
         if (settings.isErr()) {
-            // todo: error handling & logging
             return;
         }
 
-        const { chat_activity } = settings.value;
-        if (!chat_activity.is_enabled) return;
+        if (!settings.value.data.chat_activity.is_enabled) return;
 
-        const profile = await this.container.api.getMemberProfile(message.guildId!, message.author.id, { create: true, force: true });
+        const profile = await this.container.api.members.getMemberProfile(message.guild.id, message.author.id, { create: true });
         if (profile.isErr()) {
-            // todo: error handling & logging
             return;
         }
 
-        const { is_on_cooldown } = profile.value.chat_activity;
-        if (is_on_cooldown) return;
-
-        const updatedProfile = await this.container.api.incrementMemberActivityPoints(
-            message.guildId!, message.author.id,
-            { activity_type: "chat"}
-        );
+        if (profile.value.data.chat_activity.is_on_cooldown) return;
+        const updatedProfile = await this.container.api.members.incrementChatActivity(message.guild.id, message.author.id);
         if (updatedProfile.isErr()) {
-            // todo: error handling & logging
             return;
         }
 
-        const updatedActivity = updatedProfile.value.data;
+        const { current_activity_role_ids } = updatedProfile.value.data.chat_activity;
+        const memberRoles = message.member?.roles.cache.map((r) => r.id);
+        const missingRoles = current_activity_role_ids
+            .filter((rId) => !memberRoles?.includes(rId));
 
-        const memberRoles = message.member?.roles.cache.map((r) => r.id) || [];
-        const missingRoles = updatedActivity.roles.obtained
-            .map((r) => r.role_id)
-            .filter((r) => !memberRoles.includes(r));
-
-        /**
-         * This can happen when a member leaves and rejoins.
-         */
         if (missingRoles.length) {
-            await message.member?.roles.add(missingRoles).catch(() => {});
+            await message.member?.roles.add(missingRoles);
         }
 
         /**
-         * If the length is 1, we'll congratulate the member.
+         * This check specifically changes if the current activity role from the previous profile fetch is the same id.
+         * It's more precise to do it this way than to check if the length of the array for missing roles is 1.
          */
-        if (missingRoles.length === 1) {
-            const roleInfo = message.guild?.roles.cache.get(missingRoles[0]);
+        const oldCurrentRole = profile.value.data.chat_activity.current_activity_role;
+        const newCurrentRole = updatedProfile.value.data.chat_activity.current_activity_role;
+        const isNewCurrentRole = (!oldCurrentRole && newCurrentRole) || (oldCurrentRole && newCurrentRole && oldCurrentRole.role_id !== newCurrentRole.role_id);
+
+        if (isNewCurrentRole) {
+            const roleInfo = message.guild?.roles.cache.get(newCurrentRole.role_id);
             if (!roleInfo) return;
 
             await message.reply({
-                content: `<@${message.author.id}> Congratulations! You have reached ${updatedActivity.points} points and unlocked the ${inlineCode(roleInfo.name.toUpperCase())} activity role!` 
+                content: `<@${message.author.id}> Congratulations! You have reached ${newCurrentRole.required_points} points and unlocked the ${inlineCode(newCurrentRole.name)} activity role!`
             });
         }
     }

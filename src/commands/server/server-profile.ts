@@ -2,7 +2,7 @@ import { Readable } from 'stream';
 import { Command } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { type ApplicationCommandOptionData, GuildMember, ApplicationCommandOptionType, ApplicationCommandType, AttachmentBuilder, MessageFlags, InteractionContextType, ApplicationIntegrationType } from 'discord.js';
-import { ImageProcessorErrorReference } from '#/lib/extensions/ImageProcessorError';
+import RequestError from '#/lib/extensions/RequestError';
 
 @ApplyOptions<Command.Options>({
     description: 'Get information on a server member!'
@@ -37,52 +37,51 @@ export class ServerProfile extends Command {
     }
 
     private async generateCard(interaction: Command.ContextMenuCommandInteraction | Command.ChatInputCommandInteraction, userId: string) {
-        /**
-         * This is here to create guild settings incase they don't exist.
-         */
-        const settings = await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
-        if (settings.isErr()) {
-            this.container.logger.error(settings.error);
-
-            await interaction.editReply({
-                content: `Failed to fetch member's card. This has been forwarded to the developers.`
-            });
-
-            return;
-        }
-
-        if (!settings.value.chat_activity.is_enabled) {
-            await interaction.reply({
-                content: 'No tracking is enabled for this server.',
-                flags: [ MessageFlags.Ephemeral ],
-            });
-
-            return;
-        }
+        if (!interaction.guild) return;
 
         await interaction.deferReply({ withResponse: true });
 
-        const card = await this.container.api.getMemberProfileCard(interaction.guildId!, userId);
-        if (card.isErr()) {
-            const err = card.error
+        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
+        if (settings.isErr()) {
+            this.container.logger.error(settings.error);
+            return await interaction.editReply({ content: 'Something went wrong while generating the leaderboard card.' });
+        }
 
-            if (err.reference === ImageProcessorErrorReference.StatusNotOK) {
-                await interaction.editReply({
-                    content: 'Member profile does not exist.',
-                });
-            } else {
-                this.container.logger.error(err);
-                await interaction.editReply({
-                    content: `Failed to fetch member's card. This has been forwarded to the developers.`,
+        const { chat_activity } = settings.value.data;
+        if (!chat_activity.is_enabled) {
+            return await interaction.editReply({ content: 'Chat activity tracking is not enabled for this guild.' });
+        }
+
+        const image = await this.container.api.members.generateProfileCard(interaction.guild.id, userId);
+        if (image.isErr()) {
+            if (!(image.error instanceof RequestError)) {
+                this.container.logger.error(image.error);
+                return await interaction.editReply({
+                    content: 'There was an issue generating the profile card. This has been forwarded to the developers.',
                 });
             }
 
-            return;
+            const { status } = image.error.response;
+            switch (status) {
+                case 404:
+                    return await interaction.editReply({
+                        content: 'The requested member does not exist.',
+                    });
+                case 429:
+                    return await interaction.editReply({
+                        content: 'Too many cards are being generated right now, try again later.',
+                    });
+                default:
+                    this.container.logger.error(image.error);
+                    return await interaction.editReply({
+                        content: 'There was an issue generating the profile card. This has been forwarded to the developers.',
+                    });
+            }
         }
-
-        const attachment = new AttachmentBuilder(Readable.from(card.value), { name: `${interaction.guildId!}-${userId}_profile.png` });
+        
+        const attachment = new AttachmentBuilder(image.value, { name: 'profile-card.png' });
         return await interaction.editReply({
-            files: [attachment]
+            files: [ attachment ]
         });
     }
 

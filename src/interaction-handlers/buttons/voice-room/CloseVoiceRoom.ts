@@ -1,52 +1,44 @@
 import { ButtonInteraction, ChannelType, MessageFlags, type VoiceBasedChannel } from 'discord.js';
 import { InteractionHandler, InteractionHandlerTypes, } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import type { VoiceRoom, VoiceRoomLobby } from '#/lib/util/api';
-import { isOwner, getVoiceRoom } from '#/lib/util/voice-rooms';
+import type { VoiceRoom } from '#/lib/types/api';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button
 })
 export class CloseVoiceRoom extends InteractionHandler {
     public override async parse(interaction: ButtonInteraction) {
+        if (!interaction.guildId || !interaction.channelId) return this.none();
         if (interaction.customId !== 'voice_room.close') return this.none();
         if (!interaction.channel?.isVoiceBased()) return this.none();
 
-        const guildSettings = await this.container.api.getGuildSettings(interaction.guildId!); 
-        if (guildSettings.isErr()) return this.none();
+        await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
 
-        const voiceRoom = await getVoiceRoom(interaction.guildId!, interaction.channelId!);
-        if (voiceRoom.isErr()) return this.none();
-
-        const { settings, room } = voiceRoom.value;
-
-        if (!isOwner(interaction.user.id, room)) {
-            await interaction.reply({
-                content: 'You are not the owner of this voice room.',
-                flags: [ MessageFlags.Ephemeral ],
-            });
-
+        const room = await this.container.api.guilds.getVoiceRoom(interaction.guildId, interaction.channelId);
+        if (room.isErr()) {
+            await interaction.reply({ content: 'Something went wrong, please try again later.', });
             return this.none();
         }
 
-        return this.some({ settings, room });
+        return this.some({ room: room.value.data });
     }
 
-    public async run(interaction: ButtonInteraction, { room }: { settings: VoiceRoomLobby, room: VoiceRoom }) {
-        const channel = interaction.guild?.channels.cache.get(room.room_channel_id);
-        if (channel?.type !== ChannelType.GuildVoice) return;
-        const status = await this.container.api.deleteGuildVoiceRoom(interaction.guildId!, room.origin_channel_id, room.room_channel_id);
-        
+    public async run(interaction: ButtonInteraction, { room }: { room: VoiceRoom }) {
+        if (interaction.user.id !== room.current_owner_id) {
+            return await interaction.editReply({ content: 'You do not have permission to close this voice room.' });
+        }
+
+        const status = await this.container.api.guilds.deleteVoiceRoom(interaction.guildId!, interaction.channelId);
         if (status.isErr()) {
             this.container.logger.error(status.error);
-
-            await interaction.reply({
-                content: 'Failed to close the voice room. Try again in a bit.',
-                flags: [ MessageFlags.Ephemeral ],
-            });
-
-            return;
+            return await interaction.editReply({ content: 'Something went wrong, please try again later.' });
         }
-        await channel.delete(`Automated Action - Owner has closed the voice room.`);
+
+        try {
+            await (interaction.channel as VoiceBasedChannel).delete('Automated Action - No users in voice room.');
+        } catch (e) {
+            this.container.logger.error(e);
+            return await interaction.editReply({ content: 'Something went wrong with deleting the channel, contact server admins for it to be removed.' });
+        }
     }
 }

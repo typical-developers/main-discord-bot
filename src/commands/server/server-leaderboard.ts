@@ -2,7 +2,7 @@ import { Readable } from 'stream';
 import { Command, container } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { type ApplicationCommandOptionData, ApplicationCommandOptionType, ApplicationIntegrationType, AttachmentBuilder, InteractionContextType, MessageFlags } from 'discord.js';
-import { ImageProcessorErrorReference } from '#/lib/extensions/ImageProcessorError';
+import RequestError from '#/lib/extensions/RequestError';
 
 @ApplyOptions<Command.Options>({
     description: 'Get information on a server member!'
@@ -44,43 +44,37 @@ export class ServerProfile extends Command {
     }
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+        if (!interaction.guild) return;
+
         await interaction.deferReply({ withResponse: true });
 
-        const leaderboard = interaction.options.getString('leaderboard', true);
-        const display = interaction.options.getString('display', true);
-
-        const settings = await this.container.api.getGuildSettings(interaction.guildId!, { create: true });
+        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
         if (settings.isErr()) {
             this.container.logger.error(settings.error);
-
-            await interaction.editReply({
-                content: `Failed to fetch the server leaderboard. This has been forwarded to the developers.`
-            });
-
-            return;
+            return await interaction.editReply({ content: 'Something went wrong while generating the leaderboard card.' });
         }
 
-        const card = await this.container.api.getGuildLeaderboardCard(interaction.guildId!, { activity_type: leaderboard, display });
-        if (card.isErr()) {
-            const err = card.error;
+        const activityType = interaction.options.getString('leaderboard', true);
+        const displayType = interaction.options.getString('display', true);
+        const { chat_activity } = settings.value.data;
 
-            if (err.reference === ImageProcessorErrorReference.StatusNotOK) {
-                await interaction.editReply({
-                    content: 'Guild leaderboard card does not exist.',
-                });
-            } else {
-                this.container.logger.error(err);
-                await interaction.editReply({
-                    content: `Failed to fetch the server leaderboard. This has been forwarded to the developers.`,
-                });
-            }
-
-            return;
+        if (activityType === 'chat' && !chat_activity.is_enabled) {
+            return await interaction.editReply({ content: 'Chat activity tracking is not enabled for this guild.' });
         }
 
-        const attachment = new AttachmentBuilder(Readable.from(card.value), { name: `${interaction.guildId!}_${display}-${leaderboard}-leaderboard.png` });
-        return await interaction.editReply({
-            files: [attachment]
+        const res = await container.api.guilds.generateGuildActivityLeaderboardCard(interaction.guild.id, {
+            activity_type: activityType,
+            time_period: displayType
         });
+
+        if (res.isErr()) {
+            this.container.logger.error(res.error);
+            return await interaction.editReply({
+                content: 'Something went wrong while generating the leaderboard card.',
+            });
+        }
+
+        const attachment = new AttachmentBuilder(res.value, { name: 'leaderboard.png' });
+        return await interaction.editReply({ files: [ attachment ] });
     }
 }

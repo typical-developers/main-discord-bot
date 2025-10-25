@@ -1,71 +1,51 @@
 import { ButtonInteraction, MessageFlags, type VoiceBasedChannel } from 'discord.js';
 import { InteractionHandler, InteractionHandlerTypes, } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import type { VoiceRoom, VoiceRoomLobby } from '#/lib/util/api';
-import { isOwner, voiceRoomInfoCard, getVoiceRoom } from '#/lib/util/voice-rooms';
+import type { VoiceRoom } from '#/lib/types/api';
+import { voiceRoomDetailsEmbed } from '#/lib/util/voice-rooms';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button
 })
 export class LockVoiceRoom extends InteractionHandler {
     public override async parse(interaction: ButtonInteraction) {
+        if (!interaction.guildId || !interaction.channelId) return this.none();
         if (interaction.customId !== 'voice_room.toggle_lock') return this.none();
         if (!interaction.channel?.isVoiceBased()) return this.none();
 
-        const guildSettings = await this.container.api.getGuildSettings(interaction.guildId!); 
-        if (guildSettings.isErr()) return this.none();
+        await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
 
-        const voiceRoom = await getVoiceRoom(interaction.guildId!, interaction.channelId!);
-        if (voiceRoom.isErr()) return this.none();
-
-        const { settings, room } = voiceRoom.value;
-
-        if (!isOwner(interaction.user.id, room)) {
-            await interaction.reply({
-                content: 'You are not the owner of this voice room.',
-                flags: [ MessageFlags.Ephemeral ],
-            });
-
+        const room = await this.container.api.guilds.getVoiceRoom(interaction.guildId, interaction.channelId);
+        if (room.isErr()) {
+            await interaction.reply({ content: 'Something went wrong, please try again later.', });
             return this.none();
         }
 
-        return this.some({ settings, room });
+        return this.some({ room: room.value.data });
     }
 
-    private async _updateLimit(channel: VoiceBasedChannel, limit: number) {
-        await channel.setUserLimit(limit);
-    }
-
-    public async run(interaction: ButtonInteraction, { settings, room }: { settings: VoiceRoomLobby, room: VoiceRoom }) {
-        const isLocked = !room.is_locked
-        const status = await this.container.api.updateGuildVoiceRoom(interaction.guildId!, room.origin_channel_id, room.room_channel_id, {
-            is_locked: isLocked
-        });
-
-        if (status.isErr()) {
-            this.container.logger.error(status.error);
-
-            await interaction.reply({
-                content: 'Failed to toggle the lock state. Try again in a bit.',
-                flags: [ MessageFlags.Ephemeral ],
-            });
-
-            return;
+    public async run(interaction: ButtonInteraction, { room }: { room: VoiceRoom }) {
+        if (interaction.user.id !== room.current_owner_id) {
+            return await interaction.editReply({ content: 'You do not have permission to lock this voice room.' });
         }
 
-        isLocked
-            ? await this._updateLimit(interaction.channel as VoiceBasedChannel, 1)
-            : await this._updateLimit(interaction.channel as VoiceBasedChannel, settings.user_limit);
+        const isLocked = !room.is_locked;
+        const status = await this.container.api.guilds.updateVoiceRoom(interaction.guildId!, interaction.channelId, {
+            is_locked: isLocked
+        });
+        if (status.isErr()) {
+            return await interaction.editReply({ content: 'Failed to lock the voice room, please try again later.' });
+        };
 
-        const infoCard = voiceRoomInfoCard(settings, status.value.data);
+        isLocked
+            ? await (interaction.channel as VoiceBasedChannel).setUserLimit(1)
+            : await (interaction.channel as VoiceBasedChannel).setUserLimit(room.settings.user_limit);
+
         await interaction.message.edit({
-            components: infoCard,
+            components: [voiceRoomDetailsEmbed(room)],
             flags: [ MessageFlags.IsComponentsV2 ]
         });
 
-        await interaction.reply({
-            content: `The voice room has been ${isLocked ? 'locked' : 'unlocked'}.`,
-            flags: [ MessageFlags.Ephemeral ],
-        });
+        return await interaction.editReply({ content: `The voice room has been ${isLocked ? 'locked' : 'unlocked'}.` });
     }
 }

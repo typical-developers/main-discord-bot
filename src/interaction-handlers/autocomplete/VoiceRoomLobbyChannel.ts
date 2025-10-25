@@ -5,7 +5,7 @@ import { ApplyOptions } from '@sapphire/decorators';
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Autocomplete,
 })
-export class RobloxUsernameAutcomplete extends InteractionHandler {
+export class VoiceRoomLobbyChannel extends InteractionHandler {
     public override async parse(interaction: AutocompleteInteraction) {
         const focused = interaction.options.getFocused(true);
 
@@ -15,48 +15,54 @@ export class RobloxUsernameAutcomplete extends InteractionHandler {
         return this.some(command);
     }
 
-    public override async run(interaction: AutocompleteInteraction, command: string) {
-        const settings = await this.container.api.getGuildSettings(interaction.guildId!);
+    public override async run(interaction: AutocompleteInteraction, command: 'add' | 'update' | 'remove') {
+        if (!interaction.guild) return;
+
+        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
         if (settings.isErr()) {
-            return interaction.respond([{
-                name: "Something went wrong. Try again later.",
-                value: "NONE"
-            }]);
+            this.container.logger.error(settings.error);
+
+            return await interaction.respond([
+                { name: 'There was an issue fetching the guild\'s settings. Please try again later.', value: '' }
+            ]);
         }
 
-        if (command === 'add-voice-room-lobby') {
-            const existingLobbies = settings.value.voice_rooms.map((r) => r.channel_id);
-            const voiceChannels = interaction.guild?.channels.cache
-                .filter((c) => c.type === ChannelType.GuildVoice)
-                .filter((c) => !existingLobbies.includes(c.id));
+        const { voice_room_lobbies } = settings.value.data;
+        switch (command) {
+            case 'add':
+                const existingLobbies = voice_room_lobbies.map((v) => v.channel_id);
+                const existingRooms = voice_room_lobbies.map((v) => v.opened_rooms).flat();
 
-            if (!voiceChannels?.size) {
-                return interaction.respond([{
-                    name: "Unable to find any voice channels.",
-                    value: "NONE"
-                }]);
-            }
+                const filteredChannels = interaction.guild.channels.cache
+                    .filter((c) => c.type === ChannelType.GuildVoice)
+                    .filter((c) => !existingLobbies.includes(c.id))
+                    .filter((c) => !existingRooms.includes(c.id));
 
-            return interaction.respond(voiceChannels.map((c) => ({
-                name: c.name,
-                value: c.id
-            })));
-        } else {
-            if (settings.value.voice_rooms.length === 0) {
-                return interaction.respond([{
-                    name: "Unable to find any voice channels.",
-                    value: "NONE"
-                }]);
-            }
-
-            return interaction.respond(settings.value.voice_rooms.map((r) => {
-                const channel = interaction.guild?.channels.cache.get(r.channel_id);
-
-                return {
-                    name: channel?.name || "Unknown Channel",
-                    value: r.channel_id
+                if (!filteredChannels.size) {
+                    return await interaction.respond([
+                        { name: 'There are no available voice channels to add to the lobby.', value: '' }
+                    ]);
                 }
-            }));
+
+                return await interaction.respond(filteredChannels.map((c) => (
+                    { name: `🔊 ${c.name} (${c.id})`, value: c.id }
+                )));
+            case 'update':
+            case 'remove':
+                return await interaction.respond(settings.value.data.voice_room_lobbies.map((v) => {
+                    const channel = interaction.guild!.channels.cache.get(v.channel_id);
+
+                    return {
+                        name: channel 
+                            ? `🔊 ${channel.name} (${v.channel_id})`
+                            : v.channel_id,
+                        value: v.channel_id
+                    }
+                }));
+            default:
+                return await interaction.respond([
+                    { name: 'Something went wrong. Please try again later.', value: '' }
+                ]);
         }
 	}
 }
