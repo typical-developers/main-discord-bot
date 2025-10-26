@@ -6,7 +6,7 @@ import { GuildMember, type GuildBasedChannel, PermissionFlagsBits, User, type Ch
 /**
  * Fetches all message links that are in a message.
  */
-export function parseMessageLinks(content: string) {
+export function parseMessageLinks(content: string, ignoredChannels: Array<string> = []) {
     const contents = content.split(/(?:\n| )+/);
     const guilds = container.client.guilds.cache.map((g) => g.id);
 
@@ -19,6 +19,7 @@ export function parseMessageLinks(content: string) {
 
         // duplicate link.
         if (links.find((link) => link.id === groups.messageId)) continue;
+        if (ignoredChannels.includes(groups.channelId)) continue;
 
         // bot is not in the guild
         if (!guilds.includes(groups.guildId)) continue;

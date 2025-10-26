@@ -7,8 +7,9 @@ import { ApplyOptions } from '@sapphire/decorators';
 })
 export class VoiceRoomLobbyChannel extends InteractionHandler {
     public override async parse(interaction: AutocompleteInteraction) {
-        const focused = interaction.options.getFocused(true);
+        if (interaction.commandName !== 'voice-room-lobby') return this.none();
 
+        const focused = interaction.options.getFocused(true);
         if (focused.name !== 'channel') return this.none();
 
         const command = interaction.options.getSubcommand(true);

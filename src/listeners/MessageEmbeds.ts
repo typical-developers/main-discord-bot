@@ -2,6 +2,7 @@ import { type Message, StringSelectMenuBuilder, Events, type SelectMenuComponent
 import { Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { fetchMessage, generateMessageEmbed, parseMessageLinks } from '#/lib/util/message-embeds';
+import { isGuildBasedChannel } from '@sapphire/discord.js-utilities';
 
 @ApplyOptions<Listener.Options>({
     event: Events.MessageCreate,
@@ -9,9 +10,17 @@ import { fetchMessage, generateMessageEmbed, parseMessageLinks } from '#/lib/uti
 })
 export class MessageEmbeds extends Listener {
     public override async run(message: Message) {
-        if (!message || !message.member || !message.content || message.author.bot) return;
+        if (!message || !message.guildId || !message.member || !message.content || message.author.bot) return;
 
-        const messageLinks = parseMessageLinks(message.content);
+        const settings = await this.container.api.guilds.getGuildSettings(message.guildId);
+        if (settings.isErr()) return;
+
+        const { message_embeds } = settings.value.data;
+        if (!message_embeds.is_enabled) return;
+        if (message_embeds.disabled_channels.includes(message.channelId)) return;
+        if (message.member.roles.cache.some((r) => message_embeds.ignored_roles.includes(r.id))) return;
+
+        const messageLinks = parseMessageLinks(message.content, message_embeds.ignored_channels);
         if (!messageLinks.length) return;
 
         // get the first message that the member can actually see for embedding.

@@ -1,9 +1,18 @@
 import { okAsync, errAsync } from 'neverthrow';
-import type { APIResponse, APIError, GuildSettings, GuildActivityTrackingUpdate, GuildActivityRoleCreate, GuildActivityLeaderboardQuery, VoiceRoomLobbySettings, VoiceRoomRegister, VoiceRoom, VoiceRoomUpdate } from '#/lib/types/api';
+import type { APIResponse, APIError, GuildSettings, GuildActivityTrackingUpdate, GuildActivityRoleCreate, GuildActivityLeaderboardQuery, VoiceRoomLobbySettings, VoiceRoomRegister, VoiceRoom, VoiceRoomUpdate, UpdateMessageEmbedSettings } from '#/lib/types/api';
 import { request } from '#/lib/util/request';
 import RequestError from '#/lib/extensions/RequestError';
+import { Collection } from 'discord.js';
 
 const { BOT_API_URL, BOT_ENDPOINT_API_KEY, BROWSERLESS_URL } = process.env;
+
+/**
+ * This is a temporary caching solution specifically for guild settings to prevent constant fetches for settings
+ * which will happen EVERY single time a message is sent in a guild.
+ * 
+ * An actual cache system will be implemented in the VERY near future.
+ */
+const cache = new Collection<string, APIResponse<GuildSettings>>();
 
 export async function createGuildSettings(guildId: string) {
     const res = await request<APIResponse<GuildSettings>, APIError>({
@@ -14,10 +23,14 @@ export async function createGuildSettings(guildId: string) {
         }
     });
 
+    if (res.isOk()) cache.set(guildId, res.value);
+
     return res
 }
 
 export async function getGuildSettings(guildId: string, { create }: { create?: boolean } = {}) {
+    if (cache.has(guildId)) return okAsync(cache.get(guildId)!);
+
     const res = await request<APIResponse<GuildSettings>, APIError>({
         url: new URL(`/v1/guild/${guildId}/settings`, BOT_API_URL),
         method: 'GET',
@@ -40,6 +53,8 @@ export async function getGuildSettings(guildId: string, { create }: { create?: b
         return res;
     }
 
+    if (res.isOk()) cache.set(guildId, res.value);
+
     return res
 }
 
@@ -52,6 +67,8 @@ export async function updateGuildActivitySettings(guildId: string, settings: Gui
         },
         body: settings
     });
+
+    if (res.isOk()) cache.set(guildId, res.value);
     
     return res;
 }
@@ -65,6 +82,23 @@ export async function createAcitivtyRole(guildId: string, options: GuildActivity
         },
         body: options
     });
+
+    if (res.isOk()) cache.set(guildId, res.value);
+
+    return res;
+}
+
+export async function updateMessageEmbedSettings(guildId: string, options: Partial<UpdateMessageEmbedSettings>) {
+    const res = await request<APIResponse<GuildSettings>, APIError>({
+        url: new URL(`/v1/guild/${guildId}/settings/message-embeds`, BOT_API_URL),
+        method: 'PATCH',
+        headers: {
+            Authorization: BOT_ENDPOINT_API_KEY
+        },
+        body: options
+    });
+
+    if (res.isOk()) cache.set(guildId, res.value);
 
     return res;
 }
@@ -153,6 +187,8 @@ export async function createVoiceRoomLobby(guildId: string, originChannelId: str
         body: options
     });
 
+    if (res.isOk() && cache.has(guildId)) cache.delete(guildId);
+
     return res;
 }
 
@@ -166,6 +202,8 @@ export async function updateVoiceRoomLobby(guildId: string, originChannelId: str
         body: options
     });
 
+    if (res.isOk() && cache.has(guildId)) cache.delete(guildId);
+
     return res;
 }
 
@@ -177,6 +215,8 @@ export async function deleteVoiceRoomLobby(guildId: string, originChannelId: str
             Authorization: BOT_ENDPOINT_API_KEY
         }
     });
+
+    if (res.isOk() && cache.has(guildId)) cache.delete(guildId);
 
     return res;
 }
@@ -191,6 +231,8 @@ export async function registerVoiceRoom(guildId: string, originChannelId: string
         body: options
     });
 
+    if (res.isOk() && cache.has(guildId)) cache.delete(guildId);
+
     return res;
 }
 
@@ -202,6 +244,8 @@ export async function getVoiceRoom(guildId: string, voiceChannelId: string) {
             Authorization: BOT_ENDPOINT_API_KEY
         }
     });
+
+    if (res.isOk() && cache.has(guildId)) cache.delete(guildId);
 
     return res;
 }
@@ -216,6 +260,8 @@ export async function updateVoiceRoom(guildId: string, voiceChannelId: string, o
         body: options
     });
 
+    if (res.isOk() && cache.has(guildId)) cache.delete(guildId);
+
     return res;
 }
 
@@ -227,6 +273,8 @@ export async function deleteVoiceRoom(guildId: string, voiceChannelId: string) {
             Authorization: BOT_ENDPOINT_API_KEY
         }
     });
+
+    if (res.isOk() && cache.has(guildId)) cache.delete(guildId);
 
     return res
 }

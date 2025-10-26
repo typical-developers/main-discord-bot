@@ -48,8 +48,16 @@ export type GuildVoiceRoomLobby = {
     opened_rooms: Array<string>;
 };
 
+export type MessageEmbeds = {
+    is_enabled: boolean;
+    disabled_channels: Array<string>;
+    ignored_channels: Array<string>;
+    ignored_roles: Array<string>;
+}
+
 export type GuildSettings = {
     chat_activity: GuildActivityTracking;
+    message_embeds: MessageEmbeds;
     voice_room_lobbies: Array<GuildVoiceRoomLobby>;
 };
 
@@ -93,6 +101,16 @@ export type VoiceRoomUpdate = {
     current_owner_id: string;
     is_locked: boolean;
 };
+
+export type UpdateMessageEmbedSettings = {
+    is_enabled?: boolean;
+    add_disabled_channel?: string;
+    remove_disabled_channel?: string;
+    add_ignored_channel?: string;
+    remove_ignored_channel?: string;
+    add_ignored_role?: string;
+    remove_ignored_role?: string;
+}
 
 export type MemberActivity = {
     rank: number;
