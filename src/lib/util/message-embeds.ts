@@ -1,28 +1,54 @@
-import { type Channel, ChannelType, Colors, EmbedBuilder, Guild, type GuildBasedChannel, GuildMember, Message, PermissionFlagsBits, User } from "discord.js";
-import { MessageLinkRegex } from '@sapphire/discord-utilities';
 import { container } from "@sapphire/pieces";
+import { MessageLinkRegex } from "@sapphire/discord-utilities";
 import { isGuildBasedChannel } from "@sapphire/discord.js-utilities";
-
-const { client } = container;
+import { GuildMember, type GuildBasedChannel, PermissionFlagsBits, User, type Channel, ChannelType, Message, EmbedBuilder, Colors } from "discord.js";
 
 /**
- * Whether or not the member can access a specific channel.
- * @param memberInfo Information about the member.
- * @param channelId The id for the channel to check access for.
- * @returns {boolean} If the member can access the channel.
+ * Fetches all message links that are in a message.
  */
-function canViewChannel(memberInfo: GuildMember, channel: GuildBasedChannel): boolean {
-    return channel
-        .permissionsFor(memberInfo)
-        .has([ PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory ]);
+export function parseMessageLinks(content: string) {
+    const contents = content.split(/(?:\n| )+/);
+    const guilds = container.client.guilds.cache.map((g) => g.id);
+
+    const links: { id: string, guildId: string, channelId: string }[] = [];
+    for (const string of contents) {
+        const result = MessageLinkRegex.exec(string)
+
+        if (!result?.groups) continue;
+        const { groups } = result;
+
+        // duplicate link.
+        if (links.find((link) => link.id === groups.messageId)) continue;
+
+        // bot is not in the guild
+        if (!guilds.includes(groups.guildId)) continue;
+
+        links.push({
+            id: groups.messageId,
+            guildId: groups.guildId,
+            channelId: groups.channelId,
+        });
+    }
+
+    return links;
 }
 
 /**
- * Gets the most appropriate username for the author.
- * @param author 
- * @returns {string}
+ * Checks whether or not a member can view a specific channel.
  */
-function getAuthorUsername(author: User): string {
+export function canViewChannel(member: GuildMember, channel: GuildBasedChannel) {
+    return channel
+        .permissionsFor(member)
+        .has([
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.ReadMessageHistory
+        ]);
+}
+
+/**
+ * Formats the most appropriate username for the author.
+ */
+export function getAuthorUsername(author: User) {
     if (author.discriminator !== '0') {
         return author.tag;
     }
@@ -35,55 +61,48 @@ function getAuthorUsername(author: User): string {
 }
 
 /**
- * Formats the guild + channel name depending on the channel type.
- * @param channel The channel to get the name for.
- * @returns {string}
+ * Formats the most appropriate name for the channel.
  */
-function getGuildChannelName(channel: Channel): string {
-    if (!isGuildBasedChannel(channel)) return `${channel.id}`;
+export function getGuildChannelName(channel: Channel) {
+    if (!isGuildBasedChannel(channel)) return channel.id;
 
     switch (channel.type) {
         case ChannelType.GuildText:
         case ChannelType.GuildAnnouncement:
         case ChannelType.GuildVoice:
         case ChannelType.GuildStageVoice:
-            return `${channel.guild.name + ' -' || ''} #${channel.name}`
+            return `${channel.guild.name} - #${channel.name}`
         default:
-            return `${channel.guild.name + ' -' || ''} ${channel.name}`
+            return `${channel.guild.name} - ${channel.name}`
     }
 }
 
 /**
- * Get the contents of the message.
- * @param memberInfo Information about the member trying to embed the message.
- * @param messageDetails Information from the message link.
- * @returns {Promise<Message | null>} The message content.
+ * Fetches a message from a specific channel.
+ * This will return null if the member cannot view the channel.
  */
-export async function getMessageContent(memberInfo: GuildMember, messageDetails: { guildId: string, channelId: string, messageId: string }): Promise<Message | null> {
-    const guild = await client.guilds.fetch(messageDetails.guildId);
+export async function fetchMessage(member: GuildMember, { id, guildId, channelId }: { id: string, guildId: string; channelId: string;}) {
+    const guild = await container.client.guilds.fetch(guildId);
     if (!guild) return null;
 
-    const channel = await guild.channels.fetch(messageDetails.channelId);
-    
-    if (!channel) return null
-    if (!channel.isTextBased() && !channel.isThread()) return null
-    if (!canViewChannel(memberInfo, channel)) return null
+    const channel = await guild.channels.fetch(channelId);
+    if (!channel) return null;
+    if (!isGuildBasedChannel(channel)) return null;
+    if (!canViewChannel(member, channel)) return null;
 
-    const message = await channel.messages.fetch(messageDetails.messageId).catch(() => null);
+    const message = await channel.messages.fetch(id).catch(() => null);
     if (!message || !message.content.length && !message.attachments.size) return null;
 
     return message;
 }
 
 /**
- * Create an embed for a message.
- * @param message The message content to embed.
- * @returns {Promise<EmbedBuilder[]>}
+ * Generates a message embed based on message contents.
  */
-export async function createMessageEmbed(message: Message): Promise<EmbedBuilder[]> {
-    let { author, content, createdTimestamp, attachments, url, guild, channel } = message;
-    author = await author.fetch(true);
-    
+export async function generateMessageEmbed(message: Message) {
+    const { author, content, createdTimestamp, attachments, url, guild, channel } = message;
+    await author.fetch(true);
+
     const embed = new EmbedBuilder({
         color: author.accentColor || Colors.White,
         author: {
@@ -114,54 +133,4 @@ export async function createMessageEmbed(message: Message): Promise<EmbedBuilder
     }, []);
 
     return [embed, ...embedImages];
-}
-
-/**
- * Parse a singular message link.
- * @param link The message link to parse.
- */
-export async function parseMessageLink(link: string) {
-    const result = MessageLinkRegex.exec(link);
-
-    if (!result?.groups) return null;
-    const { groups } = result;
-    
-    if (!container.client.guilds.cache.get(groups.guildId)) return null;
-
-    return {
-        guildId: groups.guildId,
-        channelId: groups.channelId,
-        messageId: groups.messageId
-    }
-}
-
-/**
- * Parse message content to get all message links.
- * @param content The message content to parse.
- */
-export function parseMessageLinks(content: string) {
-    const contents = content.split(/(?:\n| )+/);
-    const guilds = client.guilds.cache.map((g) => g.id);
-
-    const links: { guildId: string, channelId: string, messageId: string }[] = [];
-    for (const string of contents) {
-        const result = MessageLinkRegex.exec(string)
-
-        if (!result?.groups) continue;
-        const { groups } = result;
-
-        // duplicate link.
-        if (links.find((link) => link.messageId === groups.messageId)) continue;
- 
-        // bot is not in the guild
-        if (!guilds.includes(groups.guildId)) continue;
-
-        links.push({
-            guildId: groups.guildId,
-            channelId: groups.channelId,
-            messageId: groups.messageId
-        });
-    }
-
-    return links;
 }

@@ -1,7 +1,7 @@
-import { type Message, StringSelectMenuBuilder, Events, type SelectMenuComponentOptionData, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { type Message, StringSelectMenuBuilder, Events, type SelectMenuComponentOptionData, ActionRowBuilder, ButtonBuilder, ButtonStyle, GuildMember, type GuildBasedChannel, PermissionFlagsBits, User, type Channel, ChannelType, EmbedBuilder, Colors } from 'discord.js';
 import { Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { getMessageContent, parseMessageLinks, createMessageEmbed } from '#/lib/util/message-embeds';
+import { fetchMessage, generateMessageEmbed, parseMessageLinks } from '#/lib/util/message-embeds';
 
 @ApplyOptions<Listener.Options>({
     event: Events.MessageCreate,
@@ -17,7 +17,7 @@ export class MessageEmbeds extends Listener {
         // get the first message that the member can actually see for embedding.
         let currentMessage: Message | undefined;
         for (const link of messageLinks) {
-            const messageDetails = await getMessageContent(message.member, link);
+            const messageDetails = await fetchMessage(message.member, link);
             if (!messageDetails) continue;
 
             currentMessage = messageDetails;
@@ -28,7 +28,7 @@ export class MessageEmbeds extends Listener {
         // for the time being, just don't show it.
         if (!currentMessage) return;
 
-        const embed = await createMessageEmbed(currentMessage);
+        const embed = await generateMessageEmbed(currentMessage);
         const jumpToButton = new ActionRowBuilder<ButtonBuilder>()
             .addComponents(
                 new ButtonBuilder({
@@ -49,9 +49,9 @@ export class MessageEmbeds extends Listener {
             const options: SelectMenuComponentOptionData[] = messageLinks
                 .map((link, index) =>
                     ({
-                        label: `${index+1} - ID ${link.messageId}`,
-                        value: `https://discord.com/channels/${link.guildId}/${link.channelId}/${link.messageId}`,
-                        default: link.messageId === messageLinks[0].messageId ? true : false
+                        label: `${index+1} - ID ${link.id}`,
+                        value: `https://discord.com/channels/${link.guildId}/${link.channelId}/${link.id}`,
+                        default: link.id === messageLinks[0].id ? true : false
                     })
                 );
 
