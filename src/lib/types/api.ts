@@ -19,12 +19,12 @@ export interface APIError extends BaseAPIResponse {
     message: string;
 };
 
-export interface GuildActivityRoles {
+export type GuildActivityRoles = {
     role_id: string;
     required_points: number;
 };
 
-export interface GuildActivityTracking {
+export type GuildActivityTracking = {
     is_enabled: boolean;
     grant_amount: number;
     cooldown: number;
@@ -32,13 +32,13 @@ export interface GuildActivityTracking {
     deny_roles: Array<string>;
 };
 
-export interface GuildVoiceRoom {
+export type GuildVoiceRoom = {
     channel_id: string;
     created_by_user_id: string;
     current_owner_id: string;
 }
 
-export interface GuildVoiceRoomLobby {
+export type GuildVoiceRoomLobby = {
     channel_id: string;
     user_limit: number;
     can_rename: boolean;
