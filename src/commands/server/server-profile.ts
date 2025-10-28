@@ -41,42 +41,44 @@ export class ServerProfile extends Command {
 
         await interaction.deferReply({ withResponse: true });
 
-        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
+        const settings = await this.container.api.guilds.fetch(interaction.guild.id, { createNew: true });
         if (settings.isErr()) {
             this.container.logger.error(settings.error);
-            return await interaction.editReply({ content: 'Something went wrong while generating the leaderboard card.' });
+            return await interaction.editReply({
+                content: 'Something went wrong while generating the leaderboard card.'
+            });
         }
 
-        const { chat_activity } = settings.value.data;
-        if (!chat_activity.is_enabled) {
-            return await interaction.editReply({ content: 'Chat activity tracking is not enabled for this guild.' });
-        }
+        const { chatActivity: chatActivitySettings } = settings.value;
+        if (!chatActivitySettings.isEnabled)
+            return await interaction.editReply({
+                content: 'Chat activity tracking is not enabled for this guild.'
+            });
 
-        const image = await this.container.api.members.generateProfileCard(interaction.guild.id, userId);
-        if (image.isErr()) {
-            if (!(image.error instanceof RequestError)) {
-                this.container.logger.error(image.error);
+        const member = await settings.value.members.fetch(userId);
+        if (member.isErr()) {
+            if (member.error instanceof RequestError && member.error.response.status === 404)
                 return await interaction.editReply({
-                    content: 'There was an issue generating the profile card. This has been forwarded to the developers.',
+                    content: 'The requested member does not exist.',
                 });
-            }
 
-            const { status } = image.error.response;
-            switch (status) {
-                case 404:
-                    return await interaction.editReply({
-                        content: 'The requested member does not exist.',
-                    });
-                case 429:
-                    return await interaction.editReply({
-                        content: 'Too many cards are being generated right now, try again later.',
-                    });
-                default:
-                    this.container.logger.error(image.error);
-                    return await interaction.editReply({
-                        content: 'There was an issue generating the profile card. This has been forwarded to the developers.',
-                    });
-            }
+            this.container.logger.error(member.error);
+            return await interaction.editReply({
+                content: 'Something went wrong while generating the leaderboard card.'
+            });
+        }
+
+        const image = await member.value.generateProfileCard();
+        if (image.isErr()) {
+            if (image.error instanceof RequestError && image.error.response.status === 429)
+                return await interaction.editReply({
+                    content: 'Too many cards are being generated right now, try again later.',
+                });
+
+            this.container.logger.error(image.error);
+            return await interaction.editReply({
+                content: 'There was an issue generating the profile card. This has been forwarded to the developers.',
+            });
         }
         
         const attachment = new AttachmentBuilder(image.value, { name: 'profile-card.png' });

@@ -17,22 +17,22 @@ export class VoiceRoomLobbyChannel extends InteractionHandler {
     }
 
     public override async run(interaction: AutocompleteInteraction, command: 'add' | 'update' | 'remove') {
-        if (!interaction.guild) return;
+        if (!interaction.guild)
+            return;
 
-        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
+        const settings = await this.container.api.guilds.fetch(interaction.guild.id, { createNew: true });
         if (settings.isErr()) {
             this.container.logger.error(settings.error);
-
             return await interaction.respond([
                 { name: 'There was an issue fetching the guild\'s settings. Please try again later.', value: '' }
             ]);
         }
 
-        const { voice_room_lobbies } = settings.value.data;
+        const { voiceRoomLobbies, activeVoiceRooms } = settings.value;
         switch (command) {
             case 'add':
-                const existingLobbies = voice_room_lobbies.map((v) => v.channel_id);
-                const existingRooms = voice_room_lobbies.map((v) => v.opened_rooms).flat();
+                const existingLobbies = voiceRoomLobbies.cache.map((v) => v.id);
+                const existingRooms = activeVoiceRooms.cache.map((v) => v.originChannelId);
 
                 const filteredChannels = interaction.guild.channels.cache
                     .filter((c) => c.type === ChannelType.GuildVoice)
@@ -50,14 +50,14 @@ export class VoiceRoomLobbyChannel extends InteractionHandler {
                 )));
             case 'update':
             case 'remove':
-                return await interaction.respond(settings.value.data.voice_room_lobbies.map((v) => {
-                    const channel = interaction.guild!.channels.cache.get(v.channel_id);
+                return await interaction.respond(voiceRoomLobbies.cache.map((v) => {
+                    const channel = interaction.guild!.channels.cache.get(v.id);
 
                     return {
                         name: channel 
-                            ? `🔊 ${channel.name} (${v.channel_id})`
-                            : v.channel_id,
-                        value: v.channel_id
+                            ? `🔊 ${channel.name} (${v.id})`
+                            : v.id,
+                        value: v.id
                     }
                 }));
             default:

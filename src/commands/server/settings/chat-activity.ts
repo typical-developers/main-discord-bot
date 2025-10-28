@@ -51,15 +51,6 @@ export class ChatActivitySettings extends Subcommand {
                     description: 'Add a role to the list of roles that grant chat activity points.',
                     options: [
                         {
-                            type: ApplicationCommandOptionType.String,
-                            name: 'grant-type',
-                            description: 'The type of chat activity to grant points for.',
-                            required: true,
-                            choices: [
-                                { name: 'Chat', value: 'chat' },
-                            ],
-                        },
-                        {
                             type: ApplicationCommandOptionType.Role,
                             name: 'role',
                             description: 'The role to add to the list of roles that grant chat activity points.',
@@ -90,33 +81,28 @@ export class ChatActivitySettings extends Subcommand {
     }
 
     public async updateChatActivitySettings(interaction: Subcommand.ChatInputCommandInteraction) {
-        if (interaction.guild == null) return;
+        if (!interaction.guild) return;
 
         await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
-        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
+        const settings = await this.container.api.guilds.fetch(interaction.guild.id, { createNew: true });
+
         if (settings.isErr()) {
             this.container.logger.error(settings.error);
 
-            await interaction.editReply({
+            return await interaction.editReply({
                 content: 'Something went wrong fetching the guild\'s settings. Please try again later.',
             });
-
-            return;
-        }
-
-        const toggle = interaction.options.getBoolean('toggle') ?? undefined;
-        const cooldown = interaction.options.getNumber('cooldown') ?? undefined;
-        const amount = interaction.options.getNumber('amount') ?? undefined;
-        const data = await this.container.api.guilds.updateGuildActivitySettings(interaction.guild.id, {
-            chat_activity: {
-                is_enabled: toggle,
-                grant_amount: amount,
-                cooldown: cooldown
-            }
+        };
+        
+        const { chatActivity } = settings.value;
+        const isSuccess = await chatActivity.updateSettings({
+            is_enabled: interaction.options.getBoolean('toggle') ?? undefined,
+            grant_amount: interaction.options.getNumber('amount') ?? undefined,
+            cooldown: interaction.options.getNumber('cooldown') ?? undefined
         });
-
-        if (data.isErr()) {
-            this.container.logger.error(data.error);
+    
+        if (isSuccess.isErr()) {
+            this.container.logger.error(isSuccess.error);
 
             await interaction.editReply({
                 content: 'There was an error updating the chat activity settings.',
@@ -131,38 +117,32 @@ export class ChatActivitySettings extends Subcommand {
     }
 
     public async addActivityRole(interaction: Subcommand.ChatInputCommandInteraction) {
-        if (interaction.guild == null) return;
+        if (!interaction.guild) return;
 
         await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
-        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
+        const settings = await this.container.api.guilds.fetch(interaction.guild.id, { createNew: true });
         if (settings.isErr()) {
             this.container.logger.error(settings.error);
 
-            await interaction.editReply({
+            return await interaction.editReply({
                 content: 'Something went wrong fetching the guild\'s settings. Please try again later.',
             });
-
-            return;
         }
 
-        const grantType = interaction.options.getString('grant-type', true);
+        const { chatActivity } = settings.value;
         const role = interaction.options.getRole('role', true);
-        const requiredPoints = interaction.options.getNumber('required-points', true);
-        const data = await this.container.api.guilds.createAcitivtyRole(interaction.guild.id, {
-            activity_type: grantType,
+        const isSuccess = await chatActivity.createActivityRole({
             role_id: role.id,
-            required_points: requiredPoints
+            required_points: interaction.options.getNumber('required-points', true)
         });
 
-        if (data.isErr()) {
-            if (data.error instanceof RequestError && data.error.response.status !== 409) {
-                this.container.logger.error(data.error);
+        if (isSuccess.isErr()) {
+            if (isSuccess.error instanceof RequestError && isSuccess.error.response.status !== 409) {
+                this.container.logger.error(isSuccess.error);
 
-                await interaction.editReply({
+                return await interaction.editReply({
                     content: 'There was an error creating the activity role.',
                 });
-
-                return;
             }
             
             await interaction.editReply({

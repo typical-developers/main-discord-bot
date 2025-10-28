@@ -58,9 +58,15 @@ export class MigrateMemberProfile extends Command {
 
         await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
 
-        const response = await this.container.api.members.migrateMemberProfile(interaction.guild.id, fromUser.id, { to_member_id: toUser.id });
-        if (response.isErr()) {
-            this.container.logger.error(response.error);
+        const settings = await this.container.api.guilds.fetch(interaction.guild.id);
+        if (settings.isErr())
+            return await interaction.editReply({
+                content: 'Something went wrong fetching the guild\'s settings. Please try again later.',
+            });
+
+        const isSuccess = await settings.value.members.migrateProfile(fromUser.id, toUser.id);
+        if (isSuccess.isErr()) {
+            this.container.logger.error(isSuccess.error);
             return await interaction.editReply({
                 content: 'There was an error migrating the member profile.',
             });
@@ -72,19 +78,17 @@ export class MigrateMemberProfile extends Command {
          */
         let removedOldRoles = true; // assumes they either have none to remove or the attempt succeeded
         const fromGuildMember = await interaction.guild.members.fetch(fromUser.id).catch(() => undefined);
-        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id);
         if (fromGuildMember && !settings.isErr()) {
-            const activityRoleIds = settings.value.data.chat_activity.activity_roles.map((a) => a.role_id);
-            const removeRoles = activityRoleIds.filter((id) => fromGuildMember.roles.cache.has((id)));
+            const activityRoles = settings.value.chatActivity.activityRoles.map((a) => a.roleId);
+            const removeRoles = activityRoles.filter((id) => fromGuildMember.roles.cache.has(id));
             
-            if (removeRoles.length) {
+            if (removeRoles.length)
                 await fromGuildMember.roles.remove(removeRoles, 'Automated Action - Member profile was migrated to another user.')
                     .catch(() => removedOldRoles = false);
-            }
         }
 
         return await interaction.editReply({
-            content: `Successfully migrated the member profile: <@${fromUser.id}> (${fromUser.id}) -> <@${toUser.id}> (${toUser.id}). ${!removedOldRoles && 'Old roles could not be removed from the user. Please manually remove them.'}`,
+            content: `Successfully migrated the member profile: <@${fromUser.id}> (${fromUser.id}) -> <@${toUser.id}> (${toUser.id}). ${!removedOldRoles ? 'Old roles could not be removed from the user. Please manually remove them.' : ''}`,
         });
     }
 }

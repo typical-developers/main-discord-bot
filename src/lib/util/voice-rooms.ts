@@ -1,28 +1,29 @@
 import { ContainerBuilder, ActionRowBuilder ,ButtonBuilder, ComponentType, SeparatorSpacingSize, inlineCode, ButtonStyle } from "discord.js";
-import type { VoiceRoom } from '#/lib/types/api';
+import type VoiceRoom from "#/lib/structures/VoiceRoom";
+import type VoiceRoomLobby from "../structures/VoiceRoomLobby";
 
-export function voiceRoomDetailsEmbed(room: VoiceRoom) {
+export function voiceRoomDetailsEmbed(room: VoiceRoom, settings: VoiceRoomLobby) {
     const settingsButtons = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder({
             type: ComponentType.Button,
             style: ButtonStyle.Secondary,
             custom_id: 'voice_room.rename',
             label: 'Rename Room',
-            disabled: !room.settings.can_rename 
+            disabled: !settings.canRename 
         }),
         new ButtonBuilder({
             type: ComponentType.Button,
             style: ButtonStyle.Secondary,
             custom_id: 'voice_room.toggle_lock',
             label: 'Toggle Locked',
-            disabled: !room.settings.can_lock
+            disabled: !settings.canLock
         }),
         new ButtonBuilder({
             type: ComponentType.Button,
             style: ButtonStyle.Secondary,
             custom_id: 'voice_room.adjust_limit',
             label: 'Adjust Limit',
-            disabled: !room.settings.can_adjust_limit
+            disabled: !settings.canAdjustLimit
         })
     );
 
@@ -59,9 +60,9 @@ export function voiceRoomDetailsEmbed(room: VoiceRoom) {
         .addTextDisplayComponents([{
             type: ComponentType.TextDisplay,
             content:
-                `**Created By:** <@${room.creator_id}>\n` +
-                `**Current Owner:** <@${room.current_owner_id}>\n` +
-                `**Locked State** ${inlineCode(`${room.is_locked}`)}`,
+                `**Created By:** <@${room.creatorId}>\n` +
+                `**Current Owner:** <@${room.currentOwnerId}>\n` +
+                `**Locked State** ${inlineCode(`${!room.isLocked}`)}`,
         }])
         .addActionRowComponents(settingsButtons)
         .addActionRowComponents(stateButtons);

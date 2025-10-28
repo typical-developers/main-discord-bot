@@ -1,4 +1,4 @@
 import { container } from '@sapphire/framework';
-import { api } from '#/lib/api';
+import BotAPI from '#/lib/structures/BotAPI';
 
-container.api = api;
+container.api = new BotAPI();

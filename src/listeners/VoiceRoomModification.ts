@@ -8,25 +8,25 @@ import { Events, VoiceState } from 'discord.js';
 })
 export class VoiceRoomModification extends Listener {
     public override async run(previous: VoiceState, current: VoiceState) {
-        if (!previous.channel || !current.member) return;
-
-        const settings = await this.container.api.guilds.getGuildSettings(current.guild.id);
-        if (settings.isErr()) return;
-
-        const { voice_room_lobbies } = settings.value.data;
-        const channel = await previous.channel.fetch();
-        const isRegistered = voice_room_lobbies.find((l) => l.opened_rooms.includes(channel.id));
-        if (!isRegistered) return;
-
-        const room = await this.container.api.guilds.getVoiceRoom(current.guild.id, channel.id);
-        if (room.isErr()) {
-            this.container.logger.error(room.error);
+        if (!previous.channel || !current.member)
             return;
-        };
+
+        const settings = await this.container.api.guilds.fetch(current.guild.id, { createNew: true });
+        if (settings.isErr())
+            return;
+
+        if (settings.value.voiceRoomLobbies.cache.has(previous.channel.id))
+            return;
+
+        const { activeVoiceRooms } = settings.value;
+        const channel = await previous.channel.fetch();
+        const room = await activeVoiceRooms.get(channel.id);
+        if (room.isErr())
+            return;
 
         // If there are no more members in the voice room, delete the room.
         if (channel.members.size <= 0) {
-            const status = await this.container.api.guilds.deleteVoiceRoom(current.guild.id, previous.channel.id);
+            const status = await room.value.delete();
             if (status.isErr()) return;
 
             await channel.delete('Automated Action - No users in voice room.');
@@ -34,16 +34,14 @@ export class VoiceRoomModification extends Listener {
         }
 
         // If there are still members in the voice room and the user that left is the current owner, transfer ownership.
-        if (room.value.data.current_owner_id === current.member.id) {
+        if (room.value.isOwner(current.member.id)) {
             const nextMember = channel.members.first();
             if (!nextMember) {
                 this.container.logger.warn('Unable to transfer ownership, no next member was found in the voice room.');
                 return
             }
 
-            const status = await this.container.api.guilds.updateVoiceRoom(current.guild.id, previous.channel.id, {
-                current_owner_id: nextMember.id
-            });
+            const status = await room.value.update({ current_owner_id: nextMember.id });
             if (status.isErr()) {
                 this.container.logger.error('Unable to transfer ownership, failed to update voice room.');
                 return;

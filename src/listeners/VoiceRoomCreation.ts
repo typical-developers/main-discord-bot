@@ -23,17 +23,17 @@ export class VoiceRoomCreation extends Listener {
     }
 
     public override async run(_: VoiceState, current: VoiceState) {
-        if (!current.member) return;
-        if (!current.channel) {
+        if (!current.member || !current.channel)
             return;
-        }
 
-        const settings = await this.container.api.guilds.getGuildSettings(current.guild.id);
-        if (settings.isErr()) return;
+        const settings = await this.container.api.guilds.fetch(current.guild.id, { createNew: true });
+        if (settings.isErr())
+            return;
 
-        const { voice_room_lobbies } = settings.value.data;
-        const lobby = voice_room_lobbies.find((l) => l.channel_id === current.channel!.id);
-        if (!lobby) return;
+        const { voiceRoomLobbies } = settings.value;
+        const lobby = await voiceRoomLobbies.get(current.channel.id);
+        if (lobby.isErr())
+            return;
 
         if (this._creationCooldown.includes(current.member.id)) {
             await current.channel.send({ content: `<@${current.member.id}> you are on a cooldown, please try again in a bit.` })
@@ -46,10 +46,10 @@ export class VoiceRoomCreation extends Listener {
                 type: ChannelType.GuildVoice,
                 parent: current.channel.parentId,
                 name: `${current.member.displayName}\'s Voice Room`,
-                userLimit: lobby.user_limit,
+                userLimit: lobby.value.userLimit,
             });
 
-            const registeredRoom = await this.container.api.guilds.registerVoiceRoom(current.guild.id, lobby.channel_id, {
+            const registeredRoom = await lobby.value.register({
                 channel_id: room.id,
                 creator_id: current.member.id
             });
@@ -67,7 +67,7 @@ export class VoiceRoomCreation extends Listener {
             await current.member.voice.setChannel(room);
 
             await room.send({
-                components: [voiceRoomDetailsEmbed(registeredRoom.value.data)],
+                components: [voiceRoomDetailsEmbed(registeredRoom.value, lobby.value)],
                 flags: [ MessageFlags.IsComponentsV2 ]
             })
         } catch (e) {

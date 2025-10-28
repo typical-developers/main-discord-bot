@@ -13,6 +13,7 @@ import RequestError from '#/lib/extensions/RequestError';
     requiredUserPermissions: [ PermissionFlagsBits.Administrator ]
 })
 export class VoiceRoomLobbySettings extends Subcommand {
+    
     private readonly _settingsOptions: (ApplicationCommandNumericOptionData | ApplicationCommandBooleanOptionData)[] = [
         {
             type: ApplicationCommandOptionType.Number,
@@ -96,113 +97,132 @@ export class VoiceRoomLobbySettings extends Subcommand {
     }
 
     private _getOptions(interaction: Subcommand.ChatInputCommandInteraction) {
-        const userLimit = interaction.options.getNumber('user-limit') ?? undefined;
-        const canRename = interaction.options.getBoolean('can-rename') ?? undefined;
-        const canLock = interaction.options.getBoolean('can-lock') ?? undefined;
-        const canAdjustLimit = interaction.options.getBoolean('can-adjust-limit') ?? undefined;
-
         return {
-            user_limit: userLimit,
-            can_rename: canRename,
-            can_lock: canLock,
-            can_adjust_limit: canAdjustLimit
+            user_limit: interaction.options.getNumber('user-limit') ?? undefined,
+            can_rename: interaction.options.getBoolean('can-rename') ?? undefined,
+            can_lock: interaction.options.getBoolean('can-lock') ?? undefined,
+            can_adjust_limit: interaction.options.getBoolean('can-adjust-limit') ?? undefined
         };
     }
 
     public async addVoiceRoomLobby(interaction: Subcommand.ChatInputCommandInteraction) {
-        if (!interaction.guild) return;
+        if (!interaction.guild)
+            return;
 
         await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
 
         const channelId = interaction.options.getString('channel', true);
         const channel = interaction.guild.channels.cache.get(channelId);
-        if (!channel) {
-            await interaction.editReply({
+        if (!channel)
+            return await interaction.editReply({
                 content: 'The channel you specified does not exist.',
             });
 
-            return;
+        const settings = await this.container.api.guilds.fetch(interaction.guild.id, { createNew: true });
+        if (settings.isErr()) {
+            this.container.logger.error(settings.error);
+
+            return await interaction.editReply({
+                content: 'Something went wrong fetching the guild\'s settings. Please try again later.',
+            });
         }
 
+        if ((await settings.value.activeVoiceRooms.get(channelId)).isOk())
+            return await interaction.editReply({
+                content: 'This channel is an active voice room and cannot be set as a voice room lobby.',
+            });
+
         const options = this._getOptions(interaction);
-        const data = await this.container.api.guilds.createVoiceRoomLobby(interaction.guild.id, channelId, options);
-        if (data.isErr()) {
-            if (data.error instanceof RequestError && data.error.response.status === 409) {
+        const isSuccess = await settings.value.voiceRoomLobbies.create(channelId, options);
+        if (isSuccess.isErr()) {
+            if (isSuccess.error instanceof RequestError && isSuccess.error.response.status === 409)
                 return await interaction.editReply({
                     content: 'This channel is already set as a voice room lobby.',
                 });
-            }
 
-            this.container.logger.error(data.error);
+            this.container.logger.error(isSuccess.error);
             return await interaction.editReply({
                 content: 'There was an error creating the voice room lobby.',
             });
         }
 
-        await interaction.editReply({
+        return await interaction.editReply({
             content: 'The voice room lobby has been created.',
         });
     }
 
     public async updateVoiceRoomLobby(interaction: Subcommand.ChatInputCommandInteraction) {
-        if (!interaction.guild) return;
+        if (!interaction.guild)
+            return;
 
         await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
 
         const channelId = interaction.options.getString('channel', true);
         const channel = interaction.guild.channels.cache.get(channelId);
-        if (!channel) {
-            await interaction.editReply({
+        if (!channel)
+            return await interaction.editReply({
                 content: 'The channel you specified does not exist.',
             });
 
-            return;
+        const settings = await this.container.api.guilds.fetch(interaction.guild.id, { createNew: true });
+        if (settings.isErr()) {
+            this.container.logger.error(settings.error);
+
+            return await interaction.editReply({
+                content: 'Something went wrong fetching the guild\'s settings. Please try again later.',
+            });
         }
 
         const options = this._getOptions(interaction);
-        const data = await this.container.api.guilds.updateVoiceRoomLobby(interaction.guild.id, channelId, options);
-        if (data.isErr()) {
-            if (data.error instanceof RequestError && data.error.response.status === 404) {
+        const isSuccess = await settings.value.voiceRoomLobbies.update(channelId, options);
+        if (isSuccess.isErr()) {
+            if (isSuccess.error instanceof RequestError && isSuccess.error.response.status === 404)
                 return await interaction.editReply({
                     content: 'This channel is not set as a voice room lobby.',
                 });
-            }
 
-            this.container.logger.error(data.error);
+            this.container.logger.error(isSuccess.error);
             return await interaction.editReply({
                 content: 'There was an error updating the voice room lobby.',
             });
         }
 
-        await interaction.editReply({
+        return await interaction.editReply({
             content: 'The voice room lobby has been updated.',
         });
     }
 
     public async removeVoiceRoomLobby(interaction: Subcommand.ChatInputCommandInteraction) {
-        if (!interaction.guild) return;
+        if (!interaction.guild)
+            return;
 
         await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
 
         const channelId = interaction.options.getString('channel', true);
 
-        const data = await this.container.api.guilds.deleteVoiceRoomLobby(interaction.guild.id, channelId);
-        if (data.isErr()) {
-            if (data.error instanceof RequestError && data.error.response.status === 404) {
+        const settings = await this.container.api.guilds.fetch(interaction.guild.id, { createNew: true });
+        if (settings.isErr()) {
+            this.container.logger.error(settings.error);
+
+            return await interaction.editReply({
+                content: 'Something went wrong fetching the guild\'s settings. Please try again later.',
+            });
+        }
+
+        const isSuccess = await settings.value.voiceRoomLobbies.delete(channelId);
+        if (isSuccess.isErr()) {
+            if (isSuccess.error instanceof RequestError && isSuccess.error.response.status === 404)
                 return await interaction.editReply({
                     content: 'This channel is not set as a voice room lobby.',
                 });
-            }
 
-            this.container.logger.error(data.error);
-            await interaction.editReply({
+            this.container.logger.error(isSuccess.error);
+            return await interaction.editReply({
                 content: 'There was an error deleting the voice room lobby.',
             });
-
-            return;
         }
 
-        await interaction.editReply({
+        return await interaction.editReply({
             content: 'The voice room lobby has been deleted.',
         });
     }

@@ -12,135 +12,29 @@ export interface APIResponse<T> extends BaseAPIResponse {
     data: T;
 };
 
+export enum APIErrorCodes {
+    InvalidRequestBody = "INVALID_REQUEST",
+
+    GuildSettingsExists = "GUILD_ALREADY_EXISTS",
+    GuildNotFound = "GUILD_NOT_FOUND",
+
+    MemberNotInGuild = "MEMBER_NOT_IN_GUILD",
+    MemberProfileNotFound = "MEMBER_NOT_FOUND",
+    MemberProfileExists = "MEMBER_ALREADY_EXISTS",
+    MemberOnGrantCooldown = "MEMBER_ON_COOLDOWN",
+    ChatActivityTrackingDisabled = "CHAT_ACTIVITY_TRACKING_DISABLED",
+    ActivityRoleExists = "ACTIVITY_ROLE_ALREADY_EXISTS",
+
+    VoiceRoomLobbyExists = "VOICE_ROOM_LOBBY_ALREADY_EXISTS",
+    VoiceRoomLobbyNotFound = "VOICE_ROOM_LOBBY_NOT_FOUND",
+    VoiceRoomLobbyIsVoiceRoom = "VOICE_ROOM_LOBBY_IS_ACTIVE_VOICE_ROOM",
+    VoiceRoomExists = "VOICE_ROOM_EXISTS",
+    VoiceRoomNotFound = "VOICE_ROOM_NOT_FOUND",
+}
+
 export interface APIError extends BaseAPIResponse {
     /**
      * The message that the API returned due to an error.
      */
-    message: string;
-};
-
-export type GuildActivityRoles = {
-    role_id: string;
-    required_points: number;
-};
-
-export type GuildActivityTracking = {
-    is_enabled: boolean;
-    grant_amount: number;
-    cooldown: number;
-    activity_roles: Array<GuildActivityRoles>;
-    deny_roles: Array<string>;
-};
-
-export type GuildVoiceRoom = {
-    channel_id: string;
-    created_by_user_id: string;
-    current_owner_id: string;
-}
-
-export type GuildVoiceRoomLobby = {
-    channel_id: string;
-    user_limit: number;
-    can_rename: boolean;
-    can_lock: boolean;
-    can_adjust_limit: boolean;
-
-    opened_rooms: Array<string>;
-};
-
-export type MessageEmbeds = {
-    is_enabled: boolean;
-    disabled_channels: Array<string>;
-    ignored_channels: Array<string>;
-    ignored_roles: Array<string>;
-}
-
-export type GuildSettings = {
-    chat_activity: GuildActivityTracking;
-    message_embeds: MessageEmbeds;
-    voice_room_lobbies: Array<GuildVoiceRoomLobby>;
-};
-
-export type GuildActivityTrackingUpdate = {
-    chat_activity?: Partial<GuildActivityTracking>;
-};
-
-export type GuildActivityRoleCreate = {
-    activity_type: string;
-    role_id: string;
-    required_points: number;
-};
-
-export type GuildActivityLeaderboardQuery = {
-    activity_type?: string;
-    time_period?: string;
-};
-
-export type VoiceRoomLobbySettings = {
-    user_limit: number;
-    can_rename: boolean;
-    can_lock: boolean;
-    can_adjust_limit: boolean;
-};
-
-export type VoiceRoom = {
-    origin_channel_id: string;
-    creator_id: string;
-    current_owner_id: string;
-    is_locked: boolean;
-
-    settings: VoiceRoomLobbySettings;
-};
-
-export type VoiceRoomRegister = {
-    creator_id: string;
-    channel_id: string;
-};
-
-export type VoiceRoomUpdate = {
-    current_owner_id: string;
-    is_locked: boolean;
-};
-
-export type UpdateMessageEmbedSettings = {
-    is_enabled?: boolean;
-    add_disabled_channel?: string;
-    remove_disabled_channel?: string;
-    add_ignored_channel?: string;
-    remove_ignored_channel?: string;
-    add_ignored_role?: string;
-    remove_ignored_role?: string;
-}
-
-export type MemberActivity = {
-    rank: number;
-    points: number;
-    is_on_cooldown: boolean;
-
-    current_activity_role_ids: Array<string>;
-
-    current_activity_role: {
-        role_id: string;
-        accent: string;
-        name: string;
-        required_points: number;
-    } | null;
-
-    next_activity_role: {
-        current_progress: number;
-        required_points: number;
-    } | null;
-};
-
-export type MemberProfile = {
-    display_name: string;
-    username: string;
-    avatar_url: string;
-
-    card_style: number;
-    chat_activity: MemberActivity;
-};
-
-export type MemberProfileMigrate = {
-    to_member_id: string;
+    message: APIErrorCodes;
 };

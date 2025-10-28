@@ -1,32 +1,38 @@
-import { ActionRowBuilder, ButtonInteraction, ComponentType, MessageFlags, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
+import { ActionRowBuilder, ButtonInteraction, ComponentType, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
 import { InteractionHandler, InteractionHandlerTypes, } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
+import type VoiceRoom from '#/lib/structures/VoiceRoom';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.Button
 })
 export class AdjustVoiceRoomLimit extends InteractionHandler {
     public override async parse(interaction: ButtonInteraction) {
-        if (!interaction.guildId || !interaction.channelId) return this.none();
-        if (interaction.customId !== 'voice_room.adjust_limit') return this.none();
-        if (!interaction.channel?.isVoiceBased()) return this.none();
-
-        const room = await this.container.api.guilds.getVoiceRoom(interaction.guildId, interaction.channelId);
-        if (room.isErr()) return this.none();
-
-        if (interaction.user.id !== room.value.data.current_owner_id) {
-            await interaction.reply({
-                content: 'You do not have permission to adjust the limit of this voice room.',
-                flags: [ MessageFlags.Ephemeral ]
-            })
-
+        if (!interaction.guildId || !interaction.channelId)
             return this.none();
-        }
+        if (interaction.customId !== 'voice_room.adjust_limit')
+            return this.none();
+        if (!interaction.channel?.isVoiceBased())
+            return this.none();
 
-        return this.some();
+        const settings = await this.container.api.guilds.fetch(interaction.guildId, { createNew: true });
+        if (settings.isErr())
+            return this.none();
+
+        const { activeVoiceRooms } = settings.value;
+        const room = await activeVoiceRooms.get(interaction.channelId);
+        if (room.isErr())
+            return this.none();
+
+        return this.some<VoiceRoom>(room.value);
     }
 
-    public async run(interaction: ButtonInteraction) {
+    public async run(interaction: ButtonInteraction, room: VoiceRoom) {
+        if (!room.isOwner(interaction.user.id))
+            return await interaction.reply({
+                content: 'You do not have permission to adjust the limit of this voice room.',
+            })
+
         const modal = new ModalBuilder({
             title: 'Adjust Voice Room Limit',
             customId: 'voice_room.adjust_limit_submit',

@@ -1,7 +1,7 @@
 import { ModalSubmitInteraction, MessageFlags, inlineCode, type VoiceBasedChannel } from 'discord.js';
 import { InteractionHandler, InteractionHandlerTypes } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import type { VoiceRoom } from '#/lib/types/api';
+import VoiceRoom from '#/lib/structures/VoiceRoom';
 
 @ApplyOptions<InteractionHandler.Options>({
 	interactionHandlerType: InteractionHandlerTypes.ModalSubmit
@@ -13,12 +13,16 @@ export class RenameVoiceRoomSubmit extends InteractionHandler {
 
         await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
 
-        const room = await this.container.api.guilds.getVoiceRoom(interaction.guildId, interaction.channelId);
-        if (room.isErr()) {
-            this.container.logger.error(room.error);
-            await interaction.editReply({ content: 'Something went wrong, please try again later.' });
+        const settings = await this.container.api.guilds.fetch(interaction.guildId, { createNew: true });
+        if (settings.isErr()) {
+            await interaction.reply({ content: 'Something went wrong, please try again later.', });
             return this.none();
-        };
+        }
+
+        const { activeVoiceRooms } = settings.value;
+        const room = await activeVoiceRooms.get(interaction.channelId);
+        if (room.isErr())
+            return this.none();
 
         const name = interaction.fields.getTextInputValue('channel_name');
         if (name.length < 1) {
@@ -26,13 +30,12 @@ export class RenameVoiceRoomSubmit extends InteractionHandler {
             return this.none();
         }
 
-        return this.some({ room: room.value.data, name: name });
+        return this.some<{ room: VoiceRoom, name: string }>({ room: room.value, name });
     }
 
     public async run(interaction: ModalSubmitInteraction, { room, name }: { room: VoiceRoom, name: string }) {
-        if (interaction.user.id !== room.current_owner_id) {
+        if (!room.isOwner(interaction.user.id))
             return await interaction.editReply({ content: 'You do not have permission to adjust the limit of this voice room.' });
-        }
 
         try {
             await (interaction.channel as VoiceBasedChannel).setName(name);

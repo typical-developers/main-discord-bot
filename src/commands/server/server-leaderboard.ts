@@ -1,8 +1,7 @@
-import { Readable } from 'stream';
-import { Command, container } from '@sapphire/framework';
+import { Command } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { type ApplicationCommandOptionData, ApplicationCommandOptionType, ApplicationIntegrationType, AttachmentBuilder, InteractionContextType, MessageFlags } from 'discord.js';
-import RequestError from '#/lib/extensions/RequestError';
+import { type ApplicationCommandOptionData, ApplicationCommandOptionType, ApplicationIntegrationType, AttachmentBuilder, InteractionContextType } from 'discord.js';
+import type { ActivityPeriod, ActivityType } from '#/lib/structures/BaseActivitySettings';
 
 @ApplyOptions<Command.Options>({
     description: 'Get information on a server member!'
@@ -48,25 +47,24 @@ export class ServerProfile extends Command {
 
         await interaction.deferReply({ withResponse: true });
 
-        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
+        const settings = await this.container.api.guilds.fetch(interaction.guild.id, { createNew: true });
         if (settings.isErr()) {
             this.container.logger.error(settings.error);
             return await interaction.editReply({ content: 'Something went wrong while generating the leaderboard card.' });
         }
 
-        const activityType = interaction.options.getString('leaderboard', true);
-        const displayType = interaction.options.getString('display', true);
-        const { chat_activity } = settings.value.data;
+        const { chatActivity } = settings.value;
+        const activityType = interaction.options.getString('leaderboard', true) as ActivityType;
+        const displayType = interaction.options.getString('display', true) as ActivityPeriod;
 
-        if (activityType === 'chat' && !chat_activity.is_enabled) {
+        if (activityType === 'chat' && !chatActivity.isEnabled) {
             return await interaction.editReply({ content: 'Chat activity tracking is not enabled for this guild.' });
         }
 
-        const res = await container.api.guilds.generateGuildActivityLeaderboardCard(interaction.guild.id, {
+        const res = await settings.value.generateActivityLeaderboardCard({
             activity_type: activityType,
             time_period: displayType
         });
-
         if (res.isErr()) {
             this.container.logger.error(res.error);
             return await interaction.editReply({

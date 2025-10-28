@@ -3,6 +3,7 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { type ApplicationCommandAutocompleteStringOptionData, type ApplicationCommandChannelOptionData, type ApplicationCommandOptionAllowedChannelTypes, type ApplicationCommandOptionData, type ApplicationCommandRoleOptionData, type ApplicationCommandStringOptionData, type ApplicationCommandSubCommandData, type ApplicationCommandSubGroupData, ApplicationCommandOptionType, ApplicationIntegrationType, ChannelType, InteractionContextType, MessageFlags, PermissionFlagsBits } from 'discord.js';
 import RequestError from '#/lib/extensions/RequestError';
 import { isGuildBasedChannel } from '@sapphire/discord.js-utilities';
+import type { GuildMessageEmbedsUpdateOptions } from '#/lib/structures/MessageEmbedSettings';
 
 @ApplyOptions<Subcommand.Options>({
     description: 'Manage chat activity settings.',
@@ -139,236 +140,93 @@ export class MessageEmbedsSettings extends Subcommand {
         });
     }
 
-    public async updateMessageEmbedSettings(interaction: Subcommand.ChatInputCommandInteraction) {
+    private async _updateSettings(interaction: Subcommand.ChatInputCommandInteraction, options: GuildMessageEmbedsUpdateOptions) {
         if (!interaction.guild) return;
-
+        
         await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
-        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
+
+        const settings = await this.container.api.guilds.fetch(interaction.guild.id, { createNew: true });
         if (settings.isErr()) {
             this.container.logger.error(settings.error);
 
-            await interaction.editReply({
+            return await interaction.editReply({
                 content: 'Something went wrong fetching the guild\'s settings. Please try again later.',
             });
-
-            return;
         }
 
-        const toggle = interaction.options.getBoolean('toggle') ?? undefined;
-        const data = await this.container.api.guilds.updateMessageEmbedSettings(interaction.guild.id, {
-            is_enabled: toggle,
-        });
-
-        if (data.isErr()) {
-            this.container.logger.error(data.error);
-
-            await interaction.editReply({
+        const isSuccess = await settings.value.updateMessageEmbedSettings(options);
+        if (isSuccess.isErr()) {
+            this.container.logger.error(isSuccess.error);
+            
+            return await interaction.editReply({
                 content: 'There was an error updating the message embed settings.',
             });
-
-            return;
         }
-
-        await interaction.editReply({
+        
+        return await interaction.editReply({
             content: 'The message embed settings have been updated.',
         });
     }
 
+    public async updateMessageEmbedSettings(interaction: Subcommand.ChatInputCommandInteraction) {
+        const isEnabled = interaction.options.getBoolean('toggle') ?? undefined;
+
+        if (isEnabled === undefined) {
+            return await interaction.editReply({
+                content: 'You must specify whether message embeds should be enabled or disabled.',
+            });
+        }
+
+        return this._updateSettings(interaction, {
+            is_enabled: isEnabled,
+        });
+    }
+
     public async addDisabledChannel(interaction: Subcommand.ChatInputCommandInteraction) {
-        if (!interaction.guild) return;
+        const channel = interaction.options.getChannel('channel', true);
 
-        await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
-        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
-        if (settings.isErr()) {
-            this.container.logger.error(settings.error);
-
-            await interaction.editReply({
-                content: 'Something went wrong fetching the guild\'s settings. Please try again later.',
-            });
-
-            return;
-        }
-
-        const channel = interaction.options.getChannel('channe', true, this._channelTypes);
-        const data = await this.container.api.guilds.updateMessageEmbedSettings(interaction.guild.id, { add_disabled_channel: channel.id });
-
-        if (data.isErr()) {
-            this.container.logger.error(data.error);
-
-            await interaction.editReply({
-                content: 'There was an error updating the message embed settings.',
-            });
-
-            return;
-        }
-
-        await interaction.editReply({
-            content: 'The channel has been added to the list of disabled channels.',
+        return this._updateSettings(interaction, {
+            add_disabled_channel: channel.id,
         });
     }
 
     public async removeDisabledChannel(interaction: Subcommand.ChatInputCommandInteraction) {
-        if (!interaction.guild) return;
-        
-        await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
-        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
-        if (settings.isErr()) {
-            this.container.logger.error(settings.error);
-    
-            await interaction.editReply({
-                content: 'Something went wrong fetching the guild\'s settings. Please try again later.',
-            });
-    
-            return;
-        }
-    
-        const channel = interaction.options.getChannel('channe', true, this._channelTypes);
-        const data = await this.container.api.guilds.updateMessageEmbedSettings(interaction.guild.id, { remove_disabled_channel: channel.id });
-    
-        if (data.isErr()) {
-            this.container.logger.error(data.error);
-    
-            await interaction.editReply({
-                content: 'There was an error updating the message embed settings.',
-            });
-    
-            return;
-        }
-    
-        await interaction.editReply({
-            content: 'The channel has been removed from the list of disabled channels.',
+        const channel = interaction.options.getChannel('channel', true);
+
+        return this._updateSettings(interaction, {
+            remove_disabled_channel: channel.id,
         });
     }
 
     public async addIgnoredChannel(interaction: Subcommand.ChatInputCommandInteraction) {
-        if (!interaction.guild) return;
-        
-        await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
-        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
-        if (settings.isErr()) {
-            this.container.logger.error(settings.error);
-    
-            await interaction.editReply({
-                content: 'Something went wrong fetching the guild\'s settings. Please try again later.',
-            });
-    
-            return;
-        }
-    
-        const channel = interaction.options.getChannel('channe', true, this._channelTypes);
-        const data = await this.container.api.guilds.updateMessageEmbedSettings(interaction.guild.id, { add_ignored_channel: channel.id });
-    
-        if (data.isErr()) {
-            this.container.logger.error(data.error);
-    
-            await interaction.editReply({
-                content: 'There was an error updating the message embed settings.',
-            });
-    
-            return;
-        }
-    
-        await interaction.editReply({
-            content: 'The channel has been added to the list of ignored channels.',
+        const channel = interaction.options.getChannel('channel', true);
+
+        return this._updateSettings(interaction, {
+            add_ignored_channel: channel.id,
         });
     }
 
     public async removeIgnoredChannel(interaction: Subcommand.ChatInputCommandInteraction) {
-        if (!interaction.guild) return;
-        
-        await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
-        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
-        if (settings.isErr()) {
-            this.container.logger.error(settings.error);
-    
-            await interaction.editReply({
-                content: 'Something went wrong fetching the guild\'s settings. Please try again later.',
-            });
-    
-            return;
-        }
-    
-        const channel = interaction.options.getChannel('channe', true, this._channelTypes);
-        const data = await this.container.api.guilds.updateMessageEmbedSettings(interaction.guild.id, { remove_ignored_channel: channel.id });
-    
-        if (data.isErr()) {
-            this.container.logger.error(data.error);
-    
-            await interaction.editReply({
-                content: 'There was an error updating the message embed settings.',
-            });
-    
-            return;
-        }
-    
-        await interaction.editReply({
-            content: 'The channel has been removed from the list of ignored channels.',
+        const channel = interaction.options.getChannel('channel', true);
+
+        return this._updateSettings(interaction, {
+            remove_ignored_channel: channel.id,
         });
     }
 
     public async addIgnoredRole(interaction: Subcommand.ChatInputCommandInteraction) {
-        if (!interaction.guild) return;
-        
-        await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
-        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
-        if (settings.isErr()) {
-            this.container.logger.error(settings.error);
-    
-            await interaction.editReply({
-                content: 'Something went wrong fetching the guild\'s settings. Please try again later.',
-            });
-    
-            return;
-        }
-    
         const role = interaction.options.getRole('role', true);
-        const data = await this.container.api.guilds.updateMessageEmbedSettings(interaction.guild.id, { add_ignored_role: role.id });
-    
-        if (data.isErr()) {
-            this.container.logger.error(data.error);
-    
-            await interaction.editReply({
-                content: 'There was an error updating the message embed settings.',
-            });
-    
-            return;
-        }
-    
-        await interaction.editReply({
-            content: 'The role has been added to the list of ignored roles.',
+
+        return this._updateSettings(interaction, {
+            add_ignored_role: role.id,
         });
     }
 
     public async removeIgnoredRole(interaction: Subcommand.ChatInputCommandInteraction) {
-        if (!interaction.guild) return;
-        
-        await interaction.deferReply({ withResponse: true, flags: [ MessageFlags.Ephemeral ] });
-        const settings = await this.container.api.guilds.getGuildSettings(interaction.guild.id, { create: true });
-        if (settings.isErr()) {
-            this.container.logger.error(settings.error);
-    
-            await interaction.editReply({
-                content: 'Something went wrong fetching the guild\'s settings. Please try again later.',
-            });
-    
-            return;
-        }
-    
         const role = interaction.options.getRole('role', true);
-        const data = await this.container.api.guilds.updateMessageEmbedSettings(interaction.guild.id, { remove_ignored_role: role.id });
-    
-        if (data.isErr()) {
-            this.container.logger.error(data.error);
-    
-            await interaction.editReply({
-                content: 'There was an error updating the message embed settings.',
-            });
-    
-            return;
-        }
-    
-        await interaction.editReply({
-            content: 'The role has been removed from the list of ignored roles.',
+
+        return this._updateSettings(interaction, {
+            remove_ignored_role: role.id,
         });
     }
 }

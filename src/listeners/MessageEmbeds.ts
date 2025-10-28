@@ -2,7 +2,6 @@ import { type Message, StringSelectMenuBuilder, Events, type SelectMenuComponent
 import { Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { fetchMessage, generateMessageEmbed, parseMessageLinks } from '#/lib/util/message-embeds';
-import { isGuildBasedChannel } from '@sapphire/discord.js-utilities';
 
 @ApplyOptions<Listener.Options>({
     event: Events.MessageCreate,
@@ -10,18 +9,24 @@ import { isGuildBasedChannel } from '@sapphire/discord.js-utilities';
 })
 export class MessageEmbeds extends Listener {
     public override async run(message: Message) {
-        if (!message || !message.guildId || !message.member || !message.content || message.author.bot) return;
+        if (!message || !message.guildId || !message.member || !message.content || message.author.bot)
+            return;
 
-        const settings = await this.container.api.guilds.getGuildSettings(message.guildId);
-        if (settings.isErr()) return;
+        const settings = await this.container.api.guilds.fetch(message.guildId, { createNew: true });
+        if (settings.isErr())
+            return;
 
-        const { message_embeds } = settings.value.data;
-        if (!message_embeds.is_enabled) return;
-        if (message_embeds.disabled_channels.includes(message.channelId)) return;
-        if (message.member.roles.cache.some((r) => message_embeds.ignored_roles.includes(r.id))) return;
+        const { messageEmbeds } = settings.value;
+        if (!messageEmbeds.isEnabled)
+            return;
+        if (messageEmbeds.disabledChannels.includes(message.channelId))
+            return;
+        if (message.member.roles.cache.some((r) => messageEmbeds.ignoredRoles.includes(r.id)))
+            return;
 
-        const messageLinks = parseMessageLinks(message.content, message_embeds.ignored_channels);
-        if (!messageLinks.length) return;
+        const messageLinks = parseMessageLinks(message.content, messageEmbeds.ignoredChannels);
+        if (!messageLinks.length)
+            return;
 
         // get the first message that the member can actually see for embedding.
         let currentMessage: Message | undefined;
@@ -35,7 +40,8 @@ export class MessageEmbeds extends Listener {
 
         // unsure if there's a point to actually showing the pager if there's not even one they can see.
         // for the time being, just don't show it.
-        if (!currentMessage) return;
+        if (!currentMessage)
+            return;
 
         const embed = await generateMessageEmbed(currentMessage);
         const jumpToButton = new ActionRowBuilder<ButtonBuilder>()
