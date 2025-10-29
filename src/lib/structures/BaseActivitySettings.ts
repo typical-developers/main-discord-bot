@@ -33,11 +33,6 @@ export type GuildActivityRoleCreateOptions = {
     required_points: number;
 };
 
-export type GuildActivityLeaderboardQueryOptions = {
-    activity_type: ActivityType;
-    time_period: ActivityPeriod;
-};
-
 export type GuildActivityTrackingUpdateOptions = Partial<
     Omit<GuildActivityTracking, 'activity_roles' | 'deny_roles'>
 >;

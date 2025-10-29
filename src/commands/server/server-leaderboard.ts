@@ -2,11 +2,12 @@ import { Command } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { type ApplicationCommandOptionData, ApplicationCommandOptionType, ApplicationIntegrationType, AttachmentBuilder, InteractionContextType } from 'discord.js';
 import type { ActivityPeriod, ActivityType } from '#/lib/structures/BaseActivitySettings';
+import { leaderboardPagination } from '#/lib/util/buttons';
 
 @ApplyOptions<Command.Options>({
     description: 'Get information on a server member!'
 })
-export class ServerProfile extends Command {
+export class ServerLeaderboard extends Command {
     readonly _options: ApplicationCommandOptionData[] = [
         {
             type: ApplicationCommandOptionType.String,
@@ -27,6 +28,12 @@ export class ServerProfile extends Command {
                 { name: 'This Month', value: 'monthly' },
                 { name: 'This Week', value: 'weekly' },
             ]
+        },
+        {
+            type: ApplicationCommandOptionType.Number,
+            required: false,
+            name: 'page',
+            description: "The page of the leaderboard to display.",
         }
     ];
 
@@ -56,23 +63,28 @@ export class ServerProfile extends Command {
         const { chatActivity } = settings.value;
         const activityType = interaction.options.getString('leaderboard', true) as ActivityType;
         const displayType = interaction.options.getString('display', true) as ActivityPeriod;
+        const page = interaction.options.getNumber('page') || 1;
 
         if (activityType === 'chat' && !chatActivity.isEnabled) {
             return await interaction.editReply({ content: 'Chat activity tracking is not enabled for this guild.' });
         }
 
-        const res = await settings.value.generateActivityLeaderboardCard({
-            activity_type: activityType,
-            time_period: displayType
-        });
-        if (res.isErr()) {
-            this.container.logger.error(res.error);
-            return await interaction.editReply({
-                content: 'Something went wrong while generating the leaderboard card.',
-            });
+        const leaderboard = await settings.value.getActivityLeaderboard({ page, activity_type: activityType, time_period: displayType });
+        if (leaderboard.isErr()) {
+            this.container.logger.error(leaderboard.error);
+            return await interaction.editReply({ content: 'Something went wrong while generating the leaderboard card.' });
         }
 
-        const attachment = new AttachmentBuilder(res.value, { name: 'leaderboard.png' });
-        return await interaction.editReply({ files: [ attachment ] });
+        const card = await leaderboard.value.generateCard();
+        if (card.isErr()) {
+            this.container.logger.error(card.error);
+            return await interaction.editReply({ content: 'Something went wrong while generating the leaderboard card.' });
+        }
+
+        const attachment = new AttachmentBuilder(card.value, { name: 'leaderboard.png' });
+        return await interaction.editReply({
+            files: [ attachment ],
+            components: [ leaderboardPagination(leaderboard.value) ]
+        });
     }
 }

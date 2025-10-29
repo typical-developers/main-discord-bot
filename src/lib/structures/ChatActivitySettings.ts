@@ -1,4 +1,4 @@
-import BaseActivitySettings, { type GuildActivityTracking, type GuildActivityRoleCreateOptions, type GuildActivityTrackingUpdateOptions, ActivityType, type GuildActivityLeaderboardQueryOptions } from './BaseActivitySettings';
+import BaseActivitySettings, { type GuildActivityTracking, type GuildActivityRoleCreateOptions, type GuildActivityTrackingUpdateOptions, ActivityType } from './BaseActivitySettings';
 import { type GuildSettings } from './Guild';
 import ActivityRole, { type GuildActivityRole } from './ActivityRole';
 

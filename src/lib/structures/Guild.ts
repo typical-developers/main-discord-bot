@@ -1,10 +1,10 @@
 import ChatActivitySettings, { type GuildChatActivityTracking } from './ChatActivitySettings';
 import MessageEmbedSettings, { type GuildMessageEmbeds, type GuildMessageEmbedsUpdateOptions } from './MessageEmbedSettings';
 import VoiceRoomLobby, { type GuildVoiceRoomLobby, type GuildVoiceRoomLobbyOptions } from './VoiceRoomLobby';
-import type { GuildActivityLeaderboardQueryOptions } from './BaseActivitySettings';
 import GuildMemberResourceManager from './GuildMemberResourceManager';
 import ActiveVoiceRoomResourceMananger from './ActiveVoiceRoomResourceMananger';
 import { VoiceRoomLobbyResourceManager } from './VoiceRoomLobbyResourceManager';
+import GuildActivityLeaderboard, { type GuildActivityLeaderboardQueryOptions } from './GuildActivityLeaderboard';
 
 import { Collection } from 'discord.js';
 import { okAsync, errAsync } from 'neverthrow';
@@ -52,8 +52,9 @@ export default class Guild {
 
     /**
      * Generates a leaderboard card for the guild.
+     * @deprecated use {@link getActivityLeaderboard} instead.
      */
-    public async generateActivityLeaderboardCard({ activity_type, time_period }: GuildActivityLeaderboardQueryOptions) {
+    public async generateActivityLeaderboardCard({ activity_type, time_period }: Omit<GuildActivityLeaderboardQueryOptions, 'page'>) {
         const browserlessUrl = new URL("/screenshot", BROWSERLESS_URL);
         
         const url = new URL(`/v1/guild/${this.id}/activity-leaderboard-card`, BOT_API_URL);
@@ -124,6 +125,10 @@ export default class Guild {
         } catch (e) {
             return errAsync(e);
         }
+    }
+
+    public async getActivityLeaderboard(options: GuildActivityLeaderboardQueryOptions) {
+        return GuildActivityLeaderboard.get(this, options);
     }
 
     /**
