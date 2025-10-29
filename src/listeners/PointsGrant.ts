@@ -37,7 +37,7 @@ export class PointsGrant extends Listener {
         const missingRoles = currentActivityRoles
             .filter((id) => !memberRoles?.includes(id));
 
-        if (!missingRoles.length)
+        if (missingRoles.length)
             await message.member?.roles.add(missingRoles);
 
         /**
