@@ -12,7 +12,7 @@ export function leaderboardPagination(leaderboard: GuildActivityLeaderboard) {
 
     return new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder({
-            emoji: { id: emojis.PreviousLeaderboardPage },
+            emoji: { id: emojis.NavigatePrevious },
             customId: `activity_leaderboard.${previousPage}.${leaderboard.activityType}.${leaderboard.timePeriod}`,
             style: ButtonStyle.Primary,
             disabled: leaderboard.currentPage === 1
@@ -24,13 +24,13 @@ export function leaderboardPagination(leaderboard: GuildActivityLeaderboard) {
             disabled: true,
         }),
         new ButtonBuilder({
-            emoji: { id: emojis.NextLeaderboardPage },
+            emoji: { id: emojis.NavigateNext },
             customId: `activity_leaderboard.${nextPage}.${leaderboard.activityType}.${leaderboard.timePeriod}`,
             style: ButtonStyle.Primary,
             disabled: !leaderboard.hasNextPage
         }),
         new ButtonBuilder({
-            emoji: { id: emojis.RefreshLeaderboardPage },
+            emoji: { id: emojis.Refresh },
             custom_id: `activity_leaderboard.${leaderboard.currentPage}.${leaderboard.activityType}.${leaderboard.timePeriod}`,
             style: ButtonStyle.Secondary,
         }),
