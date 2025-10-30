@@ -1,8 +1,8 @@
-import { Readable } from 'stream';
 import { Command } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { type ApplicationCommandOptionData, GuildMember, ApplicationCommandOptionType, ApplicationCommandType, AttachmentBuilder, MessageFlags, InteractionContextType, ApplicationIntegrationType } from 'discord.js';
+import { type ApplicationCommandOptionData, GuildMember, ApplicationCommandOptionType, ApplicationCommandType, AttachmentBuilder, MessageFlags, InteractionContextType, ApplicationIntegrationType, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import RequestError from '#/lib/extensions/RequestError';
+import { profileCard } from '#/lib/util/buttons';
 
 @ApplyOptions<Command.Options>({
     description: 'Get information on a server member!'
@@ -83,7 +83,8 @@ export class ServerProfile extends Command {
         
         const attachment = new AttachmentBuilder(image.value, { name: 'profile-card.png' });
         return await interaction.editReply({
-            files: [ attachment ]
+            files: [ attachment ],
+            components: [ profileCard() ]
         });
     }
 

@@ -32,3 +32,13 @@ export function leaderboardPagination(leaderboard: GuildActivityLeaderboard) {
         }),
     )
 }
+
+export function profileCard() {
+    return new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder({
+            emoji: { id: emojis.Refresh },
+            custom_id: 'profile_card_refresh',
+            style: ButtonStyle.Secondary,
+        })
+    )
+}
