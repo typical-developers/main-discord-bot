@@ -52,11 +52,11 @@ export class AdjustVoiceRoomLimitSubmit extends InteractionHandler {
             });
 
         /**
-         * If settings.user_limit is 0, that means it can be set up to Discord's max (100).
+         * If settings.userLimit is 0, that means there is no limit (outside of Discord's limit of 99).
          */
-        if (settings.userLimit !== 0 && settings.userLimit || 100 < limit)
+        if (settings.userLimit === 0 && limit > 99 || settings.userLimit !== 0 && limit > settings.userLimit)
             return await interaction.editReply({
-                content: `The limit cannot be more than the max limit of ${inlineCode((settings.userLimit || '100').toString())}.`
+                content: `The limit cannot be more than the max limit of ${inlineCode((settings.userLimit || '99').toString())}.`
             });
 
         try {
