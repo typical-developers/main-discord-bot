@@ -39,7 +39,7 @@ export class ActivityLeaderboardPager extends InteractionHandler {
                         disabled: true,
                     }))
                 }))
-        }).catch((e) => console.log(e));
+        }).catch((e) => this.container.logger.error(e));
 
         return this.some<{ page: number, activityTpe: string, timePeriod: string }>({ page: +page, activityTpe: activityType, timePeriod });
     }
