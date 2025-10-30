@@ -1,12 +1,8 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import type GuildActivityLeaderboard from "#/lib/structures/GuildActivityLeaderboard";
-import { ProductionEmojiIDs, StagingEmojiIDs } from "#/lib/types/constants";
+import { emojis } from "#/lib/constants/emojis";
 
 export function leaderboardPagination(leaderboard: GuildActivityLeaderboard) {
-    const emojis = process.env.ENVIRONMENT === "production"
-        ? ProductionEmojiIDs
-        : StagingEmojiIDs;
-
     const previousPage = leaderboard.currentPage - 1;
     const nextPage = leaderboard.currentPage + 1;
 
