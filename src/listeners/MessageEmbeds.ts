@@ -53,36 +53,35 @@ export class MessageEmbeds extends Listener {
                 })
             );
 
-        if (messageLinks.length === 1) {
-            return message.reply({
-                embeds: embed,
-                components: [jumpToButton],
-                allowedMentions: { repliedUser: false }
-            }).catch(() => null);
-        }
-        else {
-            const options: SelectMenuComponentOptionData[] = messageLinks
-                .map((link, index) =>
-                    ({
-                        label: `${index+1} - ID ${link.id}`,
-                        value: `https://discord.com/channels/${link.guildId}/${link.channelId}/${link.id}`,
-                        default: link.id === messageLinks[0].id ? true : false
-                    })
-                );
+        // if (messageLinks.length === 1) {
+        return message.reply({
+            embeds: embed,
+            components: [jumpToButton],
+            allowedMentions: { repliedUser: false }
+        }).catch(() => null);
+        // } else {
+        //     const options: SelectMenuComponentOptionData[] = messageLinks
+        //         .map((link, index) =>
+        //             ({
+        //                 label: `${index+1} - ID ${link.id}`,
+        //                 value: `https://discord.com/channels/${link.guildId}/${link.channelId}/${link.id}`,
+        //                 default: link.id === messageLinks[0].id ? true : false
+        //             })
+        //         );
 
-            const otherMessages = new ActionRowBuilder<StringSelectMenuBuilder>()
-                .addComponents(
-                    new StringSelectMenuBuilder({
-                        customId: 'MessageEmbedSelector',
-                        options: options
-                    }
-                ));
+        //     const otherMessages = new ActionRowBuilder<StringSelectMenuBuilder>()
+        //         .addComponents(
+        //             new StringSelectMenuBuilder({
+        //                 customId: 'MessageEmbedSelector',
+        //                 options: options
+        //             }
+        //         ));
 
-            return await message.reply({
-                embeds: embed,
-                components: [jumpToButton, otherMessages],
-                allowedMentions: { repliedUser: false }
-            }).catch(() => null);
-        }
+        //     return await message.reply({
+        //         embeds: embed,
+        //         components: [jumpToButton, otherMessages],
+        //         allowedMentions: { repliedUser: false }
+        //     }).catch(() => null);
+        // }
     }
 }
