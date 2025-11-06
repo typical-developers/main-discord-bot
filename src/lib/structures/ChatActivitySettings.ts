@@ -6,6 +6,7 @@ import { okAsync, errAsync } from 'neverthrow';
 import { Collection } from 'discord.js';
 import { request } from '#/lib/util/request';
 import type { APIResponse, APIError } from "#/lib/types/api";
+import APIRequestError from '#/lib/extensions/APIRequestError';
 
 const { BOT_API_URL, BOT_ENDPOINT_API_KEY } = process.env;
 
@@ -22,7 +23,7 @@ export default class ChatActivitySettings extends BaseActivitySettings {
     }
 
     public async updateSettings(options: GuildChatActivityTrackingUpdateOptions) {
-        const res = await request<APIResponse<GuildSettings>, APIError>({
+        const res = await request<APIResponse<GuildSettings>>({
             url: new URL(`/v1/guild/${this.guild.id}/settings/activity`, BOT_API_URL),
             method: 'PATCH',
             headers: {
@@ -31,23 +32,30 @@ export default class ChatActivitySettings extends BaseActivitySettings {
             body: { chat_activity: options }
         });
 
-        if (res.isOk()) {
-            const { is_enabled, grant_amount, cooldown, activity_roles, deny_roles } = res.value.data.chat_activity;
-
-            this.isEnabled = is_enabled;
-            this.grantAmount = grant_amount;
-            this.cooldown = cooldown;
-
-            this.activityRoles = new Collection<string, ActivityRole>();
-            for (const { role_id, required_points } of activity_roles) {
-                const role = new ActivityRole({ role_id, required_points });
-                this.activityRoles.set(role.roleId, role);
+        if (res.isErr()) {
+            if (res.error.hasResponse() && res.error.hasJSON()) {
+                const err = await res.error.json<APIError>();
+                return errAsync(new APIRequestError(res.error, {
+                    code: err.code,
+                    message: err.message
+                }));
             }
-            
-            this.denyRoles = deny_roles;
-        } else {
+
             return errAsync(res.error);
         }
+
+        const { is_enabled, grant_amount, cooldown, activity_roles, deny_roles } = res.value.data.chat_activity;
+        this.isEnabled = is_enabled;
+        this.grantAmount = grant_amount;
+        this.cooldown = cooldown;
+
+        this.activityRoles = new Collection<string, ActivityRole>();
+        for (const { role_id, required_points } of activity_roles) {
+            const role = new ActivityRole({ role_id, required_points });
+            this.activityRoles.set(role.roleId, role);
+        }
+        
+        this.denyRoles = deny_roles;
 
         return okAsync(this);
     }

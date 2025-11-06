@@ -5,6 +5,7 @@ import { Collection } from 'discord.js';
 import { okAsync, errAsync } from 'neverthrow';
 import { request } from '#/lib/util/request';
 import type { APIResponse, APIError } from "#/lib/types/api";
+import APIRequestError from "#/lib/extensions/APIRequestError";
 
 const { BOT_API_URL, BOT_ENDPOINT_API_KEY } = process.env;
 
@@ -65,7 +66,7 @@ export default abstract class BaseActivitySettings {
      * Creates a new activity role for the guild.
      */
     public async createActivityRole({ activity_type, role_id, required_points }: GuildActivityRoleCreateOptions) {
-        const res = await request<APIResponse<{}>, APIError>({
+        const res = await request<APIResponse<{}>>({
             url: new URL(`/v1/guild/${this.guild.id}/settings/activity-roles`, BOT_API_URL),
             method: 'POST',
             headers: {
@@ -74,13 +75,21 @@ export default abstract class BaseActivitySettings {
             body: { activity_type, role_id, required_points }
         });
 
-        if (res.isOk()) {
-            this.activityRoles.set(role_id, new ActivityRole({ role_id, required_points }));
-            this.activityRoles = this.activityRoles.sort((a, b) => a.requiredPoints - b.requiredPoints);
+        if (res.isErr()) {
+            if (res.error.hasResponse() && res.error.hasJSON()) {
+                const err = await res.error.json<APIError>();
+                return errAsync(new APIRequestError(res.error, {
+                    code: err.code,
+                    message: err.message
+                }));
+            }
 
-            return okAsync(this);
+            return errAsync(res.error);
         }
 
-        return res;
+        this.activityRoles.set(role_id, new ActivityRole({ role_id, required_points }));
+        this.activityRoles = this.activityRoles.sort((a, b) => a.requiredPoints - b.requiredPoints);
+
+        return okAsync(this);
     }
 }

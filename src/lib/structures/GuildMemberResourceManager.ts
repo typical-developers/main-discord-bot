@@ -3,9 +3,9 @@ import type Guild from "./Guild";
 import GuildMember, { type GuildMemberProfile } from "./GuildMember";
 
 import { errAsync, okAsync } from "neverthrow";
-import RequestError from "#/lib/extensions/RequestError";
-import type { APIResponse, APIError } from "#/lib/types/api";
+import { APIErrorCodes, type APIError, type APIResponse } from "#/lib/types/api";
 import { request } from "#/lib/util/request";
+import APIRequestError from '#/lib/extensions/APIRequestError';
 
 const { BOT_API_URL, BOT_ENDPOINT_API_KEY } = process.env;
 
@@ -18,7 +18,7 @@ export default class GuildMemberResourceManager extends BaseResourceManager<Guil
     }
 
     private async create(id: string) {
-        const res = await request<APIResponse<GuildMemberProfile>, APIError>({
+        const res = await request<APIResponse<GuildMemberProfile>>({
             url: new URL(`/v1/guild/${this.guild.id}/member/${id}`, BOT_API_URL),
             method: 'POST',
             headers: {
@@ -26,7 +26,17 @@ export default class GuildMemberResourceManager extends BaseResourceManager<Guil
             }
         });
 
-        if (res.isErr()) return errAsync(res.error);
+        if (res.isErr()) {
+            if (res.error.hasResponse() && res.error.hasJSON()) {
+                const err = await res.error.json<APIError>();
+                return errAsync(new APIRequestError(res.error, {
+                    code: err.code,
+                    message: err.message
+                }));
+            }
+
+            return errAsync(res.error);
+        }
 
         const member = new GuildMember(id, this.guild, res.value.data);
         this.cache.set(id, member);
@@ -38,7 +48,7 @@ export default class GuildMemberResourceManager extends BaseResourceManager<Guil
         if (this.cache.has(id))
             return okAsync(this.cache.get(id)!);
 
-        const res = await request<APIResponse<GuildMemberProfile>, APIError>({
+        const res = await request<APIResponse<GuildMemberProfile>>({
             url: new URL(`/v1/guild/${this.guild.id}/member/${id}`, BOT_API_URL),
             method: 'GET',
             headers: {
@@ -47,9 +57,17 @@ export default class GuildMemberResourceManager extends BaseResourceManager<Guil
         });
 
         if (res.isErr()) {
-            if (res.error instanceof RequestError && res.error.response.status === 404) {
-                if (!createNew) return errAsync(res.error);
-                return this.create(id);
+            if (res.error.hasResponse() && res.error.hasJSON()) {
+                const err = await res.error.json<APIError>();
+
+                if (err.code === APIErrorCodes.MemberProfileNotFound && createNew) {
+                    return this.create(id);
+                }
+
+                return errAsync(new APIRequestError(res.error, {
+                    code: err.code,
+                    message: err.message
+                }));
             }
 
             return errAsync(res.error);
@@ -62,7 +80,7 @@ export default class GuildMemberResourceManager extends BaseResourceManager<Guil
     }
 
     public async migrateProfile(fromMemberId: string, toMemberId: string) {
-        const res = await request<APIResponse<null>, APIError>({
+        const res = await request<APIResponse<null>>({
             url: new URL(`/v1/guild/${this.guild.id}/member/${fromMemberId}/migrate`, BOT_API_URL),
             method: 'POST',
             headers: {

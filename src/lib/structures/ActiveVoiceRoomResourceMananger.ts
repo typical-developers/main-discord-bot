@@ -5,6 +5,7 @@ import VoiceRoom, { type GuildActiveVoiceRoom, type GuildActiveVoiceRoomRegister
 import { okAsync, errAsync } from 'neverthrow';
 import type { APIResponse, APIError } from '#/lib/types/api';
 import { request } from '#/lib/util/request';
+import APIRequestError from "#/lib/extensions/APIRequestError";
 
 const { BOT_API_URL, BOT_ENDPOINT_API_KEY } = process.env;
 
@@ -17,7 +18,7 @@ export default class ActiveVoiceRoomResourceMananger extends BaseResourceManager
     }
 
     public async register(originChannelId: string, options: GuildActiveVoiceRoomRegisterOptions) {
-        const res = await request<APIResponse<GuildActiveVoiceRoom>, APIError>({
+        const res = await request<APIResponse<GuildActiveVoiceRoom>>({
             url: new URL(`/v1/guild/${this.guild.id}/voice-room-lobby/${originChannelId}/register`, BOT_API_URL),
             method: 'POST',
             headers: {
@@ -26,8 +27,17 @@ export default class ActiveVoiceRoomResourceMananger extends BaseResourceManager
             body: options
         });
 
-        if (res.isErr())
+        if (res.isErr()) {
+            if (res.error.hasResponse() && res.error.hasJSON()) {
+                const err = await res.error.json<APIError>();
+                return errAsync(new APIRequestError(res.error, {
+                    code: err.code,
+                    message: err.message
+                }));
+            }
+
             return errAsync(res.error);
+        }
 
         const room = new VoiceRoom(options.channel_id, this.guild, res.value.data);
         this.cache.set(options.channel_id, room);
@@ -39,7 +49,7 @@ export default class ActiveVoiceRoomResourceMananger extends BaseResourceManager
         if (this.cache.has(channelId))
             return okAsync(this.cache.get(channelId)!);
 
-        const res = await request<APIResponse<GuildActiveVoiceRoom>, APIError>({
+        const res = await request<APIResponse<GuildActiveVoiceRoom>>({
             url: new URL(`/v1/guild/${this.guild.id}/voice-room/${channelId}`, BOT_API_URL),
             method: 'GET',
             headers: {
@@ -47,8 +57,17 @@ export default class ActiveVoiceRoomResourceMananger extends BaseResourceManager
             }
         });
 
-        if (res.isErr())
-            return res;
+        if (res.isErr()) {
+            if (res.error.hasResponse() && res.error.hasJSON()) {
+                const err = await res.error.json<APIError>();
+                return errAsync(new APIRequestError(res.error, {
+                    code: err.code,
+                    message: err.message
+                }));
+            }
+
+            return errAsync(res.error);
+        }
 
         const room = new VoiceRoom(channelId, this.guild, res.value.data);
         this.cache.set(channelId, room);
@@ -57,7 +76,7 @@ export default class ActiveVoiceRoomResourceMananger extends BaseResourceManager
     }
 
     public async delete(channelId: string) {
-        const res = await request<APIResponse<null>, APIError>({
+        const res = await request<APIResponse<null>>({
             url: new URL(`/v1/guild/${this.guild.id}/voice-room/${channelId}`, BOT_API_URL),
             method: 'DELETE',
             headers: {
@@ -65,15 +84,24 @@ export default class ActiveVoiceRoomResourceMananger extends BaseResourceManager
             }
         });
 
-        if (res.isErr())
+        if (res.isErr()) {
+            if (res.error.hasResponse() && res.error.hasJSON()) {
+                const err = await res.error.json<APIError>();
+                return errAsync(new APIRequestError(res.error, {
+                    code: err.code,
+                    message: err.message
+                }));
+            }
+
             return errAsync(res.error);
+        }
 
         this.cache.delete(channelId);
         return okAsync(true);
     }
 
     public async update(channelId: string, options: Partial<Omit<GuildActiveVoiceRoom, 'origin_channel_id' | 'creator_id' | 'settings'>>) {
-        const res = await request<APIResponse<GuildActiveVoiceRoom>, APIError>({
+        const res = await request<APIResponse<GuildActiveVoiceRoom>>({
             url: new URL(`/v1/guild/${this.guild.id}/voice-room/${channelId}`, BOT_API_URL),
             method: 'PATCH',
             headers: {
@@ -82,8 +110,17 @@ export default class ActiveVoiceRoomResourceMananger extends BaseResourceManager
             body: options
         });
 
-        if (res.isErr())
+        if (res.isErr()) {
+            if (res.error.hasResponse() && res.error.hasJSON()) {
+                const err = await res.error.json<APIError>();
+                return errAsync(new APIRequestError(res.error, {
+                    code: err.code,
+                    message: err.message
+                }));
+            }
+
             return errAsync(res.error);
+        }
 
         const room = new VoiceRoom(channelId, this.guild, res.value.data);
         this.cache.set(channelId, room);

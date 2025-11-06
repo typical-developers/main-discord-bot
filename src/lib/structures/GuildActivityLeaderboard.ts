@@ -2,7 +2,7 @@ import type Guild from "./Guild";
 import type { ActivityType, ActivityPeriod } from "./BaseActivitySettings";
 
 import { okAsync, errAsync } from 'neverthrow';
-import type { APIResponse, APIError } from '#/lib/types/api';
+import type { APIResponse } from '#/lib/types/api';
 import { request } from '#/lib/util/request';
 import RequestError from '#/lib/extensions/RequestError';
 
@@ -36,7 +36,7 @@ class BaseActivityLeaderboard {
         const params = new URLSearchParams({ page: page.toString(), activity_type, time_period });
         url.search = params.toString();
 
-        const res = await request<APIResponse<ActivityLeaderboard>, APIError>({
+        const res = await request<APIResponse<ActivityLeaderboard>>({
             url,
             method: 'GET',
             headers: {
@@ -117,20 +117,22 @@ export default class GuildActivityLeaderboard extends BaseActivityLeaderboard {
             },
         };
 
+        const request = new Request(browserlessUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
         try {
-            const res = await fetch(browserlessUrl, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(data),
-            });
+            const res = await fetch(request);
 
             if (!res.ok) {
                 return errAsync(new RequestError({
                     message: `Request failed with status code ${res.status}.`,
                     response: res,
-                    payload: {}
+                    request
                 }));
             }
 
@@ -153,14 +155,17 @@ export default class GuildActivityLeaderboard extends BaseActivityLeaderboard {
                     return errAsync(new RequestError({
                         message: `Request failed with status code ${code}.`,
                         response: modifiedRes,
-                        payload: {}
+                        request
                     }));
                 }
             }
 
             return okAsync(Buffer.from(await res.arrayBuffer()));
         } catch (e) {
-            return errAsync(e);
+            return errAsync(new RequestError({
+                message: `Request failed.`,
+                request
+            }));
         }
     }
 }

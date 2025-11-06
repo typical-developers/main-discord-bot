@@ -1,18 +1,18 @@
 import BaseMemberActivity from "./BaseMemberActivity";
 import type { GuildMemberProfile } from "./GuildMember";
-
-import { request } from "#/lib/util/request";
-import RequestError from "#/lib/extensions/RequestError";
-import type { APIResponse, APIError } from "#/lib/types/api";
-import { okAsync } from "neverthrow";
 import CurrentActivityRole from "./CurrentActivityRole";
 import NextActivityRole from "./NextActivityRole";
+
+import { okAsync, errAsync } from "neverthrow";
+import { request } from "#/lib/util/request";
+import { type APIResponse, type APIError, APIErrorCodes } from "#/lib/types/api";
+import APIRequestError from '#/lib/extensions/APIRequestError';
 
 const { BOT_API_URL, BOT_ENDPOINT_API_KEY } = process.env;
 
 export default class GuildMemberChatActivity extends BaseMemberActivity {
     private async _incrementPoints() {
-        const res = await request<APIResponse<GuildMemberProfile>, APIError>({
+        const res = await request<APIResponse<GuildMemberProfile>>({
             url: new URL(`/v1/guild/${this.guild.id}/member/${this.member.id}/chat-activity`, BOT_API_URL),
             method: 'PATCH',
             headers: {
@@ -20,7 +20,17 @@ export default class GuildMemberChatActivity extends BaseMemberActivity {
             }
         });
 
-        if (res.isErr()) return res;
+        if (res.isErr()) {
+            if (res.error.hasResponse() && res.error.hasJSON()) {
+                const err = await res.error.json<APIError>();
+                return errAsync(new APIRequestError(res.error, {
+                    code: err.code,
+                    message: err.message
+                }));
+            }
+
+            return errAsync(res.error);
+        }
 
         const { chat_activity } = res.value.data;
 
@@ -38,7 +48,7 @@ export default class GuildMemberChatActivity extends BaseMemberActivity {
         const res = await this._incrementPoints();
 
         if (res.isErr()) {
-            if (res.error instanceof RequestError && res.error.response.status === 404) {
+            if (res.error instanceof APIRequestError && res.error.code === APIErrorCodes.MemberProfileNotFound) {
                 if (!createNew) return res;
 
                 const created = await this.guild.members.fetch(this.member.id, { createNew: true });

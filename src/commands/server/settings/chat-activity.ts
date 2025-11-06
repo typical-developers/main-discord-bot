@@ -2,6 +2,8 @@ import { Subcommand } from '@sapphire/plugin-subcommands';
 import { ApplyOptions } from '@sapphire/decorators';
 import { type ApplicationCommandSubCommandData, type ApplicationCommandSubGroupData, ApplicationCommandOptionType, ApplicationIntegrationType, InteractionContextType, MessageFlags, PermissionFlagsBits } from 'discord.js';
 import RequestError from '#/lib/extensions/RequestError';
+import APIRequestError from '#/lib/extensions/APIRequestError';
+import { APIErrorCodes } from '#/lib/types/api';
 
 @ApplyOptions<Subcommand.Options>({
     description: 'Manage chat activity settings.',
@@ -131,25 +133,20 @@ export class ChatActivitySettings extends Subcommand {
 
         const { chatActivity } = settings.value;
         const role = interaction.options.getRole('role', true);
-        const isSuccess = await chatActivity.createActivityRole({
-            role_id: role.id,
-            required_points: interaction.options.getNumber('required-points', true)
-        });
+        const requredPoints = interaction.options.getNumber('required-points', true);
 
+        const isSuccess = await chatActivity.createActivityRole({ role_id: role.id, required_points: requredPoints });
         if (isSuccess.isErr()) {
-            if (isSuccess.error instanceof RequestError && isSuccess.error.response.status !== 409) {
-                this.container.logger.error(isSuccess.error);
-
+            if (APIRequestError.isAPIError(isSuccess.error) && isSuccess.error.isErrorCode(APIErrorCodes.ActivityRoleExists)) {
                 return await interaction.editReply({
-                    content: 'There was an error creating the activity role.',
+                    content: 'The activity role already exists.',
                 });
             }
-            
-            await interaction.editReply({
-                content: 'The activity role already exists.',
-            });
 
-            return;
+            this.container.logger.error(isSuccess.error);
+            return await interaction.editReply({
+                content: 'There was an error creating the activity role.',
+            });
         }
 
         await interaction.editReply({

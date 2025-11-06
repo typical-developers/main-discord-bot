@@ -2,6 +2,8 @@ import { Subcommand } from '@sapphire/plugin-subcommands';
 import { ApplyOptions } from '@sapphire/decorators';
 import { type ApplicationCommandSubCommandData, ApplicationCommandOptionType, ApplicationIntegrationType, InteractionContextType, MessageFlags, PermissionFlagsBits, type ApplicationCommandBooleanOptionData, type ApplicationCommandNumericOptionData } from 'discord.js';
 import RequestError from '#/lib/extensions/RequestError';
+import APIRequestError from '#/lib/extensions/APIRequestError';
+import { APIErrorCodes } from '#/lib/types/api';
 
 @ApplyOptions<Subcommand.Options>({
     description: 'Manage voice room lobby settings.',
@@ -134,11 +136,20 @@ export class VoiceRoomLobbySettings extends Subcommand {
 
         const options = this._getOptions(interaction);
         const isSuccess = await settings.value.voiceRoomLobbies.create(channelId, options);
+
         if (isSuccess.isErr()) {
-            if (isSuccess.error instanceof RequestError && isSuccess.error.response.status === 409)
-                return await interaction.editReply({
-                    content: 'This channel is already set as a voice room lobby.',
-                });
+            if (APIRequestError.isAPIError(isSuccess.error)) {
+                switch (isSuccess.error.code) {
+                    case APIErrorCodes.VoiceRoomLobbyExists:
+                        return await interaction.editReply({
+                            content: 'This channel is already set as a voice room lobby.',
+                        });
+                    case APIErrorCodes.VoiceRoomLobbyIsVoiceRoom:
+                        return await interaction.editReply({
+                            content: 'This channel is an active voice room and cannot be set as a voice room lobby.',
+                        });
+                }
+            }
 
             this.container.logger.error(isSuccess.error);
             return await interaction.editReply({
@@ -176,15 +187,18 @@ export class VoiceRoomLobbySettings extends Subcommand {
         const options = this._getOptions(interaction);
         const isSuccess = await settings.value.voiceRoomLobbies.update(channelId, options);
         if (isSuccess.isErr()) {
-            if (isSuccess.error instanceof RequestError && isSuccess.error.response.status === 404)
+            if (!APIRequestError.isAPIError(isSuccess.error)) {
+                this.container.logger.error(isSuccess.error);
+                return await interaction.editReply({
+                    content: 'There was an error updating the voice room lobby.',
+                });
+            }
+
+            if (isSuccess.error.code === APIErrorCodes.VoiceRoomLobbyNotFound) {
                 return await interaction.editReply({
                     content: 'This channel is not set as a voice room lobby.',
                 });
-
-            this.container.logger.error(isSuccess.error);
-            return await interaction.editReply({
-                content: 'There was an error updating the voice room lobby.',
-            });
+            }
         }
 
         return await interaction.editReply({
@@ -211,10 +225,11 @@ export class VoiceRoomLobbySettings extends Subcommand {
 
         const isSuccess = await settings.value.voiceRoomLobbies.delete(channelId);
         if (isSuccess.isErr()) {
-            if (isSuccess.error instanceof RequestError && isSuccess.error.response.status === 404)
+            if (APIRequestError.isAPIError(isSuccess.error) && isSuccess.error.isErrorCode(APIErrorCodes.VoiceRoomLobbyNotFound)) {
                 return await interaction.editReply({
                     content: 'This channel is not set as a voice room lobby.',
                 });
+            }
 
             this.container.logger.error(isSuccess.error);
             return await interaction.editReply({

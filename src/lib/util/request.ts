@@ -1,7 +1,7 @@
 import { okAsync, errAsync } from 'neverthrow';
 import RequestError from '#/lib/extensions/RequestError';
 
-export async function request<ResponseData = any, ErrorData = any>({
+export async function request<ResponseData = any>({
     url, method, body, headers = {}, query = {}
 }: {
     url: URL,
@@ -21,34 +21,31 @@ export async function request<ResponseData = any, ErrorData = any>({
         }
     }
 
-    try {
-        const res = await fetch(url, {
-            method,
-            headers: {
-                'Content-Type': 'application/json',
-                ...headers
-            },
-            body: JSON.stringify(body)
-        });
+    const request = new Request(url, {
+        method,
+        headers: {
+            'Content-Type': 'application/json',
+            ...headers
+        },
+        body: JSON.stringify(body)
+    });
 
-        const contentType = res.headers.get('content-type');
+    try {
+        const res = await fetch(request);
 
         if (!res.ok) {
-            let payload = {} as ErrorData;
-
-            if (contentType === 'application/json') {
-                payload = await res.json() as ErrorData;
-            }
-
-            return errAsync(new RequestError<ErrorData>({
+            return errAsync(new RequestError({
                 message: `Request failed with status code ${res.status}.`,
-                response: res,
-                payload
+                request: request,
+                response: res
             }));
         }
 
         return okAsync(await res.json() as ResponseData);
-    } catch (e) {
-        return errAsync(e);
+    } catch {
+        return errAsync(new RequestError({
+            message: `Request failed.`,
+            request: request
+        }));
     }
 }

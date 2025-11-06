@@ -3,6 +3,8 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { type ApplicationCommandOptionData, ApplicationCommandOptionType, ApplicationIntegrationType, AttachmentBuilder, InteractionContextType } from 'discord.js';
 import type { ActivityPeriod, ActivityType } from '#/lib/structures/BaseActivitySettings';
 import { leaderboardPagination } from '#/lib/util/buttons';
+import { APIErrorCodes } from '#/lib/types/api';
+import APIRequestError from '#/lib/extensions/APIRequestError';
 
 @ApplyOptions<Command.Options>({
     description: 'Get information on a server member!'
@@ -71,6 +73,10 @@ export class ServerLeaderboard extends Command {
 
         const leaderboard = await settings.value.getActivityLeaderboard({ page, activity_type: activityType, time_period: displayType });
         if (leaderboard.isErr()) {
+            if (APIRequestError.isAPIError(leaderboard.error) && leaderboard.error.isErrorCode(APIErrorCodes.LeaderboardNoRows)) {
+                return await interaction.editReply({ content: 'The leaderboard currently has no rows.' });
+            }
+
             this.container.logger.error(leaderboard.error);
             return await interaction.editReply({ content: 'Something went wrong while generating the leaderboard card.' });
         }

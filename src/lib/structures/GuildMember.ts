@@ -52,20 +52,22 @@ export default class GuildMember {
             },
         };
 
+        const request = new Request(browserlessUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
         try {
-            const res = await fetch(browserlessUrl, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(data),
-            });
+            const res = await fetch(request);
 
             if (!res.ok) {
                 return errAsync(new RequestError({
                     message: `Request failed with status code ${res.status}.`,
                     response: res,
-                    payload: {}
+                    request
                 }));
             }
 
@@ -82,13 +84,13 @@ export default class GuildMember {
                     status: code,
                     statusText: responseText,
                     headers: res.headers
-                })
+                });
 
                 if (code <= 199 || code >= 300) {
                     return errAsync(new RequestError({
                         message: `Request failed with status code ${code}.`,
                         response: modifiedRes,
-                        payload: {}
+                        request
                     }));
                 }
             }
@@ -96,7 +98,10 @@ export default class GuildMember {
             const buffer = await res.arrayBuffer();
             return okAsync(Buffer.from(buffer));
         } catch (e) {
-            return errAsync(e);
+            return errAsync(new RequestError({
+                message: `There was an error generating the profile card.`,
+                request
+            }));
         }
     }
 }

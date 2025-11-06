@@ -3,6 +3,8 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { type ApplicationCommandOptionData, GuildMember, ApplicationCommandOptionType, ApplicationCommandType, AttachmentBuilder, MessageFlags, InteractionContextType, ApplicationIntegrationType, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import RequestError from '#/lib/extensions/RequestError';
 import { profileCard } from '#/lib/util/buttons';
+import APIRequestError from '#/lib/extensions/APIRequestError';
+import { APIErrorCodes } from '#/lib/types/api';
 
 @ApplyOptions<Command.Options>({
     description: 'Get information on a server member!'
@@ -57,10 +59,11 @@ export class ServerProfile extends Command {
 
         const member = await settings.value.members.fetch(userId);
         if (member.isErr()) {
-            if (member.error instanceof RequestError && member.error.response.status === 404)
+            if (APIRequestError.isAPIError(member.error) && member.error.isErrorCode(APIErrorCodes.MemberProfileNotFound)) {
                 return await interaction.editReply({
                     content: 'The requested member does not exist.',
                 });
+            }
 
             this.container.logger.error(member.error);
             return await interaction.editReply({
@@ -70,10 +73,11 @@ export class ServerProfile extends Command {
 
         const image = await member.value.generateProfileCard();
         if (image.isErr()) {
-            if (image.error instanceof RequestError && image.error.response.status === 429)
+            if (image.error.hasResponse() && image.error.response.status === 429) {
                 return await interaction.editReply({
-                    content: 'Too many cards are being generated right now, try again later.',
+                    content: 'Too many cards are being generated right now, try again in a bit.',
                 });
+            }
 
             this.container.logger.error(image.error);
             return await interaction.editReply({

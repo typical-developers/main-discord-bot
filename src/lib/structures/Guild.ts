@@ -6,10 +6,10 @@ import ActiveVoiceRoomResourceMananger from './ActiveVoiceRoomResourceMananger';
 import { VoiceRoomLobbyResourceManager } from './VoiceRoomLobbyResourceManager';
 import GuildActivityLeaderboard, { type GuildActivityLeaderboardQueryOptions } from './GuildActivityLeaderboard';
 
-import { Collection } from 'discord.js';
 import { okAsync, errAsync } from 'neverthrow';
 import type { APIResponse, APIError } from '#/lib/types/api';
 import { request } from '#/lib/util/request';
+import APIRequestError from '#/lib/extensions/APIRequestError';
 import RequestError from '#/lib/extensions/RequestError';
 
 const { BOT_API_URL, BOT_ENDPOINT_API_KEY, BROWSERLESS_URL } = process.env;
@@ -80,20 +80,22 @@ export default class Guild {
             },
         };
 
+        const request = new Request(browserlessUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
         try {
-            const res = await fetch(browserlessUrl, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(data),
-            });
+            const res = await fetch(request);
 
             if (!res.ok) {
                 return errAsync(new RequestError({
                     message: `Request failed with status code ${res.status}.`,
                     response: res,
-                    payload: {}
+                    request,
                 }));
             }
 
@@ -116,14 +118,17 @@ export default class Guild {
                     return errAsync(new RequestError({
                         message: `Request failed with status code ${code}.`,
                         response: modifiedRes,
-                        payload: {}
+                        request,
                     }));
                 }
             }
 
             return okAsync(Buffer.from(await res.arrayBuffer()));
         } catch (e) {
-            return errAsync(e);
+            return errAsync(new RequestError({
+                message: `Request failed.`,
+                request,
+            }));
         }
     }
 
@@ -135,7 +140,7 @@ export default class Guild {
      * Updates the configuration for message embeds.
      */
     public async updateMessageEmbedSettings(options: GuildMessageEmbedsUpdateOptions) {
-        const res = await request<APIResponse<GuildSettings>, APIError>({
+        const res = await request<APIResponse<GuildSettings>>({
             url: new URL(`/v1/guild/${this.id}/settings/message-embeds`, BOT_API_URL),
             method: 'PATCH',
             headers: {
@@ -144,7 +149,17 @@ export default class Guild {
             body: options
         });
 
-        if (res.isErr()) return errAsync(res.error);
+        if (res.isErr()) {
+            if (res.error.hasResponse() && res.error.hasJSON()) {
+                const err = await res.error.json<APIError>();
+                return errAsync(new APIRequestError(res.error, {
+                    code: err.code,
+                    message: err.message
+                }));
+            }
+
+            return errAsync(res.error);
+        }
 
         const { message_embeds } = res.value.data;
         this.messageEmbeds = new MessageEmbedSettings(this, message_embeds);

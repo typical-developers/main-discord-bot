@@ -1,5 +1,4 @@
 import type Guild from "./Guild";
-import type VoiceRoomLobby from "./VoiceRoomLobby";
 import type { GuildVoiceRoomLobby } from "./VoiceRoomLobby";
 
 export type GuildActiveVoiceRoom = {

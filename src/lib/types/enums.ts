@@ -4,7 +4,7 @@ export const enum BotStatusCycle {
     SprayPaintDeluxePlaying = 'SPRAY_PAINT_PLAYING',
     VoxelBlockBuilderPlaying = 'VOXEL_BLOCK_BUILDER_PLAYING',
     BuildWithBlocksPlaying = 'BUILD_WITH_BLOCKS_PLAYING',
-}
+};
 
 export const enum ExperienceUniverseID {
     Oaklands = 3666294218,

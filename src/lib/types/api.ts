@@ -25,16 +25,22 @@ export enum APIErrorCodes {
     ChatActivityTrackingDisabled = "CHAT_ACTIVITY_TRACKING_DISABLED",
     ActivityRoleExists = "ACTIVITY_ROLE_ALREADY_EXISTS",
 
+    LeaderboardNoRows = "LEADERBOARD_NO_ROWS",
+
     VoiceRoomLobbyExists = "VOICE_ROOM_LOBBY_ALREADY_EXISTS",
     VoiceRoomLobbyNotFound = "VOICE_ROOM_LOBBY_NOT_FOUND",
     VoiceRoomLobbyIsVoiceRoom = "VOICE_ROOM_LOBBY_IS_ACTIVE_VOICE_ROOM",
     VoiceRoomExists = "VOICE_ROOM_EXISTS",
     VoiceRoomNotFound = "VOICE_ROOM_NOT_FOUND",
-}
+};
 
 export interface APIError extends BaseAPIResponse {
     /**
+     * The error code that the API returned.
+     */
+    code: APIErrorCodes;
+    /**
      * The message that the API returned due to an error.
      */
-    message: APIErrorCodes;
+    message: string;
 };
