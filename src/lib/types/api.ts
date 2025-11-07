@@ -1,17 +1,3 @@
-export interface BaseAPIResponse {
-    /**
-     * Whether or not the API request was successful.
-     */
-    success: boolean;
-}
-
-export interface APIResponse<T> extends BaseAPIResponse {
-    /**
-     * The data that the API returned.
-     */
-    data: T;
-};
-
 export enum APIErrorCodes {
     InvalidRequestBody = "INVALID_REQUEST",
 
@@ -34,7 +20,14 @@ export enum APIErrorCodes {
     VoiceRoomNotFound = "VOICE_ROOM_NOT_FOUND",
 };
 
-export interface APIError extends BaseAPIResponse {
+export interface APIResponse<T> {
+    /**
+     * The data that the API returned.
+     */
+    data: T;
+};
+
+export interface APIError {
     /**
      * The error code that the API returned.
      */
