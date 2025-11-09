@@ -107,17 +107,10 @@ export class ServerProfile extends Command {
     }
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
-        let member: GuildMember | undefined;
-
-        const user = interaction.options.getUser('user');
-        if (user) {
-            member = await interaction.guild?.members.fetch(user.id).catch(() => undefined);
-        } else {
-            if (!interaction.member)
-                return;
-
-            member = await interaction.guild?.members.fetch(interaction.member.user.id).catch(() => undefined);
-        }
+        const user = interaction.options.getUser('user', false);
+        const member = user !== null
+            ? await interaction.guild?.members.fetch(user.id).catch(() => undefined)
+            : await interaction.guild?.members.fetch(interaction.user.id).catch(() => undefined);
 
         if (!member)
             return await interaction.reply({
