@@ -84,11 +84,12 @@ export class ServerProfile extends Command {
                 content: 'There was an issue generating the profile card. This has been forwarded to the developers.',
             });
         }
-        
+
+        const isOriginalUser = interaction.user.id === userId; /** Only allow refreshing if the user that ran the interaction is the same as the user that generated the card. */
         const attachment = new AttachmentBuilder(image.value, { name: 'profile-card.png' });
         return await interaction.editReply({
             files: [ attachment ],
-            components: [ profileCard() ]
+            components: isOriginalUser ? [ profileCard() ] : []
         });
     }
 
@@ -111,18 +112,18 @@ export class ServerProfile extends Command {
         const user = interaction.options.getUser('user');
         if (user) {
             member = await interaction.guild?.members.fetch(user.id).catch(() => undefined);
-        }
-        else {
-            if (!interaction.member) return;
+        } else {
+            if (!interaction.member)
+                return;
+
             member = await interaction.guild?.members.fetch(interaction.member.user.id).catch(() => undefined);
         }
 
-        if (!member) {
+        if (!member)
             return await interaction.reply({
                 content: 'Unable to fetch the member\'s details.',
                 flags: [ MessageFlags.Ephemeral ]
             });
-        }
 
         return this.generateCard(interaction, member.id);
     }
