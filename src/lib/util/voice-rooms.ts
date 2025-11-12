@@ -1,10 +1,12 @@
 import { ContainerBuilder, ActionRowBuilder ,ButtonBuilder, ComponentType, SeparatorSpacingSize, inlineCode, ButtonStyle } from "discord.js";
 import type VoiceRoom from "#/lib/structures/VoiceRoom";
-import type VoiceRoomLobby from "../structures/VoiceRoomLobby";
+import type VoiceRoomLobby from "#/lib/structures/VoiceRoomLobby";
+import { emojis } from "#/lib/constants/emojis";
 
 export function voiceRoomDetailsEmbed(room: VoiceRoom, settings: VoiceRoomLobby) {
     const settingsButtons = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder({
+            emoji: { id: emojis.Rename },
             type: ComponentType.Button,
             style: ButtonStyle.Secondary,
             custom_id: 'voice_room.rename',
@@ -12,6 +14,7 @@ export function voiceRoomDetailsEmbed(room: VoiceRoom, settings: VoiceRoomLobby)
             disabled: !settings.canRename 
         }),
         new ButtonBuilder({
+            emoji: { id: room.isLocked ? emojis.Unlock : emojis.Lock },
             type: ComponentType.Button,
             style: ButtonStyle.Secondary,
             custom_id: 'voice_room.toggle_lock',
@@ -19,6 +22,7 @@ export function voiceRoomDetailsEmbed(room: VoiceRoom, settings: VoiceRoomLobby)
             disabled: !settings.canLock
         }),
         new ButtonBuilder({
+            emoji: { id: emojis.UserLimit },
             type: ComponentType.Button,
             style: ButtonStyle.Secondary,
             custom_id: 'voice_room.adjust_limit',
@@ -29,12 +33,14 @@ export function voiceRoomDetailsEmbed(room: VoiceRoom, settings: VoiceRoomLobby)
 
     const stateButtons = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder({
+            emoji: { id: emojis.Reclaim },
             type: ComponentType.Button,
             style: ButtonStyle.Success,
             custom_id: 'voice_room.reclaim',
             label: 'Reclaim Ownership'
         }),
         new ButtonBuilder({
+            emoji: { id: emojis.Close },
             type: ComponentType.Button,
             style: ButtonStyle.Danger,
             custom_id: 'voice_room.close',
