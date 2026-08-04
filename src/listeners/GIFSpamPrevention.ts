@@ -11,7 +11,7 @@ const CATEGORY_ID = "1235781226611216554";
 })
 export class GIFSpamPrevention extends Listener {
     private maxGIFMessages = 3;
-    private cooldown = 30_000;
+    private cooldown = 60_000;
     private channels = new Map<string, number[]>();
 
     private messageIncludesGIF(message: Message) {
