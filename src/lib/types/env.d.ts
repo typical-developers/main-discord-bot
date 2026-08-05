@@ -60,5 +60,19 @@ declare module Bun {
          * The URL for the browserless instance
          */
         BROWSERLESS_URL: string;
+
+        /**
+         * The channel id for GIF spam prevention.
+         */
+        GIF_DETECTION_CHANNEL_ID: string;
+        /**
+         * The cooldown for GIF spam prevention.
+         */
+        GIFS_COOLDOWN: number;
+        /**
+         * The max amount of GIFs between cooldown for 
+         * GIF spam prevention.
+         */
+        MAX_GIFS_BETWEEN_COOLDOWN: number;
     }
 }

@@ -3,15 +3,15 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { Events, Message, inlineCode } from 'discord.js';
 
 const GIF_DETECTION_REGEX = new RegExp(/http(s)?:\/\/(www\.)?((tenor|klipy|giphy).+|(.+(\.gif)))/gmi)
-const CATEGORY_ID = "1065996313453404160";
+const CATEGORY_ID = process.env.GIF_DETECTION_CHANNEL_ID as unknown as string;
 
 @ApplyOptions<Listener.Options>({
     event: Events.MessageCreate,
     once: false
 })
 export class GIFSpamPrevention extends Listener {
-    private maxGIFMessages = 2;
-    private cooldown = 30_000;
+    private maxGIFMessages = process.env.MAX_GIFS_BETWEEN_COOLDOWN as unknown as number;
+    private cooldown = process.env.GIFS_COOLDOWN as unknown as number;
     private channels = new Map<string, number[]>();
 
     private messageIncludesGIF(message: Message) {
