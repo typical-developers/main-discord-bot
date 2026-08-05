@@ -3,7 +3,7 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { Events, Message, inlineCode } from 'discord.js';
 
 const GIF_DETECTION_REGEX = new RegExp(/http(s)?:\/\/(www\.)?((tenor|klipy|giphy).+|(.+(\.gif)))/gmi)
-const CATEGORY_ID = "1235781226611216554";
+const CATEGORY_ID = "1065996313453404160";
 
 @ApplyOptions<Listener.Options>({
     event: Events.MessageCreate,
@@ -32,7 +32,7 @@ export class GIFSpamPrevention extends Listener {
 
     public override async run(message: Message) {
         if (!message.channel.isTextBased() || message.channel.isDMBased()) {
-            return
+            return;
         }
 
         const parentChannel = await message.channel.parent?.fetch();
