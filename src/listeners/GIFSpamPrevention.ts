@@ -2,7 +2,7 @@ import { Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
 import { Events, Message, inlineCode } from 'discord.js';
 
-const GIF_DETECTION_REGEX = new RegExp(/http(s)?:\/\/(www\.)?((tenor|klipy|giphy).+|(.+(\.gif)))/gmi)
+const GIF_DETECTION_REGEX = new RegExp(/http(s)?:\/\/(www\.)?((tenor|klipy|giphy).+|(.+(\.gif|webp)))/gmi)
 const CATEGORY_ID = process.env.GIF_DETECTION_CHANNEL_ID as unknown as string;
 
 @ApplyOptions<Listener.Options>({
