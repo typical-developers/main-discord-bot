@@ -11,13 +11,9 @@ const client = new SapphireClient({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildMessageReactions,
-        GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildModeration,
-        GatewayIntentBits.GuildPresences,
-        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.GuildVoiceStates,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildVoiceStates
     ],
     partials: [ Partials.Message, Partials.Channel, Partials.Reaction, Partials.User ],
     tasks: {
@@ -26,7 +22,7 @@ const client = new SapphireClient({
             port: parseInt(process.env.REDIS_PORT),
             password: process.env.REDIS_PASSWORD,
             db: parseInt(process.env.REDIS_TASKS_DB)
-        }}    
+        }}
     }
 });
 
