@@ -3,7 +3,10 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { Events, Message, inlineCode } from 'discord.js';
 
 const GIF_DETECTION_REGEX = new RegExp(/http(s)?:\/\/(www\.)?((tenor|klipy|giphy).+|(.+(\.gif|webp)))/gmi)
-const CATEGORY_ID = process.env.GIF_DETECTION_CHANNEL_ID as unknown as string;
+const CATEGORY_IDS = (process.env.GIF_DETECTION_CHANNEL_ID as unknown as string)
+    .split(',')
+    .map((categoryId) => categoryId.trim())
+    .filter(Boolean);
 
 @ApplyOptions<Listener.Options>({
     event: Events.MessageCreate,
@@ -40,10 +43,10 @@ export class GIFSpamPrevention extends Listener {
 
         if (message.channel.isThread()) {
             const parentParentChannel = await parentChannel.parent?.fetch();
-            if (!parentParentChannel || parentParentChannel.id !== CATEGORY_ID) {
+            if (!parentParentChannel || !CATEGORY_IDS.includes(parentParentChannel.id)) {
                 return;
             }
-        } else if (parentChannel.id !== CATEGORY_ID) {
+        } else if (!CATEGORY_IDS.includes(parentChannel.id)) {
             return;
         }
 
