@@ -1,3 +1,17 @@
 module github.com/typical-developers/main-discord-bot
 
-go 1.25.0
+go 1.27.0
+
+require (
+	github.com/disgoorg/disgo v0.19.6
+	github.com/disgoorg/json/v2 v2.0.0
+	github.com/disgoorg/snowflake/v2 v2.0.3
+	github.com/redis/go-redis/v9 v9.23.0
+)
+
+require (
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/disgoorg/omit v1.0.0 // indirect
+	go.uber.org/atomic v1.12.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+)
