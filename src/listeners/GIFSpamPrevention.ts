@@ -1,12 +1,18 @@
 import { Listener } from '@sapphire/framework';
 import { ApplyOptions } from '@sapphire/decorators';
-import { Events, Message, inlineCode } from 'discord.js';
+import { Events, Message, StickerFormatType } from 'discord.js';
 
 const GIF_DETECTION_REGEX = new RegExp(/http(s)?:\/\/(www\.)?((tenor|klipy|giphy).+|(.+(\.gif|webp)))/gmi)
 const CATEGORY_IDS = (process.env.GIF_DETECTION_CHANNEL_ID as unknown as string)
     .split(',')
     .map((categoryId) => categoryId.trim())
     .filter(Boolean);
+
+const ANIMATED_STICKER_FORMATS = new Set([
+    StickerFormatType.APNG,
+    StickerFormatType.Lottie,
+    StickerFormatType.GIF
+]);
 
 @ApplyOptions<Listener.Options>({
     event: Events.MessageCreate,
@@ -18,6 +24,10 @@ export class GIFSpamPrevention extends Listener {
     private channels = new Map<string, number[]>();
 
     private messageIncludesGIF(message: Message) {
+        if (message.stickers.some(({ format }) => ANIMATED_STICKER_FORMATS.has(format))) {
+            return true;
+        }
+
         let hasGIF = message.attachments
             .filter(({ contentType }) => contentType?.toLowerCase().split(';')[0] === 'image/gif')
             .toJSON()
