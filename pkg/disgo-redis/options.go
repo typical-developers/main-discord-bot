@@ -47,7 +47,7 @@ type config struct {
 	ttl             time.Duration
 	clearOnStart    bool
 
-	guildPolicy                cache.Policy[discord.Guild]
+	guildPolicy                cache.Policy[discord.CacheGuild]
 	channelPolicy              cache.Policy[discord.GuildChannel]
 	stageInstancePolicy        cache.Policy[discord.StageInstance]
 	guildScheduledEventPolicy  cache.Policy[discord.GuildScheduledEvent]
@@ -68,7 +68,7 @@ func defaultConfig() config {
 		contextProvider: context.Background,
 		errorHandler:    func(error) {},
 
-		guildPolicy:                cache.PolicyAll[discord.Guild],
+		guildPolicy:                cache.PolicyAll[discord.CacheGuild],
 		channelPolicy:              cache.PolicyAll[discord.GuildChannel],
 		stageInstancePolicy:        cache.PolicyAll[discord.StageInstance],
 		guildScheduledEventPolicy:  cache.PolicyAll[discord.GuildScheduledEvent],
@@ -204,7 +204,7 @@ func WithErrorHandler(handler ErrorHandler) Option {
 }
 
 // WithGuildCachePolicy sets the policy applied before storing guilds.
-func WithGuildCachePolicy(policy cache.Policy[discord.Guild]) Option {
+func WithGuildCachePolicy(policy cache.Policy[discord.CacheGuild]) Option {
 	return func(config *config) { config.guildPolicy = policy }
 }
 
