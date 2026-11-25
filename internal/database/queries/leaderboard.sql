@@ -32,7 +32,7 @@ OFFSET @offset_by;
 
 -- name: GetAllTimeActivityLeaderboardPages :one
 SELECT
-    CAST(CEIL(COUNT(*)::DECIMAL / @limit_by) AS INT) AS total_pages
+    CAST(CEIL(COUNT(*)::DECIMAL / @limit_by::INT) AS INT) AS total_pages
 FROM guild_profiles
 WHERE
     guild_id = @guild_id;
@@ -54,12 +54,12 @@ FROM (
         guild_id = @guild_id
         AND grant_type = @grant_type
 ) AS rankings
-LIMIT 15
+LIMIT @limit_by
 OFFSET @offset_by;
 
 -- name: GetWeeklyActivityLeaderboardPages :one
 SELECT
-    CAST(CEIL(COUNT(*)::DECIMAL / @limit_by) AS INT) AS total_pages
+    CAST(CEIL(COUNT(*)::DECIMAL / @limit_by::INT) AS INT) AS total_pages
 FROM guild_activity_tracking_weekly_current
 WHERE
     guild_id = @guild_id
@@ -82,12 +82,12 @@ FROM (
         guild_id = @guild_id
         AND grant_type = @grant_type
 ) AS rankings
-LIMIT 15
+LIMIT @limit_by
 OFFSET @offset_by;
 
 -- name: GetMonthlyActivityLeaderboardPages :one
 SELECT
-    CAST(CEIL(COUNT(*)::DECIMAL / @limit_by) AS INT) AS total_pages
+    CAST(CEIL(COUNT(*)::DECIMAL / @limit_by::INT) AS INT) AS total_pages
 FROM guild_activity_tracking_monthly_current
 WHERE
     guild_id = @guild_id
@@ -117,7 +117,7 @@ SELECT
     m.member_id,
     weekly_leaderboard.rank AS weekly_leaderboard_rank,
     monthly_leaderboard.rank AS monthly_leaderboard_rank
-FROM (SELECT @member_id::TEXT AS member_id) m
+FROM (SELECT @member_id::SNOWFLAKE AS member_id) m
 LEFT JOIN weekly_leaderboard ON weekly_leaderboard.member_id = m.member_id
 LEFT JOIN monthly_leaderboard ON monthly_leaderboard.member_id = m.member_id;
 
@@ -184,7 +184,7 @@ WHEN NOT MATCHED THEN
         current_leaderboard.earned_points
     );
 
--- name: FlushOudatedWeeklyActivityLeaderboard :exec
+-- name: FlushOutdatedWeeklyActivityLeaderboard :exec
 TRUNCATE TABLE guild_activity_tracking_weekly_current;
 
 -- name: GetMonthlyActivityLeaderboardResetDetails :one
@@ -224,5 +224,5 @@ WHEN NOT MATCHED THEN
         current_leaderboard.earned_points
     );
 
--- name: FlushOudatedMonthlyActivityLeaderboard :exec
-TRUNCATE TABLE guild_activity_tracking_monthly_current;
+-- name: FlushOutdatedMonthlyActivityLeaderboard :exec
+TRUNCATE TABLE guild_activity_tracking_monthly_current;

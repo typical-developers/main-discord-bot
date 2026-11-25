@@ -21,12 +21,14 @@ SELECT
     guild_voice_rooms_settings.can_adjust_limit,
 
     COALESCE(
-        ARRAY_AGG(COALESCE(guild_active_voice_rooms.channel_id, '')),
+        ARRAY_AGG(guild_active_voice_rooms.channel_id)
+            FILTER (WHERE guild_active_voice_rooms.channel_id IS NOT NULL),
         '{}'
-    )::TEXT[] AS opened_rooms
+    )::SNOWFLAKE[] AS opened_rooms
 FROM guild_voice_rooms_settings
 LEFT JOIN guild_active_voice_rooms ON
     guild_voice_rooms_settings.guild_id = guild_active_voice_rooms.guild_id
+    AND guild_voice_rooms_settings.voice_channel_id = guild_active_voice_rooms.origin_channel_id
 WHERE guild_voice_rooms_settings.guild_id = @guild_id
 GROUP BY
     guild_voice_rooms_settings.guild_id,
@@ -50,7 +52,7 @@ WHERE
     AND voice_channel_id = @voice_channel_id
 RETURNING *;
 
--- name: DeleteVoiceRoomLobby :exec
+-- name: DeleteVoiceRoomLobby :execrows
 DELETE FROM guild_voice_rooms_settings
 WHERE
     guild_id = @guild_id
@@ -82,9 +84,9 @@ WHERE
 -- name: GetVoiceRoomIds :one
 SELECT
     COALESCE(
-        ARRAY_AGG(COALESCE(guild_active_voice_rooms.channel_id, '')),
+        ARRAY_AGG(guild_active_voice_rooms.channel_id),
         '{}'
-    )::TEXT[] AS opened_rooms
+    )::SNOWFLAKE[] AS opened_rooms
 FROM guild_active_voice_rooms
 WHERE
     guild_id = @guild_id
@@ -100,7 +102,7 @@ WHERE
     AND channel_id = @channel_id
 RETURNING *;
 
--- name: DeleteVoiceRoom :exec
+-- name: DeleteVoiceRoom :execrows
 DELETE FROM guild_active_voice_rooms
 WHERE
     guild_id = @guild_id

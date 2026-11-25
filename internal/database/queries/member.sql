@@ -27,27 +27,45 @@ FROM profiles
 WHERE
     member_id = @member_id;
 
--- name: IncrememberMemberChatActivityPoints :one
+-- name: IncrementMemberChatActivity :one
+-- Grants chat activity points only if the member is off cooldown.
+-- Returns no rows when the profile does not exist or the member is on cooldown.
 UPDATE guild_profiles
 SET
-    chat_activity = chat_activity + @points,
-    last_chat_activity_grant = EXTRACT(EPOCH FROM now() AT TIME ZONE 'utc')
+    chat_activity = chat_activity + @points::INT,
+    last_chat_activity_grant = EXTRACT(EPOCH FROM now())::INT
 WHERE
     guild_id = @guild_id
     AND member_id = @member_id
+    AND last_chat_activity_grant + @cooldown_seconds::INT <= EXTRACT(EPOCH FROM now())
 RETURNING *;
 
--- name: GetMemberChatActivityRoleInfo :one
+-- name: IncrementMemberVoiceActivity :one
+-- Grants voice activity points only if the member is off cooldown.
+-- Returns no rows when the profile does not exist or the member is on cooldown.
+UPDATE guild_profiles
+SET
+    voice_activity = voice_activity + @points::INT,
+    last_voice_activity_grant = EXTRACT(EPOCH FROM now())::INT
+WHERE
+    guild_id = @guild_id
+    AND member_id = @member_id
+    AND last_voice_activity_grant + @cooldown_seconds::INT <= EXTRACT(EPOCH FROM now())
+RETURNING *;
+
+-- name: GetMemberActivityRoleInfo :one
 WITH
     activity_roles AS (
         SELECT
             role_id,
             required_points
         FROM guild_activity_roles
-        WHERE guild_activity_roles.guild_id = @guild_id
+        WHERE
+            guild_activity_roles.guild_id = @guild_id
+            AND guild_activity_roles.grant_type = @grant_type
     ),
     all_role_ids AS (
-        SELECT CAST(ARRAY_AGG(role_id) AS TEXT[]) AS role_ids
+        SELECT COALESCE(ARRAY_AGG(role_id), '{}')::SNOWFLAKE[] AS role_ids
         FROM activity_roles
         WHERE required_points <= CAST(@points AS INT)
     ),
@@ -77,9 +95,9 @@ SELECT
 
     next_role_info.role_id AS next_role_id,
     next_role_info.required_points AS next_role_required_points
-FROM current_role_info
-FULL OUTER JOIN next_role_info ON TRUE
-CROSS JOIN all_role_ids;
+FROM all_role_ids
+LEFT JOIN current_role_info ON TRUE
+LEFT JOIN next_role_info ON TRUE;
 
 -- name: MigrateMemberProfile :exec
 INSERT INTO guild_profiles (
@@ -110,4 +128,4 @@ SET
     last_voice_activity_grant = DEFAULT
 WHERE
     guild_id = @guild_id
-    AND member_id = @member_id;
+    AND member_id = @member_id;

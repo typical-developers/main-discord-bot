@@ -2,11 +2,29 @@ version: "2"
 
 sql:
   - engine: "postgresql"
-    queries: "/queries"
-    schema: "/migrations"
+    queries: "queries"
+    schema: "migrations"
     gen:
       go:
         package: "gen"
-        out: "./gen"
+        out: "gen"
         sql_package: "pgx/v5"
-        emit_interface: true 
+
+        emit_methods_with_db_argument: true
+        json_tags_id_uppercase: true
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+        overrides:
+        - db_type: "snowflake"
+          go_type:
+            import: "github.com/disgoorg/snowflake/v2"
+            package: "snowflake"
+            type: "ID"
+        - db_type: "snowflake"
+          nullable: true
+          go_type:
+            import: "github.com/disgoorg/snowflake/v2"
+            package: "snowflake"
+            type: "ID"
+            pointer: true

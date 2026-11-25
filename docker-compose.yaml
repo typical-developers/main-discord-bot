@@ -1,0 +1,15 @@
+services:
+  migrations:
+    build:
+      context: .
+      dockerfile: ./cmd/migrations/Dockerfile
+    restart: no
+    env_file: ./.env
+    environment:
+      GOOSE_DBSTRING: >-
+        host=${DATABASE_HOST}
+        port=${DATABASE_PORT}
+        user=${DATABASE_USERNAME}
+        password=${DATABASE_PASSWORD}
+        dbname=${DATABASE_DB}
+        sslmode=${DATABASE_SSL_MODE}
