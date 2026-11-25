@@ -13,3 +13,13 @@ services:
         password=${DATABASE_PASSWORD}
         dbname=${DATABASE_DB}
         sslmode=${DATABASE_SSL_MODE}
+
+  bot:
+    build:
+      context: .
+      dockerfile: ./cmd/bot/Dockerfile
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+    env_file: ./.env
+    restart: unless-stopped
