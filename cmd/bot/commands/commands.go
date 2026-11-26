@@ -39,7 +39,7 @@ func GlobalCommands(cfg *config.Config, db *database.Database) []Command {
 		newServerProfileCommand(profileCards),
 		newUserProfileMenuCommand(profileCards),
 		newServerLeaderboardCommand(db),
-		newMigrateMemberProfileCommand(cfg, db),
+		// newMigrateMemberProfileCommand(cfg, db),
 
 		// server settings
 		newChatActivityCommand(db),
