@@ -11,15 +11,7 @@ import (
 	"github.com/disgoorg/snowflake/v2"
 )
 
-const (
-	EnvironmentProduction  = "production"
-	EnvironmentDevelopment = "development"
-)
-
 type Config struct {
-	// production or development. Controls which set of custom emojis is used.
-	Environment string `env:"ENVIRONMENT" envDefault:"production"`
-
 	Discord struct {
 		// The token for the Discord bot.
 		Token string `env:"TOKEN,required"`
@@ -51,8 +43,6 @@ type Config struct {
 	} `envPrefix:"DATABASE_"`
 
 	Redis struct {
-		// Optional. When set, disgo's cache is stored in Redis and the client is
-		// available to modules through Deps.Redis.
 		URL string `env:"URL"`
 	} `envPrefix:"REDIS_"`
 
@@ -67,15 +57,7 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("config: %w", err)
 	}
 
-	if c.Environment != EnvironmentProduction && c.Environment != EnvironmentDevelopment {
-		return nil, fmt.Errorf("config: ENVIRONMENT must be %q or %q, got %q", EnvironmentProduction, EnvironmentDevelopment, c.Environment)
-	}
-
 	return &c, nil
-}
-
-func (c *Config) IsProduction() bool {
-	return c.Environment == EnvironmentProduction
 }
 
 // CanMigrateProfiles reports whether the user may run /migrate-member-profile.

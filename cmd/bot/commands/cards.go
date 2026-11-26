@@ -233,8 +233,9 @@ func loadLeaderboardCard(ctx context.Context, client *bot.Client, db *database.D
 	return card, nil
 }
 
-// leaderboardMembers looks up the username and avatar of everyone on a leaderboard page. Members
-// who can't be found (for example, deleted accounts) are left out.
+// leaderboardMembers looks up the username and avatar of everyone on a leaderboard page, from
+// disgo's member cache where possible. Members who left the server are looked up as users, and
+// anyone who can't be found (for example, deleted accounts) is left out.
 func leaderboardMembers(ctx context.Context, client *bot.Client, guildID snowflake.ID, entries []database.LeaderboardEntry) map[snowflake.ID]leaderboardMember {
 	avatarOpts := []discord.CDNOpt{discord.WithSize(64), discord.WithFormat(discord.FileFormatPNG)}
 
@@ -258,16 +259,17 @@ func leaderboardMembers(ctx context.Context, client *bot.Client, guildID snowfla
 			slots <- struct{}{}
 			defer func() { <-slots }()
 
-			user, err := client.Rest.GetUser(entry.MemberID, rest.WithCtx(ctx))
-			if err != nil {
+			var member leaderboardMember
+			if m, err := disgox.GetMember(client, guildID, entry.MemberID, rest.WithCtx(ctx)); err == nil {
+				member = leaderboardMember{Username: m.User.Username, AvatarURL: m.EffectiveAvatarURL(avatarOpts...)}
+			} else if user, err := client.Rest.GetUser(entry.MemberID, rest.WithCtx(ctx)); err == nil {
+				member = leaderboardMember{Username: user.Username, AvatarURL: user.EffectiveAvatarURL(avatarOpts...)}
+			} else {
 				return
 			}
 
 			mu.Lock()
-			members[entry.MemberID] = leaderboardMember{
-				Username:  user.Username,
-				AvatarURL: user.EffectiveAvatarURL(avatarOpts...),
-			}
+			members[entry.MemberID] = member
 			mu.Unlock()
 		})
 	}
@@ -355,11 +357,74 @@ func leaderboardPeriod(period database.TimePeriod, now time.Time) (text string, 
 	return text, resetsIn
 }
 
+// Downloaded avatars and icons are remembered for a while, since leaderboard pages are paginated
+// and refreshed a lot (disgo caches members, not their images). Avatar and icon URLs contain a hash
+// of the image, so a changed avatar is a different URL and is fetched straight away.
+var cardImages = newTTLCache[string, image.Image](time.Minute*30, 150)
+
+// ttlCache is a small, size-bounded cache whose entries expire after ttl. Safe for concurrent use.
+type ttlCache[K comparable, V any] struct {
+	ttl time.Duration
+	max int
+
+	mu      sync.Mutex
+	entries map[K]ttlEntry[V]
+}
+
+type ttlEntry[V any] struct {
+	value   V
+	expires time.Time
+}
+
+func newTTLCache[K comparable, V any](ttl time.Duration, max int) *ttlCache[K, V] {
+	return &ttlCache[K, V]{ttl: ttl, max: max, entries: make(map[K]ttlEntry[V])}
+}
+
+func (c *ttlCache[K, V]) get(key K) (V, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	entry, ok := c.entries[key]
+	if !ok || time.Now().After(entry.expires) {
+		var zero V
+		return zero, false
+	}
+
+	return entry.value, true
+}
+
+func (c *ttlCache[K, V]) set(key K, value V) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	now := time.Now()
+	if len(c.entries) >= c.max {
+		// drop expired entries first, then arbitrary ones if it's still full.
+		for k, entry := range c.entries {
+			if now.After(entry.expires) {
+				delete(c.entries, k)
+			}
+		}
+		for k := range c.entries {
+			if len(c.entries) < c.max {
+				break
+			}
+			delete(c.entries, k)
+		}
+	}
+
+	c.entries[key] = ttlEntry[V]{value: value, expires: now.Add(c.ttl)}
+}
+
 // fetchCardImage downloads an image for a card. A card is still drawn without it (with a
 // placeholder), so failures are only logged.
 func fetchCardImage(ctx context.Context, url string) image.Image {
 	if url == "" {
 		return nil
+	}
+
+	if img, ok := cardImages.get(url); ok {
+		return img
 	}
 
 	img, err := render.FetchImage(ctx, url)
@@ -368,6 +433,7 @@ func fetchCardImage(ctx context.Context, url string) image.Image {
 		return nil
 	}
 
+	cardImages.set(url, img)
 	return img
 }
 

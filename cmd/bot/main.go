@@ -28,8 +28,7 @@ import (
 const (
 	shutdownTimeout = time.Second * 10
 
-	// voice states are needed to know who is left in a voice room.
-	cacheFlags = cache.FlagGuilds | cache.FlagChannels | cache.FlagRoles | cache.FlagVoiceStates
+	cacheFlags = cache.FlagGuilds | cache.FlagChannels | cache.FlagRoles | cache.FlagVoiceStates | cache.FlagMembers
 )
 
 func main() {

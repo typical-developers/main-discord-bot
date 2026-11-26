@@ -4,6 +4,7 @@ import (
 	"iter"
 
 	"github.com/disgoorg/disgo/bot"
+	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/rest"
 	"github.com/disgoorg/snowflake/v2"
 )
@@ -48,6 +49,23 @@ func VoiceChannelMembers(client *bot.Client, guildID, channelID snowflake.ID) it
 			}
 		}
 	}
+}
+
+// GetMember returns a member from the cache, falling back to the API. Members fetched from the
+// API are added to the cache, so later lookups don't need another request.
+func GetMember(client *bot.Client, guildID, userID snowflake.ID, opts ...rest.RequestOpt) (discord.Member, error) {
+	if member, ok := client.Caches.Member(guildID, userID); ok {
+		return member, nil
+	}
+
+	member, err := client.Rest.GetMember(guildID, userID, opts...)
+	if err != nil {
+		return discord.Member{}, err
+	}
+
+	member.GuildID = guildID
+	client.Caches.AddMember(*member)
+	return *member, nil
 }
 
 // RoleName returns a role's name from the cache, or a role mention if it isn't cached.
