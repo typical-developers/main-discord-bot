@@ -41,7 +41,7 @@ func (p *profileCards) send(e *handler.CommandEvent, memberID snowflake.ID) erro
 	// only the member the card belongs to can refresh it.
 	components := []discord.LayoutComponent{}
 	if e.User().ID == memberID {
-		components = append(components, p.refreshRow(memberID))
+		components = append(components, p.refreshRow())
 	}
 
 	_, err = e.UpdateInteractionResponse(discord.MessageUpdate{
@@ -55,11 +55,9 @@ func (p *profileCards) send(e *handler.CommandEvent, memberID snowflake.ID) erro
 }
 
 // refresh handles the refresh button under a profile card.
+// Only the member who ran the command can press it (see RequireOriginalInvoker), and the
+// button is only shown on their own card.
 func (p *profileCards) refresh(_ discord.ButtonInteractionData, e *handler.ComponentEvent) error {
-	if e.Vars["user"] != e.User().ID.String() {
-		return disgox.UserErrorf("This is not your profile card! Run the command yourself to see your own.")
-	}
-
 	if err := e.DeferUpdateMessage(); err != nil {
 		return err
 	}
@@ -85,14 +83,14 @@ func (p *profileCards) refresh(_ discord.ButtonInteractionData, e *handler.Compo
 		// drops the previous card when the message is updated.
 		Attachments: &[]discord.AttachmentUpdate{},
 		Embeds:      &[]discord.Embed{},
-		Components:  &[]discord.LayoutComponent{p.refreshRow(e.User().ID)},
+		Components:  &[]discord.LayoutComponent{p.refreshRow()},
 	})
 	return err
 }
 
-func (p *profileCards) refreshRow(memberID snowflake.ID) discord.ActionRowComponent {
+func (p *profileCards) refreshRow() discord.ActionRowComponent {
 	return discord.NewActionRow(
-		discord.NewSecondaryButton("", "/server-profile/refresh/"+memberID.String()).
+		discord.NewSecondaryButton("", "/server-profile/refresh").
 			WithEmoji(emojis.Component(emojis.EmojiRefresh)),
 	)
 }
@@ -122,7 +120,10 @@ func (c *serverProfileCommand) Create() discord.ApplicationCommandCreate {
 func (c *serverProfileCommand) Register(r handler.Router) {
 	r.Use(handlers.GuildOnly)
 	r.SlashCommand("/", c.profile)
-	r.ButtonComponent("/refresh/{user}", c.cards.refresh)
+	r.Group(func(r handler.Router) {
+		r.Use(handlers.RequireOriginalInvoker)
+		r.ButtonComponent("/refresh", c.cards.refresh)
+	})
 }
 
 func (c *serverProfileCommand) profile(data discord.SlashCommandInteractionData, e *handler.CommandEvent) error {

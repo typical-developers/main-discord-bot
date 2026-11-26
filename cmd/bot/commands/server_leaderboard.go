@@ -65,7 +65,10 @@ func (c *serverLeaderboardCommand) Create() discord.ApplicationCommandCreate {
 func (c *serverLeaderboardCommand) Register(r handler.Router) {
 	r.Use(handlers.GuildOnly)
 	r.SlashCommand("/chat-activity", c.leaderboard(database.ActivityTypeChat))
-	r.ButtonComponent("/page/{user}/{page}/{type}/{period}", c.paginate)
+	r.Group(func(r handler.Router) {
+		r.Use(handlers.RequireOriginalInvoker)
+		r.ButtonComponent("/page/{page}/{type}/{period}", c.paginate)
+	})
 }
 
 // leaderboard returns the handler for an activity type's leaderboard subcommand.
@@ -88,7 +91,7 @@ func (c *serverLeaderboardCommand) leaderboard(activityType database.ActivityTyp
 			return err
 		}
 
-		update, err := c.render(e.Ctx, e.Client(), *e.GuildID(), e.User().ID, activityType, period, page)
+		update, err := c.render(e.Ctx, e.Client(), *e.GuildID(), activityType, period, page)
 		if err != nil {
 			return err
 		}
@@ -98,12 +101,9 @@ func (c *serverLeaderboardCommand) leaderboard(activityType database.ActivityTyp
 	}
 }
 
-// paginate handles the page and refresh buttons under a leaderboard.
+// paginate handles the page and refresh buttons under a leaderboard. Only the member who ran the
+// command can press them (see RequireOriginalInvoker).
 func (c *serverLeaderboardCommand) paginate(_ discord.ButtonInteractionData, e *handler.ComponentEvent) error {
-	if e.Vars["user"] != e.User().ID.String() {
-		return disgox.UserErrorf("This is not your interaction! Run the command yourself to paginate the leaderboard.")
-	}
-
 	page, err := strconv.Atoi(e.Vars["page"])
 	if err != nil {
 		return fmt.Errorf("invalid leaderboard page %q: %w", e.Vars["page"], err)
@@ -119,7 +119,7 @@ func (c *serverLeaderboardCommand) paginate(_ discord.ButtonInteractionData, e *
 		return err
 	}
 
-	update, err := c.render(e.Ctx, e.Client(), *e.GuildID(), e.User().ID, activityType, period, page)
+	update, err := c.render(e.Ctx, e.Client(), *e.GuildID(), activityType, period, page)
 	if err != nil {
 		return err
 	}
@@ -128,8 +128,8 @@ func (c *serverLeaderboardCommand) paginate(_ discord.ButtonInteractionData, e *
 	return err
 }
 
-// render builds a leaderboard page. userID is the member allowed to paginate it.
-func (c *serverLeaderboardCommand) render(ctx context.Context, client *bot.Client, guildID, userID snowflake.ID, activityType database.ActivityType, period database.TimePeriod, page int) (discord.MessageUpdate, error) {
+// render builds a leaderboard page.
+func (c *serverLeaderboardCommand) render(ctx context.Context, client *bot.Client, guildID snowflake.ID, activityType database.ActivityType, period database.TimePeriod, page int) (discord.MessageUpdate, error) {
 	card, err := loadLeaderboardCard(ctx, client, c.db, guildID, activityType, period, page)
 	if err != nil {
 		return discord.MessageUpdate{}, err
@@ -145,16 +145,16 @@ func (c *serverLeaderboardCommand) render(ctx context.Context, client *bot.Clien
 		// drops the previous card when the message is updated.
 		Attachments: &[]discord.AttachmentUpdate{},
 		Embeds:      &[]discord.Embed{},
-		Components:  &[]discord.LayoutComponent{c.paginationRow(userID, card)},
+		Components:  &[]discord.LayoutComponent{c.paginationRow(card)},
 	}, nil
 }
 
-func (c *serverLeaderboardCommand) paginationRow(userID snowflake.ID, card leaderboardCard) discord.ActionRowComponent {
+func (c *serverLeaderboardCommand) paginationRow(card leaderboardCard) discord.ActionRowComponent {
 	current := int(card.Page.Page)
 	total := int(card.Page.TotalPages)
 
 	pageID := func(page int) string {
-		return fmt.Sprintf("/server-leaderboard/page/%s/%d/%s/%s", userID, page, card.ActivityType, card.Period)
+		return fmt.Sprintf("/server-leaderboard/page/%d/%s/%s", page, card.ActivityType, card.Period)
 	}
 
 	return discord.NewActionRow(

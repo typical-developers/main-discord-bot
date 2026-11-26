@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"runtime/debug"
 
@@ -47,5 +48,65 @@ func RequirePermissions(perms discord.Permissions) handler.Middleware {
 
 			return next(e)
 		})
+	}
+}
+
+// InvokerMustBeTeamMember requires for the invoking user to be in the team of
+// the application.
+func InvokerMustBeTeamMember(next handler.Handler) handler.Handler {
+	return func(e *handler.InteractionEvent) error {
+		application, err := e.Client().Rest.GetBotApplicationInfo()
+		if err != nil {
+			return err
+		}
+
+		isTeamMember := false
+		for _, member := range application.Team.Members {
+			// Only users who are developer or admin should be
+			// able to run this, since they are actually managing
+			// the application.
+			if member.Role == discord.TeamRoleReadOnly {
+				continue
+			}
+
+			if member.User.ID == e.User().ID {
+				isTeamMember = true
+				break
+			}
+		}
+
+		if !isTeamMember {
+			return e.CreateMessage(discord.MessageCreate{
+				Content: "Only application team members can run this.",
+				Flags:   discord.MessageFlagEphemeral,
+			})
+		}
+
+		return next(e)
+	}
+}
+
+// RequiresOriginalInvoker is a middleware function that requires the person
+// interactingwith a component to be the user who originally invoked the interaction.
+func RequireOriginalInvoker(next handler.Handler) handler.Handler {
+	return func(e *handler.InteractionEvent) error {
+		c, ok := e.Interaction.(discord.ComponentInteraction)
+		if !ok {
+			return next(e)
+		}
+
+		meta := c.Message.InteractionMetadata
+		if meta == nil {
+			return errors.New("no metadata found for interaction")
+		}
+
+		if meta.User.ID != e.User().ID {
+			return e.CreateMessage(discord.MessageCreate{
+				Content: "Only the user who originally invoked this interaction can interact.",
+				Flags:   discord.MessageFlagEphemeral,
+			})
+		}
+
+		return next(e)
 	}
 }
