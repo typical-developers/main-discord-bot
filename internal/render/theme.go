@@ -104,6 +104,14 @@ func rankText(rank int) string {
 	return "#" + commas(rank)
 }
 
+// compactRankText is rankText with large ranks shortened, e.g. "#1.2K".
+func compactRankText(rank int) string {
+	if rank <= 0 {
+		return "—"
+	}
+	return "#" + compact(rank)
+}
+
 // shade returns c's hue at full saturation and the given lightness (0–1). Frame 327 colours a
 // role's icon and text this way: #471AA6 gives an #AB83FF icon and #FBF6FF text.
 func shade(c color.RGBA, lightness float64) color.RGBA {

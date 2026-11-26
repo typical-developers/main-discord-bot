@@ -142,6 +142,44 @@ func (f *Fonts) truncate(str string, s textStyle, maxW float64) string {
 	return string(r[:lo]) + "…"
 }
 
+// compact shortens numbers from 1,000 up: 999 stays "999", 1,250 is "1.2K", 86,000 is "86K",
+// 123,456 is "123K" and 2,500,000 is "2.5M". Numbers are truncated rather than rounded, so
+// 999,999 is "999K" and never "1000K".
+func compact(n int) string {
+	if n < 0 {
+		return "-" + compact(-n)
+	}
+	if n < 1_000 {
+		return strconv.Itoa(n)
+	}
+
+	units := []struct {
+		size   int
+		suffix string
+	}{
+		{1_000_000_000, "B"},
+		{1_000_000, "M"},
+		{1_000, "K"},
+	}
+
+	for _, u := range units {
+		if n < u.size {
+			continue
+		}
+
+		whole := n / u.size
+		// one decimal only while it fits in three digits: "12.3K", but "123K".
+		tenth := (n % u.size) / (u.size / 10)
+		if whole >= 100 || tenth == 0 {
+			return strconv.Itoa(whole) + u.suffix
+		}
+
+		return strconv.Itoa(whole) + "." + strconv.Itoa(tenth) + u.suffix
+	}
+
+	return strconv.Itoa(n)
+}
+
 // commas formats 86000 as "86,000".
 func commas(n int) string {
 	s := strconv.Itoa(n)

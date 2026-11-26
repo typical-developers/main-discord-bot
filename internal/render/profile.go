@@ -213,7 +213,7 @@ func drawActivityPanel(ctx *canvas.Context, f *Fonts, r Rect, p activityPanel) {
 	strokeRoundRect(ctx, circle, 25, 1, p.accent.tint(0.25))
 	drawIcon(ctx, p.icon, iconViewBox, Rect{circle.X + 12.5, circle.Y + 12.83, 25, 25}, solid(white))
 
-	rank := rankText(s.AllTimeRank)
+	rank := compactRankText(s.AllTimeRank)
 	f.paintText(ctx, rank, in.Right(), f.baseline(in.Y, 34, rankStyle), rankStyle, rankPaint(s.AllTimeRank), alignRight)
 	f.text(ctx, "All Time", in.Right(), f.baseline(in.Y+34, 17, allTimeStyle), allTimeStyle, alpha(white, 0.5), alignRight)
 
@@ -221,7 +221,7 @@ func drawActivityPanel(ctx *canvas.Context, f *Fonts, r Rect, p activityPanel) {
 	textW := in.Right() - textX - math.Max(f.width(rank, rankStyle), f.width("All Time", allTimeStyle)) - 10
 	f.text(ctx, f.truncate(p.title, titleStyle, textW), textX, f.baseline(in.Y+3.5, 22, titleStyle), titleStyle, white, alignLeft)
 
-	points := commas(s.Points) + " Points"
+	points := compact(s.Points) + " Points"
 	if s.Points == 1 {
 		points = "1 Point"
 	}
@@ -245,7 +245,7 @@ func drawRankChip(ctx *canvas.Context, f *Fonts, accent activityAccent, x, y flo
 		gap  = 5
 	)
 
-	value := rankText(rank)
+	value := compactRankText(rank)
 	lw, vw := f.width(label, chipLabelStyle), f.width(value, chipValueStyle)
 	r := Rect{x, y, padX + lw + gap + vw + padX, h}
 
@@ -275,7 +275,7 @@ func drawProgressBar(ctx *canvas.Context, f *Fonts, accent activityAccent, r Rec
 		if progress.Required > 0 {
 			fraction = math.Max(0, math.Min(1, float64(progress.Current)/float64(progress.Required)))
 		}
-		label = commas(progress.Current) + " / " + commas(progress.Required)
+		label = compact(progress.Current) + " / " + compact(progress.Required)
 	}
 
 	if fraction > 0 {
