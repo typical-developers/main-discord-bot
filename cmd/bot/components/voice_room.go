@@ -226,18 +226,20 @@ func (p *voiceRoomPanel) toggleLock(_ discord.ButtonInteractionData, e *handler.
 	}
 
 	locked := !room.IsLocked.Bool
-	room, err = p.db.VoiceRooms.UpdateRoom(e.Ctx, room.GuildID, room.ChannelID, database.UpdateVoiceRoomOpts{IsLocked: &locked})
-	if err != nil {
-		return err
-	}
 
 	// locking is done by setting the user limit to 1, unlocking restores the lobby's limit.
+	// The channel is updated first, so a failure doesn't leave the room marked as locked.
 	limit := int(lobby.UserLimit)
 	if locked {
 		limit = 1
 	}
 
 	if _, err := e.Client().Rest.UpdateChannel(room.ChannelID, discord.GuildVoiceChannelUpdate{UserLimit: &limit}); err != nil {
+		return err
+	}
+
+	room, err = p.db.VoiceRooms.UpdateRoom(e.Ctx, room.GuildID, room.ChannelID, database.UpdateVoiceRoomOpts{IsLocked: &locked})
+	if err != nil {
 		return err
 	}
 
