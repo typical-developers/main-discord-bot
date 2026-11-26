@@ -42,7 +42,7 @@ func newMessageEmbeds(db *database.Database) *events.ListenerAdapter {
 
 func (m *messageEmbeds) guildMessageCreate(e *events.GuildMessageCreate) {
 	message := e.Message
-	if message.Author.Bot || message.Member == nil || message.Content == "" {
+	if message.Author.Bot || message.Member == nil || !messageLinkRegex.MatchString(message.Content) {
 		return
 	}
 
