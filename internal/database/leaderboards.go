@@ -28,18 +28,10 @@ type LeaderboardPage struct {
 	Entries    []LeaderboardEntry
 }
 
-// LeaderboardResetResult describes what happened when resetting a weekly or monthly leaderboard.
-type LeaderboardResetResult struct {
-	// Whether the current leaderboard was archived and cleared.
-	Reset bool
-
-	RowTotal      int64
-	LastReset     int32
-	ExpectedReset int32
-}
-
 // GetPage returns a page of a guild's activity leaderboard. Pages start at 1.
 // Requesting a page that doesn't exist returns the first page.
+//
+// Leaderboards other than all time are only as current as the last Refresh, which the workers run.
 func (l *leaderboards) GetPage(ctx context.Context, guildID snowflake.ID, activityType ActivityType, period TimePeriod, page, perPage int32) (LeaderboardPage, error) {
 	if !activityType.Valid() {
 		return LeaderboardPage{}, ErrInvalidActivityType
@@ -60,16 +52,11 @@ func (l *leaderboards) GetPage(ctx context.Context, guildID snowflake.ID, activi
 			GuildID: guildID,
 			LimitBy: perPage,
 		})
-	case TimePeriodWeekly:
-		totalPages, err = l.db.queries.GetWeeklyActivityLeaderboardPages(ctx, l.db.dbtx, gen.GetWeeklyActivityLeaderboardPagesParams{
+	case TimePeriodDaily, TimePeriodWeekly, TimePeriodMonthly, TimePeriodYearly:
+		totalPages, err = l.db.queries.GetActivityLeaderboardPages(ctx, l.db.dbtx, gen.GetActivityLeaderboardPagesParams{
 			GuildID:   guildID,
 			GrantType: string(activityType),
-			LimitBy:   perPage,
-		})
-	case TimePeriodMonthly:
-		totalPages, err = l.db.queries.GetMonthlyActivityLeaderboardPages(ctx, l.db.dbtx, gen.GetMonthlyActivityLeaderboardPagesParams{
-			GuildID:   guildID,
-			GrantType: string(activityType),
+			Period:    period.truncUnit(),
 			LimitBy:   perPage,
 		})
 	default:
@@ -101,24 +88,11 @@ func (l *leaderboards) GetPage(ctx context.Context, guildID snowflake.ID, activi
 		for _, row := range rows {
 			entries = append(entries, LeaderboardEntry{Rank: row.Rank, MemberID: row.MemberID, Points: row.Points})
 		}
-	case TimePeriodWeekly:
-		rows, err := l.db.queries.GetWeeklyActivityLeaderboard(ctx, l.db.dbtx, gen.GetWeeklyActivityLeaderboardParams{
+	default:
+		rows, err := l.db.queries.GetActivityLeaderboard(ctx, l.db.dbtx, gen.GetActivityLeaderboardParams{
 			GuildID:   guildID,
 			GrantType: string(activityType),
-			LimitBy:   perPage,
-			OffsetBy:  offset,
-		})
-		if err != nil {
-			return LeaderboardPage{}, err
-		}
-
-		for _, row := range rows {
-			entries = append(entries, LeaderboardEntry{Rank: row.Rank, MemberID: row.MemberID, Points: row.EarnedPoints})
-		}
-	case TimePeriodMonthly:
-		rows, err := l.db.queries.GetMonthlyActivityLeaderboard(ctx, l.db.dbtx, gen.GetMonthlyActivityLeaderboardParams{
-			GuildID:   guildID,
-			GrantType: string(activityType),
+			Period:    period.truncUnit(),
 			LimitBy:   perPage,
 			OffsetBy:  offset,
 		})
@@ -138,8 +112,8 @@ func (l *leaderboards) GetPage(ctx context.Context, guildID snowflake.ID, activi
 	}, nil
 }
 
-// GetMemberRankings returns the member's rank on the current weekly and monthly leaderboards.
-// A rank is not valid when the member has no points on that leaderboard.
+// GetMemberRankings returns the member's rank on the current daily, weekly, monthly and yearly leaderboards.
+// A rank is 0 when the member has no points on that leaderboard.
 func (l *leaderboards) GetMemberRankings(ctx context.Context, guildID, memberID snowflake.ID, activityType ActivityType) (gen.GetActivityLeaderboardRankingsRow, error) {
 	if !activityType.Valid() {
 		return gen.GetActivityLeaderboardRankingsRow{}, ErrInvalidActivityType
@@ -152,78 +126,8 @@ func (l *leaderboards) GetMemberRankings(ctx context.Context, guildID, memberID 
 	})
 }
 
-// ResetWeekly archives the current weekly leaderboard and clears it, if it hasn't been reset this week.
-func (l *leaderboards) ResetWeekly(ctx context.Context) (LeaderboardResetResult, error) {
-	var result LeaderboardResetResult
-
-	err := l.db.WithTx(ctx, func(ctx context.Context, txDb *Database) error {
-		details, err := txDb.queries.GetWeeklyActivityLeaderboardResetDetails(ctx, txDb.dbtx)
-		if err != nil {
-			return err
-		}
-
-		result = LeaderboardResetResult{
-			RowTotal:      details.RowTotal,
-			LastReset:     details.LastReset,
-			ExpectedReset: details.ExpectedReset,
-		}
-
-		if details.LastReset >= details.ExpectedReset || details.RowTotal <= 0 {
-			return nil
-		}
-
-		if err := txDb.queries.ArchiveWeeklyActivityLeaderboard(ctx, txDb.dbtx); err != nil {
-			return err
-		}
-
-		if err := txDb.queries.FlushOutdatedWeeklyActivityLeaderboard(ctx, txDb.dbtx); err != nil {
-			return err
-		}
-
-		result.Reset = true
-		return nil
-	})
-	if err != nil {
-		return LeaderboardResetResult{}, err
-	}
-
-	return result, nil
-}
-
-// ResetMonthly archives the current monthly leaderboard and clears it, if it hasn't been reset this month.
-func (l *leaderboards) ResetMonthly(ctx context.Context) (LeaderboardResetResult, error) {
-	var result LeaderboardResetResult
-
-	err := l.db.WithTx(ctx, func(ctx context.Context, txDb *Database) error {
-		details, err := txDb.queries.GetMonthlyActivityLeaderboardResetDetails(ctx, txDb.dbtx)
-		if err != nil {
-			return err
-		}
-
-		result = LeaderboardResetResult{
-			RowTotal:      details.RowTotal,
-			LastReset:     details.LastReset,
-			ExpectedReset: details.ExpectedReset,
-		}
-
-		if details.LastReset >= details.ExpectedReset || details.RowTotal <= 0 {
-			return nil
-		}
-
-		if err := txDb.queries.ArchiveMonthlyActivityLeaderboard(ctx, txDb.dbtx); err != nil {
-			return err
-		}
-
-		if err := txDb.queries.FlushOutdatedMonthlyActivityLeaderboard(ctx, txDb.dbtx); err != nil {
-			return err
-		}
-
-		result.Reset = true
-		return nil
-	})
-	if err != nil {
-		return LeaderboardResetResult{}, err
-	}
-
-	return result, nil
+// Refresh rebuilds the daily, weekly, monthly and yearly leaderboards from the activity grant log.
+// Until it runs, new grants and new periods don't show up on those leaderboards.
+func (l *leaderboards) Refresh(ctx context.Context) error {
+	return l.db.queries.RefreshActivityLeaderboards(ctx, l.db.dbtx)
 }

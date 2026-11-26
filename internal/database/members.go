@@ -67,7 +67,7 @@ func (m *members) GetActivityRoleInfo(ctx context.Context, guildID snowflake.ID,
 }
 
 // GrantActivityPoints grants the guild's configured amount of activity points to the member,
-// and adds them to the weekly and monthly leaderboards.
+// and adds them to the activity grant log that the daily, weekly, monthly and yearly leaderboards are built from.
 //
 // The cooldown is checked in the same statement that grants the points,
 // so concurrent grants for the same member can't both succeed.
@@ -121,25 +121,12 @@ func (m *members) GrantActivityPoints(ctx context.Context, guildID, memberID sno
 			return ErrMemberOnGrantCooldown
 		}
 
-		if err := txDb.queries.IncrementWeeklyActivityLeaderboard(ctx, txDb.dbtx, gen.IncrementWeeklyActivityLeaderboardParams{
-			GrantType:    string(activityType),
+		return txDb.queries.LogActivityGrant(ctx, txDb.dbtx, gen.LogActivityGrantParams{
 			GuildID:      guildID,
 			MemberID:     memberID,
-			EarnedPoints: settings.GrantAmount,
-		}); err != nil {
-			return err
-		}
-
-		if err := txDb.queries.IncrementMonthlyActivityLeaderboard(ctx, txDb.dbtx, gen.IncrementMonthlyActivityLeaderboardParams{
 			GrantType:    string(activityType),
-			GuildID:      guildID,
-			MemberID:     memberID,
 			EarnedPoints: settings.GrantAmount,
-		}); err != nil {
-			return err
-		}
-
-		return nil
+		})
 	})
 	if err != nil {
 		return gen.GuildProfile{}, err
@@ -152,7 +139,7 @@ func (m *members) GrantActivityPoints(ctx context.Context, guildID, memberID sno
 //
 // If the other member already has a profile, the points are added together and the card style
 // and last grant times are taken from the old profile. The old profile is reset to its defaults.
-// Weekly and monthly leaderboard points are not moved.
+// Points in the activity grant log (daily, weekly, monthly and yearly leaderboards) are not moved.
 func (m *members) MigrateProfile(ctx context.Context, guildID, fromMemberID, toMemberID snowflake.ID) error {
 	if fromMemberID == toMemberID {
 		return ErrMemberProfileMigrateSelf

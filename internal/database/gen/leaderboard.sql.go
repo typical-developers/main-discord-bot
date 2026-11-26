@@ -9,122 +9,115 @@ import (
 	"context"
 
 	snowflake "github.com/disgoorg/snowflake/v2"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const archiveMonthlyActivityLeaderboard = `-- name: ArchiveMonthlyActivityLeaderboard :exec
-MERGE INTO guild_activity_tracking_monthly AS archive
-USING (
-    SELECT
-        EXTRACT (EPOCH FROM date_trunc('month', now() AT TIME ZONE 'utc') - INTERVAL '1 month')::INT AS month_start,
-        *
-    FROM guild_activity_tracking_monthly_current
-) AS current_leaderboard
-ON
-    archive.month_start = current_leaderboard.month_start
-    AND archive.guild_id = current_leaderboard.guild_id
-    AND archive.member_id = current_leaderboard.member_id
-    AND archive.grant_type = current_leaderboard.grant_type
-WHEN MATCHED THEN
-    UPDATE SET
-        earned_points = current_leaderboard.earned_points
-WHEN NOT MATCHED THEN
-    INSERT (
-        month_start, guild_id, member_id, grant_type, earned_points
-    )
-    VALUES (
-        current_leaderboard.month_start,
-        current_leaderboard.guild_id,
-        current_leaderboard.member_id,
-        current_leaderboard.grant_type,
-        current_leaderboard.earned_points
-    )
+const getActivityLeaderboard = `-- name: GetActivityLeaderboard :many
+SELECT
+    rank::BIGINT AS rank,
+    member_id,
+    earned_points
+FROM guild_activity_leaderboards
+WHERE
+    guild_id = $1
+    AND grant_type = $2
+    AND period = $3
+ORDER BY rank
+LIMIT $5
+OFFSET $4
 `
 
-func (q *Queries) ArchiveMonthlyActivityLeaderboard(ctx context.Context, db DBTX) error {
-	_, err := db.Exec(ctx, archiveMonthlyActivityLeaderboard)
-	return err
+type GetActivityLeaderboardParams struct {
+	GuildID   snowflake.ID
+	GrantType string
+	Period    string
+	OffsetBy  int32
+	LimitBy   int32
 }
 
-const archiveWeeklyActivityLeaderboard = `-- name: ArchiveWeeklyActivityLeaderboard :exec
-MERGE INTO guild_activity_tracking_weekly AS archive
-USING (
-    SELECT
-        EXTRACT (EPOCH FROM date_trunc('week', now() AT TIME ZONE 'utc') - INTERVAL '1 week')::INT AS week_start,
-        *
-    FROM guild_activity_tracking_weekly_current
-) AS current_leaderboard
-ON
-    archive.week_start = current_leaderboard.week_start
-    AND archive.guild_id = current_leaderboard.guild_id
-    AND archive.member_id = current_leaderboard.member_id
-    AND archive.grant_type = current_leaderboard.grant_type
-WHEN MATCHED THEN
-    UPDATE SET
-        earned_points = current_leaderboard.earned_points
-WHEN NOT MATCHED THEN
-    INSERT (
-        week_start, guild_id, member_id, grant_type, earned_points
-    )
-    VALUES (
-        current_leaderboard.week_start,
-        current_leaderboard.guild_id,
-        current_leaderboard.member_id,
-        current_leaderboard.grant_type,
-        current_leaderboard.earned_points
-    )
-`
-
-func (q *Queries) ArchiveWeeklyActivityLeaderboard(ctx context.Context, db DBTX) error {
-	_, err := db.Exec(ctx, archiveWeeklyActivityLeaderboard)
-	return err
+type GetActivityLeaderboardRow struct {
+	Rank         int64
+	MemberID     snowflake.ID
+	EarnedPoints int32
 }
 
-const flushOutdatedMonthlyActivityLeaderboard = `-- name: FlushOutdatedMonthlyActivityLeaderboard :exec
-TRUNCATE TABLE guild_activity_tracking_monthly_current
-`
-
-func (q *Queries) FlushOutdatedMonthlyActivityLeaderboard(ctx context.Context, db DBTX) error {
-	_, err := db.Exec(ctx, flushOutdatedMonthlyActivityLeaderboard)
-	return err
+// Returns a page of the current leaderboard for a period: 'day', 'week', 'month' or 'year'.
+func (q *Queries) GetActivityLeaderboard(ctx context.Context, db DBTX, arg GetActivityLeaderboardParams) ([]GetActivityLeaderboardRow, error) {
+	rows, err := db.Query(ctx, getActivityLeaderboard,
+		arg.GuildID,
+		arg.GrantType,
+		arg.Period,
+		arg.OffsetBy,
+		arg.LimitBy,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetActivityLeaderboardRow
+	for rows.Next() {
+		var i GetActivityLeaderboardRow
+		if err := rows.Scan(&i.Rank, &i.MemberID, &i.EarnedPoints); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
-const flushOutdatedWeeklyActivityLeaderboard = `-- name: FlushOutdatedWeeklyActivityLeaderboard :exec
-TRUNCATE TABLE guild_activity_tracking_weekly_current
+const getActivityLeaderboardPages = `-- name: GetActivityLeaderboardPages :one
+SELECT
+    CAST(CEIL(COUNT(*)::DECIMAL / $1::INT) AS INT) AS total_pages
+FROM guild_activity_leaderboards
+WHERE
+    guild_id = $2
+    AND grant_type = $3
+    AND period = $4
 `
 
-func (q *Queries) FlushOutdatedWeeklyActivityLeaderboard(ctx context.Context, db DBTX) error {
-	_, err := db.Exec(ctx, flushOutdatedWeeklyActivityLeaderboard)
-	return err
+type GetActivityLeaderboardPagesParams struct {
+	LimitBy   int32
+	GuildID   snowflake.ID
+	GrantType string
+	Period    string
+}
+
+func (q *Queries) GetActivityLeaderboardPages(ctx context.Context, db DBTX, arg GetActivityLeaderboardPagesParams) (int32, error) {
+	row := db.QueryRow(ctx, getActivityLeaderboardPages,
+		arg.LimitBy,
+		arg.GuildID,
+		arg.GrantType,
+		arg.Period,
+	)
+	var total_pages int32
+	err := row.Scan(&total_pages)
+	return total_pages, err
 }
 
 const getActivityLeaderboardRankings = `-- name: GetActivityLeaderboardRankings :one
-WITH
-    weekly_leaderboard AS (
-        SELECT
-            member_id,
-            COALESCE(ROW_NUMBER() OVER (ORDER BY earned_points DESC), 0)::INT AS rank
-        FROM guild_activity_tracking_weekly_current
-        WHERE
-            guild_activity_tracking_weekly_current.guild_id = $2
-            AND guild_activity_tracking_weekly_current.grant_type = $3
-    ),
-    monthly_leaderboard AS (
-        SELECT
-            member_id,
-            COALESCE(ROW_NUMBER() OVER (ORDER BY earned_points DESC), 0)::INT AS rank
-        FROM guild_activity_tracking_monthly_current
-        WHERE
-            guild_activity_tracking_monthly_current.guild_id = $2
-            AND guild_activity_tracking_monthly_current.grant_type = $3
-    )
 SELECT
     m.member_id,
-    weekly_leaderboard.rank AS weekly_leaderboard_rank,
-    monthly_leaderboard.rank AS monthly_leaderboard_rank
+    ranks.daily_leaderboard_rank,
+    ranks.weekly_leaderboard_rank,
+    ranks.monthly_leaderboard_rank,
+    ranks.yearly_leaderboard_rank
 FROM (SELECT $1::SNOWFLAKE AS member_id) m
-LEFT JOIN weekly_leaderboard ON weekly_leaderboard.member_id = m.member_id
-LEFT JOIN monthly_leaderboard ON monthly_leaderboard.member_id = m.member_id
+LEFT JOIN (
+    SELECT
+        member_id,
+        MAX(rank) FILTER (WHERE period = 'day')::INT AS daily_leaderboard_rank,
+        MAX(rank) FILTER (WHERE period = 'week')::INT AS weekly_leaderboard_rank,
+        MAX(rank) FILTER (WHERE period = 'month')::INT AS monthly_leaderboard_rank,
+        MAX(rank) FILTER (WHERE period = 'year')::INT AS yearly_leaderboard_rank
+    FROM guild_activity_leaderboards
+    WHERE
+        guild_id = $2
+        AND grant_type = $3
+        AND member_id = $1
+    GROUP BY member_id
+) AS ranks ON ranks.member_id = m.member_id
 `
 
 type GetActivityLeaderboardRankingsParams struct {
@@ -135,14 +128,24 @@ type GetActivityLeaderboardRankingsParams struct {
 
 type GetActivityLeaderboardRankingsRow struct {
 	MemberID               snowflake.ID
-	WeeklyLeaderboardRank  pgtype.Int4
-	MonthlyLeaderboardRank pgtype.Int4
+	DailyLeaderboardRank   int32
+	WeeklyLeaderboardRank  int32
+	MonthlyLeaderboardRank int32
+	YearlyLeaderboardRank  int32
 }
 
+// Returns the member's rank on the current daily, weekly, monthly and yearly leaderboards.
+// A rank is NULL when the member has no points in that period.
 func (q *Queries) GetActivityLeaderboardRankings(ctx context.Context, db DBTX, arg GetActivityLeaderboardRankingsParams) (GetActivityLeaderboardRankingsRow, error) {
 	row := db.QueryRow(ctx, getActivityLeaderboardRankings, arg.MemberID, arg.GuildID, arg.GrantType)
 	var i GetActivityLeaderboardRankingsRow
-	err := row.Scan(&i.MemberID, &i.WeeklyLeaderboardRank, &i.MonthlyLeaderboardRank)
+	err := row.Scan(
+		&i.MemberID,
+		&i.DailyLeaderboardRank,
+		&i.WeeklyLeaderboardRank,
+		&i.MonthlyLeaderboardRank,
+		&i.YearlyLeaderboardRank,
+	)
 	return i, err
 }
 
@@ -152,7 +155,7 @@ SELECT
     rankings.rank,
     rankings.points
 FROM (
-    SELECT 
+    SELECT
         member_id,
         ROW_NUMBER() OVER (
             ORDER BY
@@ -237,272 +240,43 @@ func (q *Queries) GetAllTimeActivityLeaderboardPages(ctx context.Context, db DBT
 	return total_pages, err
 }
 
-const getMonthlyActivityLeaderboard = `-- name: GetMonthlyActivityLeaderboard :many
-SELECT
-    rankings.rank,
-    rankings.member_id,
-    rankings.earned_points
-FROM (
-    SELECT
-        ROW_NUMBER() OVER (
-            ORDER BY earned_points DESC
-        ) AS rank,
-        member_id,
-        earned_points
-    FROM guild_activity_tracking_monthly_current
-    WHERE
-        guild_id = $1
-        AND grant_type = $2
-) AS rankings
-LIMIT $4
-OFFSET $3
-`
-
-type GetMonthlyActivityLeaderboardParams struct {
-	GuildID   snowflake.ID
-	GrantType string
-	OffsetBy  int32
-	LimitBy   int32
-}
-
-type GetMonthlyActivityLeaderboardRow struct {
-	Rank         int64
-	MemberID     snowflake.ID
-	EarnedPoints int32
-}
-
-func (q *Queries) GetMonthlyActivityLeaderboard(ctx context.Context, db DBTX, arg GetMonthlyActivityLeaderboardParams) ([]GetMonthlyActivityLeaderboardRow, error) {
-	rows, err := db.Query(ctx, getMonthlyActivityLeaderboard,
-		arg.GuildID,
-		arg.GrantType,
-		arg.OffsetBy,
-		arg.LimitBy,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetMonthlyActivityLeaderboardRow
-	for rows.Next() {
-		var i GetMonthlyActivityLeaderboardRow
-		if err := rows.Scan(&i.Rank, &i.MemberID, &i.EarnedPoints); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getMonthlyActivityLeaderboardPages = `-- name: GetMonthlyActivityLeaderboardPages :one
-SELECT
-    CAST(CEIL(COUNT(*)::DECIMAL / $1::INT) AS INT) AS total_pages
-FROM guild_activity_tracking_monthly_current
-WHERE
-    guild_id = $2
-    AND grant_type = $3
-`
-
-type GetMonthlyActivityLeaderboardPagesParams struct {
-	LimitBy   int32
-	GuildID   snowflake.ID
-	GrantType string
-}
-
-func (q *Queries) GetMonthlyActivityLeaderboardPages(ctx context.Context, db DBTX, arg GetMonthlyActivityLeaderboardPagesParams) (int32, error) {
-	row := db.QueryRow(ctx, getMonthlyActivityLeaderboardPages, arg.LimitBy, arg.GuildID, arg.GrantType)
-	var total_pages int32
-	err := row.Scan(&total_pages)
-	return total_pages, err
-}
-
-const getMonthlyActivityLeaderboardResetDetails = `-- name: GetMonthlyActivityLeaderboardResetDetails :one
-SELECT
-    (SELECT COUNT(*) FROM guild_activity_tracking_monthly_current) AS row_total,
-    COALESCE(
-        (SELECT month_start FROM guild_activity_tracking_monthly ORDER BY month_start DESC LIMIT 1),
-        0
-    )::INT AS last_reset,
-    EXTRACT(epoch FROM date_trunc('month', now() AT TIME ZONE 'utc') - INTERVAL '1 month')::INT AS expected_reset
-`
-
-type GetMonthlyActivityLeaderboardResetDetailsRow struct {
-	RowTotal      int64
-	LastReset     int32
-	ExpectedReset int32
-}
-
-func (q *Queries) GetMonthlyActivityLeaderboardResetDetails(ctx context.Context, db DBTX) (GetMonthlyActivityLeaderboardResetDetailsRow, error) {
-	row := db.QueryRow(ctx, getMonthlyActivityLeaderboardResetDetails)
-	var i GetMonthlyActivityLeaderboardResetDetailsRow
-	err := row.Scan(&i.RowTotal, &i.LastReset, &i.ExpectedReset)
-	return i, err
-}
-
-const getWeeklyActivityLeaderboard = `-- name: GetWeeklyActivityLeaderboard :many
-SELECT
-    rankings.rank,
-    rankings.member_id,
-    rankings.earned_points
-FROM (
-    SELECT
-        ROW_NUMBER() OVER (
-            ORDER BY earned_points DESC
-        ) AS rank,
-        member_id,
-        earned_points
-    FROM guild_activity_tracking_weekly_current
-    WHERE
-        guild_id = $1
-        AND grant_type = $2
-) AS rankings
-LIMIT $4
-OFFSET $3
-`
-
-type GetWeeklyActivityLeaderboardParams struct {
-	GuildID   snowflake.ID
-	GrantType string
-	OffsetBy  int32
-	LimitBy   int32
-}
-
-type GetWeeklyActivityLeaderboardRow struct {
-	Rank         int64
-	MemberID     snowflake.ID
-	EarnedPoints int32
-}
-
-func (q *Queries) GetWeeklyActivityLeaderboard(ctx context.Context, db DBTX, arg GetWeeklyActivityLeaderboardParams) ([]GetWeeklyActivityLeaderboardRow, error) {
-	rows, err := db.Query(ctx, getWeeklyActivityLeaderboard,
-		arg.GuildID,
-		arg.GrantType,
-		arg.OffsetBy,
-		arg.LimitBy,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetWeeklyActivityLeaderboardRow
-	for rows.Next() {
-		var i GetWeeklyActivityLeaderboardRow
-		if err := rows.Scan(&i.Rank, &i.MemberID, &i.EarnedPoints); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getWeeklyActivityLeaderboardPages = `-- name: GetWeeklyActivityLeaderboardPages :one
-SELECT
-    CAST(CEIL(COUNT(*)::DECIMAL / $1::INT) AS INT) AS total_pages
-FROM guild_activity_tracking_weekly_current
-WHERE
-    guild_id = $2
-    AND grant_type = $3
-`
-
-type GetWeeklyActivityLeaderboardPagesParams struct {
-	LimitBy   int32
-	GuildID   snowflake.ID
-	GrantType string
-}
-
-func (q *Queries) GetWeeklyActivityLeaderboardPages(ctx context.Context, db DBTX, arg GetWeeklyActivityLeaderboardPagesParams) (int32, error) {
-	row := db.QueryRow(ctx, getWeeklyActivityLeaderboardPages, arg.LimitBy, arg.GuildID, arg.GrantType)
-	var total_pages int32
-	err := row.Scan(&total_pages)
-	return total_pages, err
-}
-
-const getWeeklyActivityLeaderboardResetDetails = `-- name: GetWeeklyActivityLeaderboardResetDetails :one
-SELECT
-    (SELECT COUNT(*) FROM guild_activity_tracking_weekly_current) AS row_total,
-    COALESCE(
-        (SELECT week_start FROM guild_activity_tracking_weekly ORDER BY week_start DESC LIMIT 1),
-        0
-    )::INT AS last_reset,
-    EXTRACT(epoch FROM date_trunc('week', now() AT TIME ZONE 'utc') - INTERVAL '1 week')::INT AS expected_reset
-`
-
-type GetWeeklyActivityLeaderboardResetDetailsRow struct {
-	RowTotal      int64
-	LastReset     int32
-	ExpectedReset int32
-}
-
-func (q *Queries) GetWeeklyActivityLeaderboardResetDetails(ctx context.Context, db DBTX) (GetWeeklyActivityLeaderboardResetDetailsRow, error) {
-	row := db.QueryRow(ctx, getWeeklyActivityLeaderboardResetDetails)
-	var i GetWeeklyActivityLeaderboardResetDetailsRow
-	err := row.Scan(&i.RowTotal, &i.LastReset, &i.ExpectedReset)
-	return i, err
-}
-
-const incrementMonthlyActivityLeaderboard = `-- name: IncrementMonthlyActivityLeaderboard :exec
-INSERT INTO guild_activity_tracking_monthly_current (
-    grant_type, guild_id, member_id, earned_points
+const logActivityGrant = `-- name: LogActivityGrant :exec
+INSERT INTO guild_activity_grant_log (
+    guild_id, member_id, grant_type, hour_start, earned_points
 )
 VALUES (
-    $1, $2, $3, $4
+    $1, $2, $3, date_trunc('hour', now(), 'UTC'), $4::INT
 )
-ON CONFLICT (grant_type, guild_id, member_id)
+ON CONFLICT (guild_id, grant_type, hour_start, member_id)
 DO UPDATE SET
-    earned_points = guild_activity_tracking_monthly_current.earned_points + $4
-WHERE
-    guild_activity_tracking_monthly_current.grant_type = $1
+    earned_points = guild_activity_grant_log.earned_points + EXCLUDED.earned_points
 `
 
-type IncrementMonthlyActivityLeaderboardParams struct {
-	GrantType    string
+type LogActivityGrantParams struct {
 	GuildID      snowflake.ID
 	MemberID     snowflake.ID
+	GrantType    string
 	EarnedPoints int32
 }
 
-func (q *Queries) IncrementMonthlyActivityLeaderboard(ctx context.Context, db DBTX, arg IncrementMonthlyActivityLeaderboardParams) error {
-	_, err := db.Exec(ctx, incrementMonthlyActivityLeaderboard,
-		arg.GrantType,
+// Adds granted points to the member's activity grant log for the current hour (UTC).
+func (q *Queries) LogActivityGrant(ctx context.Context, db DBTX, arg LogActivityGrantParams) error {
+	_, err := db.Exec(ctx, logActivityGrant,
 		arg.GuildID,
 		arg.MemberID,
+		arg.GrantType,
 		arg.EarnedPoints,
 	)
 	return err
 }
 
-const incrementWeeklyActivityLeaderboard = `-- name: IncrementWeeklyActivityLeaderboard :exec
-INSERT INTO guild_activity_tracking_weekly_current (
-    grant_type, guild_id, member_id, earned_points
-)
-VALUES (
-    $1, $2, $3, $4
-)
-ON CONFLICT (grant_type, guild_id, member_id)
-DO UPDATE SET
-    earned_points = guild_activity_tracking_weekly_current.earned_points + $4
-WHERE
-    guild_activity_tracking_weekly_current.grant_type = $1
+const refreshActivityLeaderboards = `-- name: RefreshActivityLeaderboards :exec
+REFRESH MATERIALIZED VIEW CONCURRENTLY guild_activity_leaderboards
 `
 
-type IncrementWeeklyActivityLeaderboardParams struct {
-	GrantType    string
-	GuildID      snowflake.ID
-	MemberID     snowflake.ID
-	EarnedPoints int32
-}
-
-func (q *Queries) IncrementWeeklyActivityLeaderboard(ctx context.Context, db DBTX, arg IncrementWeeklyActivityLeaderboardParams) error {
-	_, err := db.Exec(ctx, incrementWeeklyActivityLeaderboard,
-		arg.GrantType,
-		arg.GuildID,
-		arg.MemberID,
-		arg.EarnedPoints,
-	)
+// Rebuilds the daily, weekly, monthly and yearly leaderboards from the activity grant log.
+// CONCURRENTLY lets the leaderboards be read while they're being rebuilt.
+func (q *Queries) RefreshActivityLeaderboards(ctx context.Context, db DBTX) error {
+	_, err := db.Exec(ctx, refreshActivityLeaderboards)
 	return err
 }

@@ -25,17 +25,36 @@ type TimePeriod string
 
 const (
 	TimePeriodAllTime TimePeriod = "all_time"
+	TimePeriodDaily   TimePeriod = "daily"
 	TimePeriodWeekly  TimePeriod = "weekly"
 	TimePeriodMonthly TimePeriod = "monthly"
+	TimePeriodYearly  TimePeriod = "yearly"
 )
 
 func (t TimePeriod) Valid() bool {
 	switch t {
-	case TimePeriodAllTime, TimePeriodWeekly, TimePeriodMonthly:
+	case TimePeriodAllTime, TimePeriodDaily, TimePeriodWeekly, TimePeriodMonthly, TimePeriodYearly:
 		return true
 	}
 
 	return false
+}
+
+// truncUnit is the Postgres date_trunc unit for the period, used to find when the current period
+// started. It is empty for all time.
+func (t TimePeriod) truncUnit() string {
+	switch t {
+	case TimePeriodDaily:
+		return "day"
+	case TimePeriodWeekly:
+		return "week"
+	case TimePeriodMonthly:
+		return "month"
+	case TimePeriodYearly:
+		return "year"
+	}
+
+	return ""
 }
 
 func pgBool(b *bool) pgtype.Bool {

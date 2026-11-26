@@ -24,6 +24,24 @@ type GuildActiveVoiceRoom struct {
 	IsLocked        pgtype.Bool
 }
 
+type GuildActivityGrantLog struct {
+	GuildID      snowflake.ID
+	MemberID     snowflake.ID
+	GrantType    string
+	HourStart    pgtype.Timestamptz
+	EarnedPoints int32
+}
+
+type GuildActivityLeaderboard struct {
+	Period       string
+	GuildID      snowflake.ID
+	GrantType    string
+	MemberID     snowflake.ID
+	EarnedPoints int32
+	LastGrant    interface{}
+	Rank         int32
+}
+
 type GuildActivityRole struct {
 	InsertEpoch    pgtype.Int4
 	GuildID        snowflake.ID

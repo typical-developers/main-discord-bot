@@ -12,6 +12,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/luckfire/goblox v0.1.0
 	github.com/redis/go-redis/v9 v9.23.0
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/tdewolff/canvas v0.0.0-20260923214215-09804640d00c
 	golang.org/x/image v0.45.0
 )

@@ -103,8 +103,8 @@ func loadProfileCard(ctx context.Context, client *bot.Client, db *database.Datab
 		AvatarURL:   member.EffectiveAvatarURL(cardImageOpts...),
 		Points:      profile.ChatActivity,
 		AllTimeRank: profile.ChatActivityRank,
-		WeeklyRank:  rankings.WeeklyLeaderboardRank.Int32,
-		MonthlyRank: rankings.MonthlyLeaderboardRank.Int32,
+		WeeklyRank:  rankings.WeeklyLeaderboardRank,
+		MonthlyRank: rankings.MonthlyLeaderboardRank,
 	}
 
 	if roleInfo.CurrentRoleID != nil {
@@ -324,8 +324,8 @@ func leaderboardCardFile(ctx context.Context, card leaderboardCard) (*discord.Fi
 }
 
 // leaderboardPeriod describes a leaderboard's period for its card, and how long is left until it
-// resets. Weekly and monthly leaderboards reset at the start of each week (Monday) and month in
-// UTC, the same as the reset task.
+// resets. Periods start at the beginning of each day, week (Monday), month and year in UTC,
+// the same as the leaderboard queries.
 func leaderboardPeriod(period database.TimePeriod, now time.Time) (text string, resetsIn string) {
 	now = now.UTC()
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
@@ -333,6 +333,10 @@ func leaderboardPeriod(period database.TimePeriod, now time.Time) (text string, 
 	var label string
 	var start, end time.Time
 	switch period {
+	case database.TimePeriodDaily:
+		label = "Today"
+		start = today
+		end = start.AddDate(0, 0, 1)
 	case database.TimePeriodWeekly:
 		label = "This Week"
 		start = today.AddDate(0, 0, -((int(today.Weekday()) + 6) % 7))
@@ -341,6 +345,10 @@ func leaderboardPeriod(period database.TimePeriod, now time.Time) (text string, 
 		label = "This Month"
 		start = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
 		end = start.AddDate(0, 1, 0)
+	case database.TimePeriodYearly:
+		label = "This Year"
+		start = time.Date(now.Year(), 1, 1, 0, 0, 0, 0, time.UTC)
+		end = start.AddDate(1, 0, 0)
 	default:
 		return "All Time", ""
 	}

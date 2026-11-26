@@ -27,8 +27,10 @@ func newServerLeaderboardCommand(db *database.Database) *serverLeaderboardComman
 // default when no filter is given.
 var leaderboardFilters = []discord.ApplicationCommandOptionChoiceString{
 	{Name: "All Time", Value: string(database.TimePeriodAllTime)},
+	{Name: "This Year", Value: string(database.TimePeriodYearly)},
 	{Name: "This Month", Value: string(database.TimePeriodMonthly)},
 	{Name: "This Week", Value: string(database.TimePeriodWeekly)},
+	{Name: "Today", Value: string(database.TimePeriodDaily)},
 }
 
 func (c *serverLeaderboardCommand) Create() discord.ApplicationCommandCreate {
