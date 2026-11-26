@@ -99,10 +99,10 @@ func (q *Queries) GetActivityLeaderboardPages(ctx context.Context, db DBTX, arg 
 const getActivityLeaderboardRankings = `-- name: GetActivityLeaderboardRankings :one
 SELECT
     m.member_id,
-    ranks.daily_leaderboard_rank,
-    ranks.weekly_leaderboard_rank,
-    ranks.monthly_leaderboard_rank,
-    ranks.yearly_leaderboard_rank
+    COALESCE(ranks.daily_leaderboard_rank, 0)::INT AS daily_leaderboard_rank,
+    COALESCE(ranks.weekly_leaderboard_rank, 0)::INT AS weekly_leaderboard_rank,
+    COALESCE(ranks.monthly_leaderboard_rank, 0)::INT AS monthly_leaderboard_rank,
+    COALESCE(ranks.yearly_leaderboard_rank, 0)::INT AS yearly_leaderboard_rank
 FROM (SELECT $1::SNOWFLAKE AS member_id) m
 LEFT JOIN (
     SELECT
@@ -135,7 +135,7 @@ type GetActivityLeaderboardRankingsRow struct {
 }
 
 // Returns the member's rank on the current daily, weekly, monthly and yearly leaderboards.
-// A rank is NULL when the member has no points in that period.
+// A rank is 0 when the member has no points in that period.
 func (q *Queries) GetActivityLeaderboardRankings(ctx context.Context, db DBTX, arg GetActivityLeaderboardRankingsParams) (GetActivityLeaderboardRankingsRow, error) {
 	row := db.QueryRow(ctx, getActivityLeaderboardRankings, arg.MemberID, arg.GuildID, arg.GrantType)
 	var i GetActivityLeaderboardRankingsRow
