@@ -58,6 +58,15 @@ func (g *guilds) Register(ctx context.Context, guildID snowflake.ID) (gen.Guild,
 	return guild, nil
 }
 
+// EnsureRegistered registers the guild if it isn't registered yet.
+func (g *guilds) EnsureRegistered(ctx context.Context, guildID snowflake.ID) error {
+	if _, err := g.Register(ctx, guildID); err != nil && !errors.Is(err, ErrGuildAlreadyRegistered) {
+		return err
+	}
+
+	return nil
+}
+
 func (g *guilds) GetActivitySettings(ctx context.Context, guildID snowflake.ID, activityType ActivityType) (ActivitySettings, error) {
 	var (
 		settings ActivitySettings

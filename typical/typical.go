@@ -11,6 +11,7 @@ import (
 	"github.com/disgoorg/disgo/handler"
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/typical-developers/main-discord-bot/cmd/bot/commands"
+	"github.com/typical-developers/main-discord-bot/cmd/bot/components"
 	"github.com/typical-developers/main-discord-bot/cmd/bot/handlers"
 	"github.com/typical-developers/main-discord-bot/cmd/bot/listeners"
 	"github.com/typical-developers/main-discord-bot/internal/config"
@@ -39,9 +40,10 @@ func New(c *bot.Client, r *handler.Mux, cfg *config.Config, db *database.Databas
 	r.Use(handlers.Recover)
 	r.Error(t.handleInteractionEventError)
 
-	listeners.Register(c, db)
+	listeners.Register(c, cfg, db)
+	components.Register(r, cfg, db)
 
-	for _, command := range commands.GlobalCommands(db) {
+	for _, command := range commands.GlobalCommands(cfg, db) {
 		if err := t.registerCommand(r, command, nil); err != nil {
 			return nil, err
 		}
@@ -81,8 +83,12 @@ func (t *TypicalBot) registerCommand(r *handler.Mux, command commands.Command, g
 }
 
 // SyncCommands overwrites Discord's commands with the registered ones.
-// When a development guild is set, global commands are left untouched.
 func (t *TypicalBot) SyncCommands() error {
+	if err := handler.SyncCommands(t.client, t.globalCommands, nil); err != nil {
+		return fmt.Errorf("sync global commands: %w", err)
+	}
+	slog.Info("synced global commands", slog.Int("count", len(t.globalCommands)))
+
 	for guildID, guildCommands := range t.guildCommands {
 		if err := handler.SyncCommands(t.client, guildCommands, []snowflake.ID{guildID}); err != nil {
 			return fmt.Errorf("sync commands for guild %s: %w", guildID, err)

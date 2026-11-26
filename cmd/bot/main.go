@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"slices"
 	"syscall"
 	"time"
 
@@ -16,15 +17,19 @@ import (
 	"github.com/disgoorg/disgo/handler"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
+	"github.com/typical-developers/main-discord-bot/cmd/bot/tasks"
 	"github.com/typical-developers/main-discord-bot/internal/config"
 	"github.com/typical-developers/main-discord-bot/internal/database"
+	"github.com/typical-developers/main-discord-bot/internal/emojis"
 	disgoredis "github.com/typical-developers/main-discord-bot/pkg/disgo-redis"
 	"github.com/typical-developers/main-discord-bot/typical"
 )
 
 const (
 	shutdownTimeout = time.Second * 10
-	cacheFlags      = cache.FlagGuilds | cache.FlagChannels | cache.FlagRoles
+
+	// voice states are needed to know who is left in a voice room.
+	cacheFlags = cache.FlagGuilds | cache.FlagChannels | cache.FlagRoles | cache.FlagVoiceStates
 )
 
 func main() {
@@ -35,8 +40,7 @@ func main() {
 }
 
 func run() error {
-	// a missing .env is fine, the environment may already be populated (e.g. docker).
-	_ = godotenv.Load()
+	shadowed := loadDotEnv()
 
 	cfg, err := config.Load()
 	if err != nil {
@@ -44,6 +48,10 @@ func run() error {
 	}
 
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel})))
+
+	for _, key := range shadowed {
+		slog.Warn("ignoring .env value because the variable is already set in the environment", slog.String("key", key))
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -67,6 +75,10 @@ func run() error {
 		bot.WithGatewayConfigOpts(
 			gateway.WithIntents(
 				gateway.IntentGuilds,
+				gateway.IntentGuildMessages,
+				gateway.IntentGuildVoiceStates,
+				// privileged: needed to read message links and GIF links in messages.
+				gateway.IntentMessageContent,
 			),
 			gateway.WithAutoReconnect(true),
 		),
@@ -77,6 +89,14 @@ func run() error {
 	)
 	if err != nil {
 		return fmt.Errorf("create client: %w", err)
+	}
+
+	// the application ID comes from the token, so this shows which bot is logging in.
+	slog.Info("logging in", slog.String("application_id", client.ApplicationID.String()))
+
+	// buttons look their emojis up by name, so they're loaded before anything can be sent.
+	if err := emojis.Load(client.Rest, client.ApplicationID); err != nil {
+		return fmt.Errorf("load emojis: %w", err)
 	}
 
 	t, err := typical.New(client, r, cfg, db)
@@ -96,6 +116,8 @@ func run() error {
 		defer cancel()
 		client.Close(closeCtx)
 	}()
+
+	tasks.Start(ctx, client, db)
 
 	slog.Info("bot is running, press ctrl+c to stop")
 	<-ctx.Done()
@@ -148,4 +170,28 @@ func initCache(ctx context.Context, cfg *config.Config) (bot.ConfigOpt, func(), 
 	}
 
 	return bot.WithCaches(caches), closeFn, nil
+}
+
+// loadDotEnv loads .env into the environment. A missing .env is fine, the environment may
+// already be populated (e.g. docker).
+//
+// Variables that are already set are not overridden, so a stale value in the shell, the
+// OS environment or an IDE run configuration would silently win. The keys of any .env
+// values skipped that way are returned so they can be logged.
+func loadDotEnv() []string {
+	values, err := godotenv.Read()
+	if err != nil {
+		return nil
+	}
+
+	var shadowed []string
+	for key, value := range values {
+		if current, ok := os.LookupEnv(key); ok && current != value {
+			shadowed = append(shadowed, key)
+		}
+	}
+	slices.Sort(shadowed)
+
+	_ = godotenv.Load()
+	return shadowed
 }

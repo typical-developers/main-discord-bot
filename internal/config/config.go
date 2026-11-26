@@ -4,15 +4,41 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"slices"
+	"time"
 
 	"github.com/caarlos0/env/v10"
+	"github.com/disgoorg/snowflake/v2"
+)
+
+const (
+	EnvironmentProduction  = "production"
+	EnvironmentDevelopment = "development"
 )
 
 type Config struct {
+	// production or development. Controls which set of custom emojis is used.
+	Environment string `env:"ENVIRONMENT" envDefault:"production"`
+
 	Discord struct {
 		// The token for the Discord bot.
 		Token string `env:"TOKEN,required"`
 	} `envPrefix:"DISCORD_"`
+
+	Moderation struct {
+		// Guilds where members are disconnected from voice when they turn on their camera.
+		DisableCameraGuildIDs []snowflake.ID `env:"DISABLE_CAMERA_GUILD_IDS" envDefault:"865737627712749579"`
+
+		// Categories where GIF spam is limited. Channels and threads inside them are covered.
+		GIFSpamCategoryIDs []snowflake.ID `env:"GIF_SPAM_CATEGORY_IDS"`
+		// How far back GIFs are counted.
+		GIFSpamCooldown time.Duration `env:"GIF_SPAM_COOLDOWN" envDefault:"5s"`
+		// How many GIFs a channel can have within the cooldown before more are deleted.
+		GIFSpamMaxMessages int `env:"GIF_SPAM_MAX_MESSAGES" envDefault:"2"`
+	} `envPrefix:"MODERATION_"`
+
+	// Users allowed to run /migrate-member-profile.
+	ProfileMigrationUserIDs []snowflake.ID `env:"PROFILE_MIGRATION_USER_IDS" envDefault:"399416615742996480"`
 
 	// PostgreSQL database connection.
 	Database struct {
@@ -41,7 +67,20 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("config: %w", err)
 	}
 
+	if c.Environment != EnvironmentProduction && c.Environment != EnvironmentDevelopment {
+		return nil, fmt.Errorf("config: ENVIRONMENT must be %q or %q, got %q", EnvironmentProduction, EnvironmentDevelopment, c.Environment)
+	}
+
 	return &c, nil
+}
+
+func (c *Config) IsProduction() bool {
+	return c.Environment == EnvironmentProduction
+}
+
+// CanMigrateProfiles reports whether the user may run /migrate-member-profile.
+func (c *Config) CanMigrateProfiles(userID snowflake.ID) bool {
+	return slices.Contains(c.ProfileMigrationUserIDs, userID)
 }
 
 func (c *Config) DatabaseURL() string {

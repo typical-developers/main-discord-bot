@@ -20,9 +20,28 @@ type Command interface {
 	Register(r handler.Router)
 }
 
+// guildOnly is the context used by every command that only makes sense inside a server.
+var guildOnly = []discord.InteractionContextType{
+	discord.InteractionContextTypeGuild,
+}
+
 // GlobalCommands returns the commands available in every guild.
-func GlobalCommands(db *database.Database) []Command {
-	return []Command{}
+func GlobalCommands(cfg *config.Config, db *database.Database) []Command {
+	return []Command{
+		// moderation
+		newSlowmodeCommand(),
+
+		// server
+		newServerProfileCommand(db),
+		newUserProfileMenuCommand(db),
+		newServerLeaderboardCommand(db),
+		newMigrateMemberProfileCommand(cfg, db),
+
+		// server settings
+		newChatActivityCommand(db),
+		newMessageEmbedsCommand(db),
+		newVoiceRoomLobbyCommand(db),
+	}
 }
 
 // GuildCommands returns the commands limited to specific guilds, keyed by guild ID.
