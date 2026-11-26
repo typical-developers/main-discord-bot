@@ -14,6 +14,16 @@ services:
         dbname=${DATABASE_DB}
         sslmode=${DATABASE_SSL_MODE}
 
+  workers:
+    build:
+      context: .
+      dockerfile: ./cmd/workers/Dockerfile
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+    env_file: ./.env
+    restart: unless-stopped
+
   bot:
     build:
       context: .
