@@ -1,8 +1,3 @@
-// Package emojis looks up the bot's application emojis by name, so the same code works for every
-// application (production and development) as long as each has the emojis uploaded under these
-// names in the Discord Developer Portal.
-//
-// Adapted from nagomi's internal/emojis.
 package emojis
 
 import (

@@ -10,18 +10,18 @@ import (
 )
 
 type Guild struct {
-	InsertEpoch pgtype.Int4
+	InsertEpoch *int32
 	GuildID     snowflake.ID
 }
 
 type GuildActiveVoiceRoom struct {
-	InsertEpoch     pgtype.Int4
+	InsertEpoch     *int32
 	GuildID         snowflake.ID
 	OriginChannelID snowflake.ID
 	ChannelID       snowflake.ID
 	CreatedByUserID snowflake.ID
 	CurrentOwnerID  snowflake.ID
-	IsLocked        pgtype.Bool
+	IsLocked        *bool
 }
 
 type GuildActivityGrantLog struct {
@@ -43,10 +43,10 @@ type GuildActivityLeaderboard struct {
 }
 
 type GuildActivityRole struct {
-	InsertEpoch    pgtype.Int4
+	InsertEpoch    *int32
 	GuildID        snowflake.ID
 	RoleID         snowflake.ID
-	RequiredPoints pgtype.Int4
+	RequiredPoints *int32
 	GrantType      string
 }
 
@@ -97,7 +97,7 @@ type GuildMessageEmbedsSetting struct {
 }
 
 type GuildProfile struct {
-	InsertEpoch            pgtype.Int4
+	InsertEpoch            *int32
 	GuildID                snowflake.ID
 	MemberID               snowflake.ID
 	CardStyle              int32
@@ -116,7 +116,7 @@ type GuildVoiceActivitySetting struct {
 }
 
 type GuildVoiceRoomsSetting struct {
-	InsertEpoch    pgtype.Int4
+	InsertEpoch    *int32
 	GuildID        snowflake.ID
 	VoiceChannelID snowflake.ID
 	UserLimit      int32

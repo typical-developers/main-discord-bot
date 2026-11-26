@@ -9,7 +9,6 @@ import (
 	"context"
 
 	snowflake "github.com/disgoorg/snowflake/v2"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createMemberProfile = `-- name: CreateMemberProfile :one
@@ -95,9 +94,9 @@ type GetMemberActivityRoleInfoParams struct {
 type GetMemberActivityRoleInfoRow struct {
 	CurrentRolesIds           []snowflake.ID
 	CurrentRoleID             *snowflake.ID
-	CurrentRoleRequiredPoints pgtype.Int4
+	CurrentRoleRequiredPoints *int32
 	NextRoleID                *snowflake.ID
-	NextRoleRequiredPoints    pgtype.Int4
+	NextRoleRequiredPoints    *int32
 }
 
 func (q *Queries) GetMemberActivityRoleInfo(ctx context.Context, db DBTX, arg GetMemberActivityRoleInfoParams) (GetMemberActivityRoleInfoRow, error) {

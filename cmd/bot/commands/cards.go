@@ -23,6 +23,7 @@ import (
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/typical-developers/main-discord-bot/internal/database"
 	"github.com/typical-developers/main-discord-bot/internal/disgox"
+	"github.com/typical-developers/main-discord-bot/internal/ptr"
 	"github.com/typical-developers/main-discord-bot/internal/render"
 )
 
@@ -111,7 +112,7 @@ func loadProfileCard(ctx context.Context, client *bot.Client, db *database.Datab
 	if roleInfo.CurrentRoleID != nil {
 		card.CurrentRole = &profileCardRole{
 			Name:           disgox.RoleName(client, guildID, *roleInfo.CurrentRoleID),
-			RequiredPoints: roleInfo.CurrentRoleRequiredPoints.Int32,
+			RequiredPoints: ptr.Value(roleInfo.CurrentRoleRequiredPoints),
 		}
 
 		if role, ok := client.Caches.Role(guildID, *roleInfo.CurrentRoleID); ok {
@@ -124,10 +125,10 @@ func loadProfileCard(ctx context.Context, client *bot.Client, db *database.Datab
 
 	if roleInfo.NextRoleID != nil {
 		// progress is counted from the current role, or from 0 when there isn't one.
-		base := roleInfo.CurrentRoleRequiredPoints.Int32
+		base := ptr.Value(roleInfo.CurrentRoleRequiredPoints)
 		card.NextRole = &profileCardProgress{
 			Current:  profile.ChatActivity - base,
-			Required: roleInfo.NextRoleRequiredPoints.Int32 - base,
+			Required: ptr.Value(roleInfo.NextRoleRequiredPoints) - base,
 		}
 	}
 

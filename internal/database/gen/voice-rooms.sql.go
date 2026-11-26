@@ -9,7 +9,6 @@ import (
 	"context"
 
 	snowflake "github.com/disgoorg/snowflake/v2"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createVoiceRoomLobby = `-- name: CreateVoiceRoomLobby :one
@@ -29,10 +28,10 @@ RETURNING insert_epoch, guild_id, voice_channel_id, user_limit, can_rename, can_
 type CreateVoiceRoomLobbyParams struct {
 	GuildID        snowflake.ID
 	VoiceChannelID snowflake.ID
-	UserLimit      pgtype.Int4
-	CanRename      pgtype.Bool
-	CanLock        pgtype.Bool
-	CanAdjustLimit pgtype.Bool
+	UserLimit      *int32
+	CanRename      *bool
+	CanLock        *bool
+	CanAdjustLimit *bool
 }
 
 func (q *Queries) CreateVoiceRoomLobby(ctx context.Context, db DBTX, arg CreateVoiceRoomLobbyParams) (GuildVoiceRoomsSetting, error) {
@@ -331,7 +330,7 @@ RETURNING insert_epoch, guild_id, origin_channel_id, channel_id, created_by_user
 
 type UpdateVoiceRoomParams struct {
 	CurrentOwnerID *snowflake.ID
-	IsLocked       pgtype.Bool
+	IsLocked       *bool
 	GuildID        snowflake.ID
 	ChannelID      snowflake.ID
 }
@@ -370,10 +369,10 @@ RETURNING insert_epoch, guild_id, voice_channel_id, user_limit, can_rename, can_
 `
 
 type UpdateVoiceRoomLobbyParams struct {
-	UserLimit      pgtype.Int4
-	CanRename      pgtype.Bool
-	CanLock        pgtype.Bool
-	CanAdjustLimit pgtype.Bool
+	UserLimit      *int32
+	CanRename      *bool
+	CanLock        *bool
+	CanAdjustLimit *bool
 	GuildID        snowflake.ID
 	VoiceChannelID snowflake.ID
 }

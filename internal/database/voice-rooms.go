@@ -48,10 +48,10 @@ func (v *voiceRooms) CreateLobby(ctx context.Context, guildID, channelID snowfla
 		lobby, err = txDb.queries.CreateVoiceRoomLobby(ctx, txDb.dbtx, gen.CreateVoiceRoomLobbyParams{
 			GuildID:        guildID,
 			VoiceChannelID: channelID,
-			UserLimit:      pgInt4(settings.UserLimit),
-			CanRename:      pgBool(settings.CanRename),
-			CanLock:        pgBool(settings.CanLock),
-			CanAdjustLimit: pgBool(settings.CanAdjustLimit),
+			UserLimit:      settings.UserLimit,
+			CanRename:      settings.CanRename,
+			CanLock:        settings.CanLock,
+			CanAdjustLimit: settings.CanAdjustLimit,
 		})
 		if err != nil {
 			if pgErrorCode(err) == pgUniqueViolation {
@@ -103,10 +103,10 @@ func (v *voiceRooms) UpdateLobby(ctx context.Context, guildID, channelID snowfla
 	lobby, err := v.db.queries.UpdateVoiceRoomLobby(ctx, v.db.dbtx, gen.UpdateVoiceRoomLobbyParams{
 		GuildID:        guildID,
 		VoiceChannelID: channelID,
-		UserLimit:      pgInt4(settings.UserLimit),
-		CanRename:      pgBool(settings.CanRename),
-		CanLock:        pgBool(settings.CanLock),
-		CanAdjustLimit: pgBool(settings.CanAdjustLimit),
+		UserLimit:      settings.UserLimit,
+		CanRename:      settings.CanRename,
+		CanLock:        settings.CanLock,
+		CanAdjustLimit: settings.CanAdjustLimit,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -199,7 +199,7 @@ func (v *voiceRooms) UpdateRoom(ctx context.Context, guildID, channelID snowflak
 		GuildID:        guildID,
 		ChannelID:      channelID,
 		CurrentOwnerID: opts.CurrentOwnerID,
-		IsLocked:       pgBool(opts.IsLocked),
+		IsLocked:       opts.IsLocked,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

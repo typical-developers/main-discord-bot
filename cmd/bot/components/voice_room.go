@@ -17,6 +17,7 @@ import (
 	"github.com/typical-developers/main-discord-bot/internal/database"
 	"github.com/typical-developers/main-discord-bot/internal/database/gen"
 	"github.com/typical-developers/main-discord-bot/internal/disgox"
+	"github.com/typical-developers/main-discord-bot/internal/ptr"
 )
 
 const (
@@ -197,7 +198,7 @@ func (p *voiceRoomPanel) adjustLimitSubmit(e *handler.ModalEvent) error {
 	}
 
 	room, lobby := roomFromCtx(e.Ctx)
-	if room.IsLocked.Bool {
+	if ptr.Value(room.IsLocked) {
 		return disgox.UserErrorf("This voice room is locked, please unlock it before adjusting the limit.")
 	}
 
@@ -229,7 +230,7 @@ func (p *voiceRoomPanel) toggleLock(_ discord.ButtonInteractionData, e *handler.
 		return disgox.UserErrorf("This voice room cannot be locked.")
 	}
 
-	locked := !room.IsLocked.Bool
+	locked := !ptr.Value(room.IsLocked)
 
 	// locking is done by setting the user limit to 1, unlocking restores the lobby's limit.
 	// The channel is updated first, so a failure doesn't leave the room marked as locked.

@@ -11,6 +11,7 @@ sql:
         sql_package: "pgx/v5"
 
         emit_methods_with_db_argument: true
+        emit_pointers_for_null_types: true
         json_tags_id_uppercase: true
         emit_enum_valid_method: true
         emit_all_enum_values: true

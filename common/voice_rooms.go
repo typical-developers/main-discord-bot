@@ -6,6 +6,7 @@ import (
 	"github.com/disgoorg/disgo/discord"
 	"github.com/typical-developers/main-discord-bot/internal/database/gen"
 	"github.com/typical-developers/main-discord-bot/internal/emojis"
+	"github.com/typical-developers/main-discord-bot/internal/ptr"
 )
 
 // Custom IDs for the voice room management panel.
@@ -24,7 +25,7 @@ const (
 // It must be sent with discord.MessageFlagIsComponentsV2.
 func VoiceRoomPanel(room gen.GuildActiveVoiceRoom, lobby gen.GuildVoiceRoomsSetting) discord.ContainerComponent {
 	lockEmoji := emojis.EmojiLock
-	if room.IsLocked.Bool {
+	if ptr.Value(room.IsLocked) {
 		lockEmoji = emojis.EmojiUnlock
 	}
 
@@ -34,7 +35,7 @@ func VoiceRoomPanel(room gen.GuildActiveVoiceRoom, lobby gen.GuildVoiceRoomsSett
 		discord.NewLargeSeparator(),
 		discord.NewTextDisplay(fmt.Sprintf(
 			"**Created By:** <@%s>\n**Current Owner:** <@%s>\n**Locked:** `%t`",
-			room.CreatedByUserID, room.CurrentOwnerID, room.IsLocked.Bool,
+			room.CreatedByUserID, room.CurrentOwnerID, ptr.Value(room.IsLocked),
 		)),
 		discord.NewActionRow(
 			discord.NewSecondaryButton("Rename Room", VoiceRoomRenameID).

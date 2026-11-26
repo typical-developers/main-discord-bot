@@ -1,7 +1,5 @@
 package database
 
-import "github.com/jackc/pgx/v5/pgtype"
-
 // ActivityType is the kind of activity points are granted for.
 // It is stored as grant_type in the database.
 type ActivityType string
@@ -55,20 +53,4 @@ func (t TimePeriod) truncUnit() string {
 	}
 
 	return ""
-}
-
-func pgBool(b *bool) pgtype.Bool {
-	if b == nil {
-		return pgtype.Bool{}
-	}
-
-	return pgtype.Bool{Bool: *b, Valid: true}
-}
-
-func pgInt4(i *int32) pgtype.Int4 {
-	if i == nil {
-		return pgtype.Int4{}
-	}
-
-	return pgtype.Int4{Int32: *i, Valid: true}
 }

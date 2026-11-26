@@ -117,16 +117,16 @@ func (g *guilds) UpdateActivitySettings(ctx context.Context, guildID snowflake.I
 	case ActivityTypeChat:
 		affected, err = g.db.queries.UpdateGuildChatActivitySettings(ctx, g.db.dbtx, gen.UpdateGuildChatActivitySettingsParams{
 			GuildID:       guildID,
-			IsEnabled:     pgBool(opts.IsEnabled),
-			GrantAmount:   pgInt4(opts.GrantAmount),
-			GrantCooldown: pgInt4(opts.GrantCooldown),
+			IsEnabled:     opts.IsEnabled,
+			GrantAmount:   opts.GrantAmount,
+			GrantCooldown: opts.GrantCooldown,
 		})
 	case ActivityTypeVoice:
 		affected, err = g.db.queries.UpdateGuildVoiceActivitySettings(ctx, g.db.dbtx, gen.UpdateGuildVoiceActivitySettingsParams{
 			GuildID:       guildID,
-			IsEnabled:     pgBool(opts.IsEnabled),
-			GrantAmount:   pgInt4(opts.GrantAmount),
-			GrantCooldown: pgInt4(opts.GrantCooldown),
+			IsEnabled:     opts.IsEnabled,
+			GrantAmount:   opts.GrantAmount,
+			GrantCooldown: opts.GrantCooldown,
 		})
 	default:
 		return ErrInvalidActivityType
@@ -220,7 +220,7 @@ func (g *guilds) UpdateMessageEmbedSettings(ctx context.Context, guildID snowfla
 		if opts.IsEnabled != nil {
 			if _, err := txDb.queries.UpdateGuildMessageEmbedSettings(ctx, txDb.dbtx, gen.UpdateGuildMessageEmbedSettingsParams{
 				GuildID:   guildID,
-				IsEnabled: pgBool(opts.IsEnabled),
+				IsEnabled: opts.IsEnabled,
 			}); err != nil {
 				return err
 			}

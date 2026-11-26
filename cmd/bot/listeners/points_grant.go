@@ -14,6 +14,7 @@ import (
 	"github.com/typical-developers/main-discord-bot/internal/database"
 	"github.com/typical-developers/main-discord-bot/internal/database/gen"
 	"github.com/typical-developers/main-discord-bot/internal/disgox"
+	"github.com/typical-developers/main-discord-bot/internal/ptr"
 )
 
 // pointsGrant grants chat activity points for messages, hands out the activity roles
@@ -85,13 +86,13 @@ func (p *pointsGrant) guildMessageCreate(e *events.GuildMessageCreate) {
 
 	// the member unlocked a new role if they didn't have enough points for it before this grant.
 	previousPoints := profile.ChatActivity - settings.GrantAmount
-	if roles.CurrentRoleID == nil || roles.CurrentRoleRequiredPoints.Int32 <= previousPoints {
+	if roles.CurrentRoleID == nil || ptr.Value(roles.CurrentRoleRequiredPoints) <= previousPoints {
 		return
 	}
 
 	content := fmt.Sprintf("<@%s> Congratulations! You have reached %d points and unlocked the `%s` activity role!",
 		message.Author.ID,
-		roles.CurrentRoleRequiredPoints.Int32,
+		ptr.Value(roles.CurrentRoleRequiredPoints),
 		disgox.RoleName(e.Client(), e.GuildID, *roles.CurrentRoleID),
 	)
 

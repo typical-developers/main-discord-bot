@@ -9,7 +9,6 @@ import (
 	"context"
 
 	snowflake "github.com/disgoorg/snowflake/v2"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const appendGuildMessageEmbedSettingsArrays = `-- name: AppendGuildMessageEmbedSettingsArrays :execrows
@@ -105,7 +104,7 @@ type GetGuildActivityRolesParams struct {
 
 type GetGuildActivityRolesRow struct {
 	RoleID         snowflake.ID
-	RequiredPoints pgtype.Int4
+	RequiredPoints *int32
 }
 
 func (q *Queries) GetGuildActivityRoles(ctx context.Context, db DBTX, arg GetGuildActivityRolesParams) ([]GetGuildActivityRolesRow, error) {
@@ -312,9 +311,9 @@ WHERE
 `
 
 type UpdateGuildChatActivitySettingsParams struct {
-	IsEnabled     pgtype.Bool
-	GrantAmount   pgtype.Int4
-	GrantCooldown pgtype.Int4
+	IsEnabled     *bool
+	GrantAmount   *int32
+	GrantCooldown *int32
 	GuildID       snowflake.ID
 }
 
@@ -339,7 +338,7 @@ WHERE
 `
 
 type UpdateGuildMessageEmbedSettingsParams struct {
-	IsEnabled pgtype.Bool
+	IsEnabled *bool
 	GuildID   snowflake.ID
 }
 
@@ -361,9 +360,9 @@ WHERE
 `
 
 type UpdateGuildVoiceActivitySettingsParams struct {
-	IsEnabled     pgtype.Bool
-	GrantAmount   pgtype.Int4
-	GrantCooldown pgtype.Int4
+	IsEnabled     *bool
+	GrantAmount   *int32
+	GrantCooldown *int32
 	GuildID       snowflake.ID
 }
 
