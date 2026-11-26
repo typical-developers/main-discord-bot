@@ -9,11 +9,23 @@ import (
 	"github.com/disgoorg/disgo/bot"
 	"github.com/disgoorg/disgo/gateway"
 	"github.com/luckfire/goblox/legacy"
-	"github.com/typical-developers/main-discord-bot/common"
 )
 
 // robloxRequestTimeout bounds a single player count lookup, so a slow Roblox API can't stall the status cycle.
 const robloxRequestTimeout = time.Second * 10
+
+// statusExperience is a Roblox experience shown in the bot's status.
+type statusExperience struct {
+	Name       string
+	UniverseID int64
+}
+
+// statusExperiences are cycled through in the bot's status, in order.
+var statusExperiences = []statusExperience{
+	{Name: "Oaklands", UniverseID: 3666294218},
+	{Name: "Voxel Block Builder", UniverseID: 8006379851},
+	{Name: "Build With Blocks", UniverseID: 8827949529},
+}
 
 // botStatus cycles the bot's status through the player counts of our Roblox experiences.
 type botStatus struct {
@@ -30,8 +42,8 @@ func newBotStatus(client *bot.Client, roblox *legacy.Client) *botStatus {
 }
 
 func (b *botStatus) run(ctx context.Context) {
-	experience := common.StatusExperiences[b.next]
-	b.next = (b.next + 1) % len(common.StatusExperiences)
+	experience := statusExperiences[b.next]
+	b.next = (b.next + 1) % len(statusExperiences)
 
 	playing, err := b.playing(ctx, experience.UniverseID)
 	if err != nil {

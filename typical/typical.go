@@ -40,7 +40,7 @@ func New(c *bot.Client, r *handler.Mux, cfg *config.Config, db *database.Databas
 	r.Use(handlers.Recover)
 	r.Error(t.handleInteractionEventError)
 
-	listeners.Register(c, cfg, db)
+	listeners.Register(c, r, cfg, db)
 	components.Register(r, cfg, db)
 
 	for _, command := range commands.GlobalCommands(cfg, db) {
