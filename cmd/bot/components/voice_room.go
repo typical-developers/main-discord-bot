@@ -40,15 +40,21 @@ func (p *voiceRoomPanel) Register(r handler.Router) {
 	r.Group(func(r handler.Router) {
 		r.Use(handlers.GuildOnly)
 
-		r.ButtonComponent(common.VoiceRoomRenameID, p.rename)
-		r.Modal(common.VoiceRoomRenameSubmitID, p.renameSubmit)
-
-		r.ButtonComponent(common.VoiceRoomLimitID, p.adjustLimit)
-		r.Modal(common.VoiceRoomLimitSubmitID, p.adjustLimitSubmit)
-
-		r.ButtonComponent(common.VoiceRoomToggleLockID, p.toggleLock)
+		// anyone in the room can reclaim it, as long as they created it.
 		r.ButtonComponent(common.VoiceRoomReclaimID, p.reclaim)
-		r.ButtonComponent(common.VoiceRoomCloseID, p.close)
+
+		r.Group(func(r handler.Router) {
+			r.Use(p.requireOwner)
+
+			r.ButtonComponent(common.VoiceRoomRenameID, p.rename)
+			r.Modal(common.VoiceRoomRenameSubmitID, p.renameSubmit)
+
+			r.ButtonComponent(common.VoiceRoomLimitID, p.adjustLimit)
+			r.Modal(common.VoiceRoomLimitSubmitID, p.adjustLimitSubmit)
+
+			r.ButtonComponent(common.VoiceRoomToggleLockID, p.toggleLock)
+			r.ButtonComponent(common.VoiceRoomCloseID, p.close)
+		})
 	})
 }
 
@@ -75,18 +81,36 @@ func (p *voiceRoomPanel) activeRoom(ctx context.Context, guildID, channelID snow
 	return room, lobby, nil
 }
 
-// ownedRoom is activeRoom, but fails unless the user is the room's current owner.
-func (p *voiceRoomPanel) ownedRoom(ctx context.Context, guildID, channelID, userID snowflake.ID, action string) (gen.GuildActiveVoiceRoom, gen.GuildVoiceRoomsSetting, error) {
-	room, lobby, err := p.activeRoom(ctx, guildID, channelID)
-	if err != nil {
-		return room, lobby, err
-	}
+type ownedRoomKey struct{}
 
-	if room.CurrentOwnerID != userID {
-		return room, lobby, disgox.UserErrorf("You do not have permission to %s this voice room.", action)
-	}
+// ownedRoom is a voice room and its lobby's settings, looked up by requireOwner.
+type ownedRoom struct {
+	room  gen.GuildActiveVoiceRoom
+	lobby gen.GuildVoiceRoomsSetting
+}
 
-	return room, lobby, nil
+// requireOwner is middleware that only lets the voice room's current owner through. The room and
+// its lobby are passed on to the handler in its context; get them with roomFromCtx.
+func (p *voiceRoomPanel) requireOwner(next handler.Handler) handler.Handler {
+	return func(e *handler.InteractionEvent) error {
+		room, lobby, err := p.activeRoom(e.Ctx, *e.Interaction.GuildID(), e.Interaction.Channel().ID())
+		if err != nil {
+			return err
+		}
+
+		if room.CurrentOwnerID != e.User().ID {
+			return disgox.UserErrorf("You do not have permission to manage this voice room.")
+		}
+
+		e.Ctx = context.WithValue(e.Ctx, ownedRoomKey{}, ownedRoom{room, lobby})
+		return next(e)
+	}
+}
+
+// roomFromCtx returns the voice room and lobby requireOwner looked up for this interaction.
+func roomFromCtx(ctx context.Context) (gen.GuildActiveVoiceRoom, gen.GuildVoiceRoomsSetting) {
+	owned := ctx.Value(ownedRoomKey{}).(ownedRoom)
+	return owned.room, owned.lobby
 }
 
 // updatePanel replaces the panel on the message the button was clicked on, then confirms the action.
@@ -107,11 +131,7 @@ func (p *voiceRoomPanel) updatePanel(e *handler.ComponentEvent, room gen.GuildAc
 }
 
 func (p *voiceRoomPanel) rename(_ discord.ButtonInteractionData, e *handler.ComponentEvent) error {
-	_, lobby, err := p.ownedRoom(e.Ctx, *e.GuildID(), e.Channel().ID(), e.User().ID, "rename")
-	if err != nil {
-		return err
-	}
-
+	_, lobby := roomFromCtx(e.Ctx)
 	if !lobby.CanRename {
 		return disgox.UserErrorf("This voice room cannot be renamed.")
 	}
@@ -139,10 +159,6 @@ func (p *voiceRoomPanel) renameSubmit(e *handler.ModalEvent) error {
 		return err
 	}
 
-	if _, _, err := p.ownedRoom(e.Ctx, *e.GuildID(), e.Channel().ID(), e.User().ID, "rename"); err != nil {
-		return err
-	}
-
 	if _, err := e.Client().Rest.UpdateChannel(e.Channel().ID(), discord.GuildVoiceChannelUpdate{Name: &name},
 		rest.WithReason(fmt.Sprintf("Automated Action - Voice room renamed by %s.", e.User().Tag())),
 	); err != nil {
@@ -156,11 +172,7 @@ func (p *voiceRoomPanel) renameSubmit(e *handler.ModalEvent) error {
 }
 
 func (p *voiceRoomPanel) adjustLimit(_ discord.ButtonInteractionData, e *handler.ComponentEvent) error {
-	_, lobby, err := p.ownedRoom(e.Ctx, *e.GuildID(), e.Channel().ID(), e.User().ID, "adjust the limit of")
-	if err != nil {
-		return err
-	}
-
+	_, lobby := roomFromCtx(e.Ctx)
 	if !lobby.CanAdjustLimit {
 		return disgox.UserErrorf("The limit of this voice room cannot be adjusted.")
 	}
@@ -184,11 +196,7 @@ func (p *voiceRoomPanel) adjustLimitSubmit(e *handler.ModalEvent) error {
 		return err
 	}
 
-	room, lobby, err := p.ownedRoom(e.Ctx, *e.GuildID(), e.Channel().ID(), e.User().ID, "adjust the limit of")
-	if err != nil {
-		return err
-	}
-
+	room, lobby := roomFromCtx(e.Ctx)
 	if room.IsLocked.Bool {
 		return disgox.UserErrorf("This voice room is locked, please unlock it before adjusting the limit.")
 	}
@@ -216,11 +224,7 @@ func (p *voiceRoomPanel) toggleLock(_ discord.ButtonInteractionData, e *handler.
 		return err
 	}
 
-	room, lobby, err := p.ownedRoom(e.Ctx, *e.GuildID(), e.Channel().ID(), e.User().ID, "lock")
-	if err != nil {
-		return err
-	}
-
+	room, lobby := roomFromCtx(e.Ctx)
 	if !lobby.CanLock {
 		return disgox.UserErrorf("This voice room cannot be locked.")
 	}
@@ -238,7 +242,7 @@ func (p *voiceRoomPanel) toggleLock(_ discord.ButtonInteractionData, e *handler.
 		return err
 	}
 
-	room, err = p.db.VoiceRooms.UpdateRoom(e.Ctx, room.GuildID, room.ChannelID, database.UpdateVoiceRoomOpts{IsLocked: &locked})
+	room, err := p.db.VoiceRooms.UpdateRoom(e.Ctx, room.GuildID, room.ChannelID, database.UpdateVoiceRoomOpts{IsLocked: &locked})
 	if err != nil {
 		return err
 	}
@@ -283,11 +287,7 @@ func (p *voiceRoomPanel) close(_ discord.ButtonInteractionData, e *handler.Compo
 		return err
 	}
 
-	room, _, err := p.ownedRoom(e.Ctx, *e.GuildID(), e.Channel().ID(), e.User().ID, "close")
-	if err != nil {
-		return err
-	}
-
+	room, _ := roomFromCtx(e.Ctx)
 	if err := p.db.VoiceRooms.DeleteRoom(e.Ctx, room.GuildID, room.ChannelID); err != nil {
 		return err
 	}
