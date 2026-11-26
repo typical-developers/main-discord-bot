@@ -11,7 +11,7 @@ sqlc generate -f internal/database/sqlc.yaml
 goose is used to generate and run migrations for the database. Please refer to [goose's documentation](https://pressly.github.io/goose/documentation/annotations) for more information on how it works.
 ### Creating Migrations
 ```
-goose -dir ./internal/database/sql/migrations create {MIGRATION_NAME} sql
+goose -dir ./internal/database/migrations create {MIGRATION_NAME} sql
 ```
 ### Running `up` Migrations
 > [!NOTE]
@@ -21,5 +21,5 @@ goose -dir ./internal/database/sql/migrations create {MIGRATION_NAME} sql
 > GOOSE_DBSTRING=postgres://admin:admin@localhost:5432/admin_db
 > ```
 ```bash
-goose -dir ./internal/database/sql/migrations up
+goose -dir ./internal/database/migrations up
 ```
