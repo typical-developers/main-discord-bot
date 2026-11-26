@@ -25,24 +25,62 @@ var (
 
 	// the card's border fades from top to bottom.
 	cardBorder = vgrad(gradientStop{0, hex("#2a2b3b")}, gradientStop{1, hex("#12131e")})
-
-	// the week and month chips' border fades from top to bottom.
-	chipBorder = vgrad(gradientStop{0, hex("#363a58")}, gradientStop{1, hex("#232536")})
 )
 
-// activityAccent is the gradient used for an activity's icon circle and progress bar.
+// activityAccent is the gradient an activity panel is themed with: its background, icon circle
+// and progress bar, and (with its first colour) the week and month chips.
 type activityAccent struct {
-	from, to color.RGBA
+	stops []color.RGBA
 }
 
-var chatAccent = activityAccent{hex("#5c64ff"), hex("#ff83de")}
+// chatAccent is the chat panel's theme when there's no role to base it on.
+var chatAccent = activityAccent{[]color.RGBA{hex("#5c64ff"), hex("#ff83de")}}
 
-func (a activityAccent) paint() paint {
-	return hgrad(a.from, a.to)
+// from is the left-most colour of the gradient.
+func (a activityAccent) from() color.RGBA { return a.stops[0] }
+
+func (a activityAccent) paint() paint { return gradientOf(a.stops, 1) }
+
+func (a activityAccent) tint(o float64) paint { return gradientOf(a.stops, o) }
+
+// roleAccent themes an activity panel on a role's colours: its gradient when it has one,
+// otherwise its solid colour. Roles without a colour use fallback.
+func roleAccent(colors []color.Color, fallback activityAccent) activityAccent {
+	stops := roleStops(colors)
+	if len(stops) == 0 {
+		return fallback
+	}
+	return activityAccent{stops}
 }
 
-func (a activityAccent) tint(o float64) paint {
-	return hgrad(alpha(a.from, o), alpha(a.to, o))
+// roleStops returns a role's colours without Discord's "no colour" (black), or nil when it has none.
+func roleStops(colors []color.Color) []color.RGBA {
+	var stops []color.RGBA
+	for _, c := range colors {
+		if c == nil {
+			continue
+		}
+		rgba := toRGBA(c)
+		if rgba.R|rgba.G|rgba.B == 0 {
+			continue
+		}
+		rgba.A = 255
+		stops = append(stops, rgba)
+	}
+	return stops
+}
+
+// gradientOf is a left-to-right gradient through cs at opacity o, or a solid colour when
+// there's only one.
+func gradientOf(cs []color.RGBA, o float64) paint {
+	if len(cs) == 1 {
+		return solid(alpha(cs[0], o))
+	}
+	faded := make([]color.Color, len(cs))
+	for i, c := range cs {
+		faded[i] = alpha(c, o)
+	}
+	return hgrad(faded...)
 }
 
 // rankPaint colours an all time rank, top to bottom: gold to pink for #1 to #50, white to blue

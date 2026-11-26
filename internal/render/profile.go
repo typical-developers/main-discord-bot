@@ -22,13 +22,18 @@ type ProfileCard struct {
 	// ChatRole is the member's current chat activity role, or nil when they don't have one yet.
 	ChatRole *ProfileRole
 	Chat     ActivityStats
+	// ChatTheme is the colours the chat panel is themed on: the current chat activity role's
+	// gradient, or its solid colour. No colours (or black, Discord's "no colour") uses the
+	// default chat theme.
+	ChatTheme []color.Color
 }
 
 // ProfileRole is an activity role, shown as a pill under the member's name.
 type ProfileRole struct {
 	Name string
-	// Color is the role's colour; nil (or black, Discord's "no colour") is drawn grey.
-	Color color.Color
+	// Colors is the role's colour, or its gradient's colours from left to right. No colours
+	// (or black, Discord's "no colour") is drawn grey.
+	Colors []color.Color
 	// Icon is the role's icon; the activity's own icon is drawn when nil.
 	Icon image.Image
 }
@@ -104,7 +109,7 @@ func (p ProfileCard) Layout(f *Fonts) (float64, float64, func(ctx *canvas.Contex
 		drawActivityPanel(ctx, f, Rect{panelX, panelTop, panelWidth, panelHeight}, activityPanel{
 			title:  "Chat Activity",
 			icon:   chatIcon,
-			accent: chatAccent,
+			accent: roleAccent(p.ChatTheme, chatAccent),
 			stats:  p.Chat,
 		})
 	}
@@ -147,7 +152,8 @@ func (p ProfileCard) drawHeader(ctx *canvas.Context, f *Fonts) {
 	}
 }
 
-// drawRolePill draws a role in its colour with its icon, or the activity's icon when it has none.
+// drawRolePill draws a role in its colour (or its gradient) with its icon, or the activity's icon
+// when it has none.
 func drawRolePill(ctx *canvas.Context, f *Fonts, r Rect, role ProfileRole, fallback *canvas.Path) {
 	const (
 		padX     = 12
@@ -155,24 +161,29 @@ func drawRolePill(ctx *canvas.Context, f *Fonts, r Rect, role ProfileRole, fallb
 		gap      = 7
 	)
 
-	col := hex("#99aab5") // Discord's colour for roles without one
-	if role.Color != nil {
-		if c := toRGBA(role.Color); c.R|c.G|c.B != 0 {
-			col = c
-		}
+	stops := roleStops(role.Colors)
+	if len(stops) == 0 {
+		stops = []color.RGBA{hex("#99aab5")} // Discord's colour for roles without one
+	}
+	col := stops[0]
+
+	// the icon follows the gradient too, in the same lighter shades as a solid role.
+	iconStops := make([]color.RGBA, len(stops))
+	for i, c := range stops {
+		iconStops[i] = shade(c, 0.76)
 	}
 
 	name := f.truncate(role.Name, roleStyle, r.W-2*padX-iconSize-gap)
 	pill := Rect{r.X, r.Y, padX + iconSize + gap + f.width(name, roleStyle) + padX, r.H}
 
-	fillRoundRect(ctx, pill, r.H/2, solid(alpha(col, 0.25)))
-	strokeRoundRect(ctx, pill, r.H/2, 1, solid(col))
+	fillRoundRect(ctx, pill, r.H/2, gradientOf(stops, 0.25))
+	strokeRoundRect(ctx, pill, r.H/2, 1, gradientOf(stops, 1))
 
 	icon := Rect{pill.X + padX, pill.Y + (pill.H-iconSize)/2, iconSize, iconSize}
 	if role.Icon != nil {
 		drawImage(ctx, coverSquare(role.Icon, iconSize*Scale), icon)
 	} else {
-		drawIcon(ctx, fallback, iconViewBox, icon, solid(shade(col, 0.76)))
+		drawIcon(ctx, fallback, iconViewBox, icon, gradientOf(iconStops, 1))
 	}
 
 	f.text(ctx, name, icon.Right()+gap, f.baseline(pill.Y, pill.H, roleStyle), roleStyle, shade(col, 0.98), alignLeft)
@@ -236,11 +247,15 @@ func drawRankChip(ctx *canvas.Context, f *Fonts, accent activityAccent, x, y flo
 	lw, vw := f.width(label, chipLabelStyle), f.width(value, chipValueStyle)
 	r := Rect{x, y, padX + lw + gap + vw + padX, h}
 
-	// black with the accent's first colour at 20%; the border is tinted with it at 10%.
+	// black with the accent's first colour at 20%. The border is the same colour, fading from
+	// 50% at the top to 20% at the bottom, so it matches whatever the panel is themed on.
+	from := accent.from()
 	fillRoundRect(ctx, r, h/2, solid(color.Black))
-	fillRoundRect(ctx, r, h/2, solid(alpha(accent.from, 0.2)))
-	strokeRoundRect(ctx, r, h/2, 1, chipBorder)
-	strokeRoundRect(ctx, r, h/2, 1, solid(alpha(accent.from, 0.1)))
+	fillRoundRect(ctx, r, h/2, solid(alpha(from, 0.2)))
+	strokeRoundRect(ctx, r, h/2, 1, vgrad(
+		gradientStop{0, toRGBA(alpha(from, 0.5))},
+		gradientStop{1, toRGBA(alpha(from, 0.2))},
+	))
 	f.text(ctx, label, x+padX, f.baseline(y+6, 17, chipLabelStyle), chipLabelStyle, alpha(white, 0.5), alignLeft)
 	f.text(ctx, value, x+padX+lw+gap, f.baseline(y+5, 19, chipValueStyle), chipValueStyle, white, alignLeft)
 

@@ -55,8 +55,8 @@ type profileCard struct {
 
 type profileCardRole struct {
 	Name string
-	// 0 when the role has no colour.
-	Color int
+	// the role's colour, or its gradient's colours. Empty when the role has no colour.
+	Colors []int
 	// empty when the role has no icon.
 	IconURL        string
 	RequiredPoints int32
@@ -115,7 +115,7 @@ func loadProfileCard(ctx context.Context, client *bot.Client, db *database.Datab
 		}
 
 		if role, ok := client.Caches.Role(guildID, *roleInfo.CurrentRoleID); ok {
-			card.CurrentRole.Color = role.Color
+			card.CurrentRole.Colors = roleColors(role)
 			if icon := role.IconURL(discord.WithSize(64), discord.WithFormat(discord.FileFormatPNG)); icon != nil {
 				card.CurrentRole.IconURL = *icon
 			}
@@ -132,6 +132,35 @@ func loadProfileCard(ctx context.Context, client *bot.Client, db *database.Datab
 	}
 
 	return card, nil
+}
+
+// roleColors returns a role's colour, or the colours of its gradient from left to right
+// (holographic roles have three). It's empty when the role has no colour.
+func roleColors(role discord.Role) []int {
+	primary := role.RoleColors.PrimaryColor
+	if primary == 0 {
+		primary = role.Color
+	}
+	if primary == 0 {
+		return nil
+	}
+
+	colors := []int{primary}
+	for _, c := range []*int{role.RoleColors.SecondaryColor, role.RoleColors.TertiaryColor} {
+		if c != nil {
+			colors = append(colors, *c)
+		}
+	}
+	return colors
+}
+
+// cardColors converts Discord colours (0xRRGGBB) for the renderer.
+func cardColors(colors []int) []color.Color {
+	out := make([]color.Color, len(colors))
+	for i, c := range colors {
+		out[i] = color.RGBA{uint8(c >> 16), uint8(c >> 8), uint8(c), 255}
+	}
+	return out
 }
 
 // profileCardFile draws a profile card as a PNG attachment.
@@ -163,10 +192,9 @@ func profileCardFile(ctx context.Context, card profileCard) (*discord.File, erro
 	}
 
 	if card.CurrentRole != nil {
-		r.ChatRole = &render.ProfileRole{Name: card.CurrentRole.Name, Icon: roleIcon}
-		if c := card.CurrentRole.Color; c != 0 {
-			r.ChatRole.Color = color.RGBA{uint8(c >> 16), uint8(c >> 8), uint8(c), 255}
-		}
+		r.ChatRole = &render.ProfileRole{Name: card.CurrentRole.Name, Colors: cardColors(card.CurrentRole.Colors), Icon: roleIcon}
+		// the chat panel is themed on the member's current activity role.
+		r.ChatTheme = r.ChatRole.Colors
 	}
 
 	if card.NextRole != nil {
@@ -296,7 +324,7 @@ func leaderboardCardFile(ctx context.Context, card leaderboardCard) (*discord.Fi
 
 		Page:         int(card.Page.Page),
 		TotalEntries: int(card.Page.TotalEntries),
-		UpdatedAt:    card.Page.UpdatedAt.Format("15:04"),
+		UpdatedAt:    card.Page.UpdatedAt.Format("01/02/2006 15:04 UTC"),
 	}
 
 	// the server icon and every member's avatar are fetched together.

@@ -30,7 +30,7 @@ type LeaderboardCard struct {
 	// leaderboard; they make up the footer's "Page 1 • Showing 15 of 1,234".
 	Page         int
 	TotalEntries int
-	// UpdatedAt is when the leaderboard was last updated, e.g. "20:25".
+	// UpdatedAt is when the leaderboard was last updated, e.g. "11/26/2026 20:25 UTC".
 	UpdatedAt string
 }
 
