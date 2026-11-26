@@ -6,34 +6,33 @@ import (
 	"log/slog"
 	"regexp"
 	"slices"
+	"strings"
 
 	"github.com/disgoorg/disgo/bot"
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/events"
+	"github.com/disgoorg/disgo/handler"
+	"github.com/disgoorg/disgo/rest"
 	"github.com/disgoorg/snowflake/v2"
+	"github.com/typical-developers/main-discord-bot/cmd/bot/handlers"
 	"github.com/typical-developers/main-discord-bot/internal/database"
+	"github.com/typical-developers/main-discord-bot/internal/disgox"
 )
 
-// messageLinkRegex matches links to Discord messages: guild, channel and message IDs.
-var messageLinkRegex = regexp.MustCompile(`https?://(?:(?:ptb|canary)\.)?discord(?:app)?\.com/channels/(\d{17,20})/(\d{17,20})/(\d{17,20})`)
-
-// defaultEmbedColor is used when the author has no profile accent color.
-const defaultEmbedColor = 0xFFFFFF
-
-type messageLink struct {
-	GuildID   snowflake.ID
-	ChannelID snowflake.ID
-	MessageID snowflake.ID
-}
-
-// messageEmbeds replies to messages containing message links with an embed of the linked message,
-// as long as the author can see it.
+// messageEmbeds replies to messages containing message links with an embed of the first linked
+// message the author can see, and a menu to switch between them when there are several.
+// Adapted from nagomi's message embeds listener.
 type messageEmbeds struct {
 	db *database.Database
 }
 
-func newMessageEmbeds(db *database.Database) *events.ListenerAdapter {
+func newMessageEmbeds(r handler.Router, db *database.Database) *events.ListenerAdapter {
 	m := &messageEmbeds{db}
+
+	r.Group(func(r handler.Router) {
+		r.Use(handlers.GuildOnly)
+		r.SelectMenuComponent(messageEmbedSelectID, m.selectMessage)
+	})
 
 	return &events.ListenerAdapter{
 		OnGuildMessageCreate: m.guildMessageCreate,
@@ -42,6 +41,8 @@ func newMessageEmbeds(db *database.Database) *events.ListenerAdapter {
 
 func (m *messageEmbeds) guildMessageCreate(e *events.GuildMessageCreate) {
 	message := e.Message
+
+	// most messages have no links, so skip them before touching the database.
 	if message.Author.Bot || message.Member == nil || !messageLinkRegex.MatchString(message.Content) {
 		return
 	}
@@ -55,44 +56,54 @@ func (m *messageEmbeds) guildMessageCreate(e *events.GuildMessageCreate) {
 		return
 	}
 
-	if !settings.IsEnabled || slices.Contains(settings.DisabledChannels, e.ChannelID) {
+	client := e.Client()
+	if !settings.IsEnabled ||
+		slices.Contains(settings.DisabledChannels, e.ChannelID) ||
+		hasIgnoredRole(*message.Member, settings.IgnoredRoles) {
 		return
-	}
-
-	for _, roleID := range message.Member.RoleIDs {
-		if slices.Contains(settings.IgnoredRoles, roleID) {
-			return
-		}
 	}
 
 	// the message member has no user attached, but permission checks need one.
-	member := *message.Member
-	member.User = message.Author
-	member.GuildID = e.GuildID
+	author := *message.Member
+	author.User = message.Author
+	author.GuildID = e.GuildID
 
-	client := e.Client()
-
-	// embed the first linked message the author can actually see.
 	var (
-		linked     *discord.Message
-		linkedFrom messageLink
+		embeds []discord.Embed
+		links  []messageLink
 	)
-	for _, link := range parseMessageLinks(client, message.Content, settings.IgnoredChannels) {
-		if linked = fetchVisibleMessage(client, member, link); linked != nil {
-			linkedFrom = link
+	for _, link := range parseMessageLinks(message.Content) {
+		if len(links) == maxMessageLinkOptions {
 			break
 		}
+
+		if link.GuildID == e.GuildID && isIgnoredChannel(client, settings.IgnoredChannels, link.ChannelID) {
+			continue
+		}
+
+		linked, ok := resolveMessageLink(ctx, client, m.db, e.GuildID, link, author)
+		if !ok {
+			continue
+		}
+
+		if embeds == nil {
+			embeds = linked.Embeds(client)
+		}
+		links = append(links, link)
 	}
 
-	if linked == nil {
+	if len(embeds) == 0 {
 		return
 	}
 
+	var components []discord.LayoutComponent
+	if len(links) > 1 {
+		components = append(components, messageLinkMenu(links))
+	}
+
 	if _, err := client.Rest.CreateMessage(e.ChannelID, discord.MessageCreate{
-		Embeds: linkedMessageEmbeds(client, linkedFrom.GuildID, *linked),
-		Components: []discord.LayoutComponent{
-			discord.NewActionRow(discord.NewLinkButton("Jump to Original", linked.JumpURL())),
-		},
+		Embeds:           embeds,
+		Components:       components,
 		MessageReference: &discord.MessageReference{MessageID: &message.ID},
 		AllowedMentions:  &discord.AllowedMentions{RepliedUser: false},
 	}); err != nil {
@@ -100,9 +111,71 @@ func (m *messageEmbeds) guildMessageCreate(e *events.GuildMessageCreate) {
 	}
 }
 
-// parseMessageLinks returns the unique message links in content, skipping ignored channels
-// and guilds the bot isn't in.
-func parseMessageLinks(client *bot.Client, content string, ignoredChannels []snowflake.ID) []messageLink {
+// selectMessage switches the embed to another of the linked messages.
+func (m *messageEmbeds) selectMessage(data discord.SelectMenuInteractionData, e *handler.ComponentEvent) error {
+	values, ok := data.(discord.StringSelectMenuInteractionData)
+	if !ok || len(values.Values) == 0 {
+		return nil
+	}
+
+	link, err := parseMessageLinkOption(values.Values[0])
+	if err != nil {
+		return err
+	}
+
+	guildID := *e.GuildID()
+	settings, err := m.db.Guilds.GetMessageEmbedSettings(e.Ctx, guildID)
+	if err != nil {
+		return err
+	}
+
+	// the settings may have changed since the embed was sent.
+	if !settings.IsEnabled {
+		return disgox.UserErrorf("Message embeds have been disabled in this server.")
+	}
+	if link.GuildID == guildID && isIgnoredChannel(e.Client(), settings.IgnoredChannels, link.ChannelID) {
+		return disgox.UserErrorf("Messages from that channel can no longer be embedded.")
+	}
+
+	resolved := e.Member()
+	if resolved == nil {
+		return nil
+	}
+	viewer := resolved.Member
+	viewer.GuildID = guildID
+
+	// whoever switches the message has to be able to see it themselves.
+	linked, ok := resolveMessageLink(e.Ctx, e.Client(), m.db, guildID, link, viewer)
+	if !ok {
+		return disgox.UserErrorf("That message can't be embedded. You may not have access to it, or it was deleted.")
+	}
+
+	embeds := linked.Embeds(e.Client())
+	return e.UpdateMessage(discord.MessageUpdate{Embeds: &embeds})
+}
+
+// messageEmbedSelectID is the custom ID of the menu for switching between linked messages.
+const messageEmbedSelectID = "/message-embed"
+
+const (
+	// Discord allows 25 options in a select menu and 10 embeds in a message.
+	maxMessageLinkOptions = 25
+	maxMessageEmbeds      = 10
+)
+
+// messageLinkRegex matches links to Discord messages.
+// https://sapphirejs.dev/docs/Guide/utilities/Discord_Utilities/UsefulRegexes/#message-link-regex
+var messageLinkRegex = regexp.MustCompile(`(?:https://)?(?:ptb\.|canary\.)?discord(?:app)?\.com/channels/(\d{17,20})/(\d{17,20})/(\d{17,20})`)
+
+// messageLink is a link to a Discord message.
+type messageLink struct {
+	GuildID   snowflake.ID
+	ChannelID snowflake.ID
+	MessageID snowflake.ID
+}
+
+// parseMessageLinks returns the message links in content, without duplicates.
+func parseMessageLinks(content string) []messageLink {
 	var links []messageLink
 
 	for _, match := range messageLinkRegex.FindAllStringSubmatch(content, -1) {
@@ -113,15 +186,8 @@ func parseMessageLinks(client *bot.Client, content string, ignoredChannels []sno
 			continue
 		}
 
-		if slices.Contains(ignoredChannels, channelID) {
-			continue
-		}
-
+		// the same message can be linked through different subdomains.
 		if slices.ContainsFunc(links, func(l messageLink) bool { return l.MessageID == messageID }) {
-			continue
-		}
-
-		if _, ok := client.Caches.Guild(guildID); !ok {
 			continue
 		}
 
@@ -131,121 +197,198 @@ func parseMessageLinks(client *bot.Client, content string, ignoredChannels []sno
 	return links
 }
 
-// fetchVisibleMessage fetches a linked message, or returns nil if the member can't see it
-// or it has nothing to show.
-func fetchVisibleMessage(client *bot.Client, member discord.Member, link messageLink) *discord.Message {
-	channel, ok := client.Caches.Channel(link.ChannelID)
-	if !ok || channel.GuildID() != link.GuildID {
-		return nil
+// option encodes the link as a select menu option value.
+func (l messageLink) option() string {
+	return fmt.Sprintf("%s_%s_%s", l.GuildID, l.ChannelID, l.MessageID)
+}
+
+// parseMessageLinkOption decodes a select menu option value made by messageLinkMenu.
+func parseMessageLinkOption(value string) (messageLink, error) {
+	parts := strings.SplitN(value, "_", 3)
+	if len(parts) != 3 {
+		return messageLink{}, fmt.Errorf("invalid message link option %q", value)
 	}
 
-	// links can point to other servers the bot is in, so check the author is a member there.
-	if link.GuildID != member.GuildID {
-		other, err := client.Rest.GetMember(link.GuildID, member.User.ID)
-		if err != nil {
-			return nil
+	guildID, err := snowflake.Parse(parts[0])
+	if err != nil {
+		return messageLink{}, err
+	}
+	channelID, err := snowflake.Parse(parts[1])
+	if err != nil {
+		return messageLink{}, err
+	}
+	messageID, err := snowflake.Parse(parts[2])
+	if err != nil {
+		return messageLink{}, err
+	}
+
+	return messageLink{GuildID: guildID, ChannelID: channelID, MessageID: messageID}, nil
+}
+
+// messageLinkMenu builds the menu for switching between the linked messages.
+func messageLinkMenu(links []messageLink) discord.ActionRowComponent {
+	options := make([]discord.StringSelectMenuOption, 0, len(links))
+	for i, link := range links {
+		if i == maxMessageLinkOptions {
+			break
 		}
-		member = *other
-		member.GuildID = link.GuildID
+		options = append(options, discord.StringSelectMenuOption{
+			Label: fmt.Sprintf("Message Link #%d", i+1),
+			Value: link.option(),
+		})
+	}
+
+	return discord.NewActionRow(discord.StringSelectMenuComponent{
+		CustomID:    messageEmbedSelectID,
+		Placeholder: "Select a Message",
+		Options:     options,
+	})
+}
+
+// isIgnoredChannel reports whether a channel, its parent channel (for threads) or its category is
+// in ids.
+func isIgnoredChannel(client *bot.Client, ids []snowflake.ID, channelID snowflake.ID) bool {
+	for range 3 {
+		if slices.Contains(ids, channelID) {
+			return true
+		}
+
+		channel, ok := client.Caches.Channel(channelID)
+		if !ok || channel.ParentID() == nil {
+			return false
+		}
+		channelID = *channel.ParentID()
+	}
+
+	return false
+}
+
+// hasIgnoredRole reports whether the member has any of the roles in ids.
+func hasIgnoredRole(member discord.Member, ids []snowflake.ID) bool {
+	return slices.ContainsFunc(member.RoleIDs, func(id snowflake.ID) bool { return slices.Contains(ids, id) })
+}
+
+// linkedMessage is a linked message that can be embedded.
+type linkedMessage struct {
+	Guild   discord.CacheGuild
+	Channel discord.GuildChannel
+	Message discord.Message
+}
+
+// resolveMessageLink fetches a linked message for embedding in a message from sourceGuildID.
+// It returns false if viewer can't see the message, the linked server doesn't allow its messages
+// to be embedded, or the message has nothing to show.
+func resolveMessageLink(ctx context.Context, client *bot.Client, db *database.Database, sourceGuildID snowflake.ID, link messageLink, viewer discord.Member) (linkedMessage, bool) {
+	guild, ok := client.Caches.Guild(link.GuildID)
+	if !ok {
+		return linkedMessage{}, false
+	}
+
+	channel, ok := client.Caches.Channel(link.ChannelID)
+	if !ok || channel.GuildID() != link.GuildID {
+		return linkedMessage{}, false
+	}
+
+	// links can point to other servers the bot is in. Their own settings decide whether their
+	// messages can be embedded, and the viewer has to be a member there.
+	if link.GuildID != sourceGuildID {
+		settings, err := db.Guilds.GetMessageEmbedSettings(ctx, link.GuildID)
+		if err != nil || !settings.IsEnabled || isIgnoredChannel(client, settings.IgnoredChannels, link.ChannelID) {
+			return linkedMessage{}, false
+		}
+
+		member, err := disgox.GetMember(client, link.GuildID, viewer.User.ID, rest.WithCtx(ctx))
+		if err != nil {
+			return linkedMessage{}, false
+		}
+		viewer = member
 	}
 
 	// threads take their permissions from their parent channel.
 	permissionChannel := channel
 	if thread, ok := channel.(discord.GuildThread); ok {
-		parent, ok := client.Caches.Channel(*thread.ParentID())
-		if !ok {
-			return nil
+		if permissionChannel, ok = client.Caches.Channel(*thread.ParentID()); !ok {
+			return linkedMessage{}, false
 		}
-		permissionChannel = parent
 	}
 
-	permissions := client.Caches.MemberPermissionsInChannel(permissionChannel, member)
-	if !permissions.Has(discord.PermissionViewChannel, discord.PermissionReadMessageHistory) {
-		return nil
+	if !client.Caches.MemberPermissionsInChannel(permissionChannel, viewer).Has(discord.PermissionViewChannel, discord.PermissionReadMessageHistory) {
+		return linkedMessage{}, false
 	}
 
-	message, err := client.Rest.GetMessage(link.ChannelID, link.MessageID)
+	message, err := client.Rest.GetMessage(link.ChannelID, link.MessageID, rest.WithCtx(ctx))
 	if err != nil {
-		return nil
+		return linkedMessage{}, false
 	}
 
-	if message.Content == "" && len(message.Attachments) == 0 {
-		return nil
+	if message.Content == "" && !slices.ContainsFunc(message.Attachments, isImage) {
+		return linkedMessage{}, false
 	}
 
-	return message
+	return linkedMessage{Guild: guild, Channel: channel, Message: *message}, true
 }
 
-// linkedMessageEmbeds builds the embeds for a linked message. The first attachment is shown in
-// the main embed, the rest are added as extra embeds that Discord shows as a gallery.
-func linkedMessageEmbeds(client *bot.Client, guildID snowflake.ID, message discord.Message) []discord.Embed {
-	author := message.Author
+// Embeds builds the embeds for a linked message. The first image is shown in the main embed and
+// the rest in image-only embeds, which Discord groups into a gallery because they share a URL.
+func (l linkedMessage) Embeds(client *bot.Client) []discord.Embed {
+	message := l.Message
 
-	// accent colors are only included when fetching the user directly.
-	color := defaultEmbedColor
-	if user, err := client.Rest.GetUser(author.ID); err == nil {
-		author = *user
-		if author.AccentColor != nil {
-			color = *author.AccentColor
-		}
+	// the author's server profile, falling back to their user when they've left the server.
+	name := message.Author.EffectiveName()
+	iconURL := message.Author.EffectiveAvatarURL()
+	if member, err := disgox.GetMember(client, l.Guild.ID, message.Author.ID); err == nil {
+		name = member.EffectiveName()
+		iconURL = member.EffectiveAvatarURL()
 	}
 
-	embed := discord.NewEmbed().
-		WithAuthorName(authorName(author)).
-		WithAuthorIcon(author.EffectiveAvatarURL()).
-		WithDescription(message.Content).
-		WithColor(color).
-		WithTimestamp(message.CreatedAt).
-		WithFooterText(channelName(client, message.ChannelID))
+	footer := l.Guild.Name + " - "
+	if l.Channel.Type() == discord.ChannelTypeGuildText {
+		footer += "#"
+	}
+	footer += l.Channel.Name()
 
-	if guild, ok := client.Caches.Guild(guildID); ok {
-		if icon := guild.IconURL(); icon != nil {
-			embed = embed.WithFooterIcon(*icon)
-		}
+	main := discord.Embed{
+		URL: message.JumpURL(),
+		Author: &discord.EmbedAuthor{
+			Name:    fmt.Sprintf("%s (@%s)", name, message.Author.Username),
+			IconURL: iconURL,
+		},
+		Description: message.Content,
+		Timestamp:   &message.CreatedAt,
+		Footer:      &discord.EmbedFooter{Text: footer},
+	}
+	if icon := l.Guild.IconURL(); icon != nil {
+		main.Footer.IconURL = *icon
+	}
+	if message.Author.AccentColor != nil {
+		main.Color = *message.Author.AccentColor
 	}
 
-	embeds := []discord.Embed{embed}
-	for i, attachment := range message.Attachments {
-		if i == 0 {
-			embeds[0] = embeds[0].WithURL(message.JumpURL()).WithImage(attachment.URL)
+	embeds := []discord.Embed{main}
+	for _, attachment := range message.Attachments {
+		if !isImage(attachment) {
 			continue
 		}
 
-		embeds = append(embeds, discord.NewEmbed().WithURL(message.JumpURL()).WithImage(attachment.URL))
+		image := &discord.EmbedResource{URL: attachment.URL}
+		if attachment.Description != nil {
+			image.Description = *attachment.Description
+		}
+
+		if embeds[0].Image == nil {
+			embeds[0].Image = image
+			continue
+		}
+
+		if len(embeds) == maxMessageEmbeds {
+			break
+		}
+		embeds = append(embeds, discord.Embed{URL: message.JumpURL(), Image: image})
 	}
 
 	return embeds
 }
 
-// authorName formats the most appropriate name for a message author.
-func authorName(user discord.User) string {
-	if user.Discriminator != "0" {
-		return user.Tag()
-	}
-
-	if user.GlobalName != nil {
-		return fmt.Sprintf("%s (@%s)", *user.GlobalName, user.Username)
-	}
-
-	return "@" + user.Username
-}
-
-// channelName formats a channel as "Server - #channel".
-func channelName(client *bot.Client, channelID snowflake.ID) string {
-	channel, ok := client.Caches.Channel(channelID)
-	if !ok {
-		return channelID.String()
-	}
-
-	guildName := channel.GuildID().String()
-	if guild, ok := client.Caches.Guild(channel.GuildID()); ok {
-		guildName = guild.Name
-	}
-
-	switch channel.Type() {
-	case discord.ChannelTypeGuildText, discord.ChannelTypeGuildNews, discord.ChannelTypeGuildVoice, discord.ChannelTypeGuildStageVoice:
-		return fmt.Sprintf("%s - #%s", guildName, channel.Name())
-	default:
-		return fmt.Sprintf("%s - %s", guildName, channel.Name())
-	}
+func isImage(attachment discord.Attachment) bool {
+	return attachment.ContentType != nil && strings.HasPrefix(*attachment.ContentType, "image/")
 }
