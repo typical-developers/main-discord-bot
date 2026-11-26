@@ -120,8 +120,19 @@ func (v *voiceRooms) joined(ctx context.Context, e *events.GuildVoiceStateUpdate
 		return
 	}
 
+	// an empty room is only deleted when someone leaves it, so one nobody was moved into would
+	// stay forever (e.g. the member left the lobby while it was being created).
 	if err := disgox.MoveMember(client.Rest, guildID, member.User.ID, channel.ID()); err != nil {
 		log.Error("failed to move member into their voice room", slog.Any("err", err))
+		v.clearCooldown(member.User.ID)
+
+		if err := v.db.VoiceRooms.DeleteRoom(ctx, guildID, channel.ID()); err != nil {
+			log.Error("failed to delete unused voice room", slog.Any("err", err))
+		}
+		if err := client.Rest.DeleteChannel(channel.ID(), rest.WithReason("Automated Action - Member could not be moved into their voice room.")); err != nil {
+			log.Error("failed to delete unused voice room channel", slog.Any("err", err))
+		}
+		return
 	}
 
 	if _, err := client.Rest.CreateMessage(channel.ID(), discord.MessageCreate{
