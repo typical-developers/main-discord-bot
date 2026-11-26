@@ -19,7 +19,7 @@ type profileCards struct {
 func (p *profileCards) send(e *handler.CommandEvent, memberID snowflake.ID) error {
 	guildID := *e.GuildID()
 
-	member, err := e.Client().Rest.GetMember(guildID, memberID)
+	member, err := disgox.GetMember(e.Client(), guildID, memberID)
 	if err != nil {
 		return disgox.WrapUserError(err, "Unable to fetch the member's details.")
 	}
@@ -28,7 +28,7 @@ func (p *profileCards) send(e *handler.CommandEvent, memberID snowflake.ID) erro
 		return err
 	}
 
-	card, err := loadProfileCard(e.Ctx, e.Client(), p.db, guildID, *member)
+	card, err := loadProfileCard(e.Ctx, e.Client(), p.db, guildID, member)
 	if err != nil {
 		return err
 	}
@@ -65,12 +65,12 @@ func (p *profileCards) refresh(_ discord.ButtonInteractionData, e *handler.Compo
 	}
 
 	guildID := *e.GuildID()
-	member, err := e.Client().Rest.GetMember(guildID, e.User().ID)
+	member, err := disgox.GetMember(e.Client(), guildID, e.User().ID)
 	if err != nil {
 		return err
 	}
 
-	card, err := loadProfileCard(e.Ctx, e.Client(), p.db, guildID, *member)
+	card, err := loadProfileCard(e.Ctx, e.Client(), p.db, guildID, member)
 	if err != nil {
 		return err
 	}

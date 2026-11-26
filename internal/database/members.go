@@ -107,8 +107,15 @@ func (m *members) GrantActivityPoints(ctx context.Context, guildID, memberID sno
 			}
 
 			// no rows means the profile doesn't exist or the member is on cooldown.
-			if _, err := txDb.Members.GetProfile(ctx, guildID, memberID); err != nil {
+			exists, err := txDb.queries.MemberProfileExists(ctx, txDb.dbtx, gen.MemberProfileExistsParams{
+				GuildID:  guildID,
+				MemberID: memberID,
+			})
+			if err != nil {
 				return err
+			}
+			if !exists {
+				return ErrMemberProfileNotFound
 			}
 
 			return ErrMemberOnGrantCooldown

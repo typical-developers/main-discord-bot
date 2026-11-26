@@ -99,6 +99,15 @@ FROM all_role_ids
 LEFT JOIN current_role_info ON TRUE
 LEFT JOIN next_role_info ON TRUE;
 
+-- name: MemberProfileExists :one
+SELECT EXISTS (
+    SELECT 1
+    FROM guild_profiles
+    WHERE
+        guild_id = @guild_id
+        AND member_id = @member_id
+);
+
 -- name: MigrateMemberProfile :exec
 INSERT INTO guild_profiles (
     guild_id, member_id,
@@ -128,4 +137,4 @@ SET
     last_voice_activity_grant = DEFAULT
 WHERE
     guild_id = @guild_id
-    AND member_id = @member_id;
+    AND member_id = @member_id;

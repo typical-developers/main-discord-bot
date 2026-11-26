@@ -254,6 +254,28 @@ func (q *Queries) IncrementMemberVoiceActivity(ctx context.Context, db DBTX, arg
 	return i, err
 }
 
+const memberProfileExists = `-- name: MemberProfileExists :one
+SELECT EXISTS (
+    SELECT 1
+    FROM guild_profiles
+    WHERE
+        guild_id = $1
+        AND member_id = $2
+)
+`
+
+type MemberProfileExistsParams struct {
+	GuildID  snowflake.ID
+	MemberID snowflake.ID
+}
+
+func (q *Queries) MemberProfileExists(ctx context.Context, db DBTX, arg MemberProfileExistsParams) (bool, error) {
+	row := db.QueryRow(ctx, memberProfileExists, arg.GuildID, arg.MemberID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const migrateMemberProfile = `-- name: MigrateMemberProfile :exec
 INSERT INTO guild_profiles (
     guild_id, member_id,
