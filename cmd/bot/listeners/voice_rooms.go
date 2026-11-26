@@ -11,6 +11,7 @@ import (
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/events"
 	"github.com/disgoorg/disgo/rest"
+	"github.com/disgoorg/omit"
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/typical-developers/main-discord-bot/common"
 	"github.com/typical-developers/main-discord-bot/internal/database"
@@ -85,7 +86,7 @@ func (v *voiceRooms) joined(ctx context.Context, e *events.GuildVoiceStateUpdate
 	// sends a message in the lobby's text chat and removes the member from the lobby.
 	rejectMember := func(content string) {
 		_, _ = client.Rest.CreateMessage(channelID, discord.MessageCreate{Content: content})
-		_ = disgox.DisconnectMember(client.Rest, guildID, member.User.ID)
+		_, _ = client.Rest.UpdateMember(guildID, member.User.ID, discord.MemberUpdate{ChannelID: omit.NewNilPtr[snowflake.ID]()})
 	}
 
 	if !v.startCooldown(member.User.ID) {
@@ -122,7 +123,7 @@ func (v *voiceRooms) joined(ctx context.Context, e *events.GuildVoiceStateUpdate
 
 	// an empty room is only deleted when someone leaves it, so one nobody was moved into would
 	// stay forever (e.g. the member left the lobby while it was being created).
-	if err := disgox.MoveMember(client.Rest, guildID, member.User.ID, channel.ID()); err != nil {
+	if _, err := client.Rest.UpdateMember(guildID, member.User.ID, discord.MemberUpdate{ChannelID: omit.NewPtr(channel.ID())}); err != nil {
 		log.Error("failed to move member into their voice room", slog.Any("err", err))
 		v.clearCooldown(member.User.ID)
 

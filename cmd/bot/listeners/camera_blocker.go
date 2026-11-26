@@ -8,9 +8,9 @@ import (
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/events"
 	"github.com/disgoorg/disgo/rest"
+	"github.com/disgoorg/omit"
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/typical-developers/main-discord-bot/internal/config"
-	"github.com/typical-developers/main-discord-bot/internal/disgox"
 )
 
 // cameraBlocker disconnects members who turn on their camera in the configured guilds.
@@ -37,7 +37,9 @@ func (c *cameraBlocker) voiceStateUpdate(e *events.GuildVoiceStateUpdate) {
 		slog.String("member_id", state.UserID.String()),
 	)
 
-	if err := disgox.DisconnectMember(e.Client().Rest, state.GuildID, state.UserID,
+	// an explicit null channel disconnects the member.
+	if _, err := e.Client().Rest.UpdateMember(state.GuildID, state.UserID,
+		discord.MemberUpdate{ChannelID: omit.NewNilPtr[snowflake.ID]()},
 		rest.WithReason("Member enabled self video."),
 	); err != nil {
 		log.Error("failed to disconnect member with camera on", slog.Any("err", err))
