@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"regexp"
 	"slices"
 	"strings"
@@ -69,6 +70,7 @@ func (m *messageEmbeds) guildMessageCreate(e *events.GuildMessageCreate) {
 	author.GuildID = e.GuildID
 
 	var (
+		first  linkedMessage
 		embeds []discord.Embed
 		links  []messageLink
 	)
@@ -87,6 +89,7 @@ func (m *messageEmbeds) guildMessageCreate(e *events.GuildMessageCreate) {
 		}
 
 		if embeds == nil {
+			first = linked
 			embeds = linked.Embeds(client)
 		}
 		links = append(links, link)
@@ -96,10 +99,11 @@ func (m *messageEmbeds) guildMessageCreate(e *events.GuildMessageCreate) {
 		return
 	}
 
-	var components []discord.LayoutComponent
+	var menu *discord.StringSelectMenuComponent
 	if len(links) > 1 {
-		components = append(components, messageLinkMenu(links))
+		menu = new(messageLinkMenu(links))
 	}
+	components := messageEmbedComponents(first.Message.JumpURL(), menu)
 
 	if _, err := client.Rest.CreateMessage(e.ChannelID, discord.MessageCreate{
 		Embeds:           embeds,
@@ -111,7 +115,8 @@ func (m *messageEmbeds) guildMessageCreate(e *events.GuildMessageCreate) {
 	}
 }
 
-// selectMessage switches the embed to another of the linked messages.
+// selectMessage shows the selected linked message to whoever picked it, in a message only they
+// can see. The original embed is left as it is for everyone else.
 func (m *messageEmbeds) selectMessage(data discord.SelectMenuInteractionData, e *handler.ComponentEvent) error {
 	values, ok := data.(discord.StringSelectMenuInteractionData)
 	if !ok || len(values.Values) == 0 {
@@ -120,6 +125,10 @@ func (m *messageEmbeds) selectMessage(data discord.SelectMenuInteractionData, e 
 
 	link, err := parseMessageLinkOption(values.Values[0])
 	if err != nil {
+		return err
+	}
+
+	if err := e.DeferCreateMessage(true); err != nil {
 		return err
 	}
 
@@ -150,8 +159,24 @@ func (m *messageEmbeds) selectMessage(data discord.SelectMenuInteractionData, e 
 		return disgox.UserErrorf("That message can't be embedded. You may not have access to it, or it was deleted.")
 	}
 
-	embeds := linked.Embeds(e.Client())
-	return e.UpdateMessage(discord.MessageUpdate{Embeds: &embeds})
+	_, err = e.UpdateInteractionResponse(discord.MessageUpdate{
+		Embeds:     new(linked.Embeds(e.Client())),
+		Components: new(messageEmbedComponents(linked.Message.JumpURL(), nil)),
+	})
+	return err
+}
+
+// messageEmbedComponents is a "Jump to Message" button for the embedded message, and the menu for
+// switching between linked messages when there is one.
+func messageEmbedComponents(jumpURL string, menu *discord.StringSelectMenuComponent) []discord.LayoutComponent {
+	components := []discord.LayoutComponent{
+		discord.NewActionRow(discord.NewLinkButton("Jump to Message", jumpURL)),
+	}
+	if menu != nil {
+		components = append(components, discord.NewActionRow(*menu))
+	}
+
+	return components
 }
 
 // messageEmbedSelectID is the custom ID of the menu for switching between linked messages.
@@ -163,9 +188,12 @@ const (
 	maxMessageEmbeds      = 10
 )
 
-// messageLinkRegex matches links to Discord messages.
+// messageLinkRegex matches links to Discord messages, along with their query string if they have one.
 // https://sapphirejs.dev/docs/Guide/utilities/Discord_Utilities/UsefulRegexes/#message-link-regex
-var messageLinkRegex = regexp.MustCompile(`(?:https://)?(?:ptb\.|canary\.)?discord(?:app)?\.com/channels/(\d{17,20})/(\d{17,20})/(\d{17,20})`)
+var messageLinkRegex = regexp.MustCompile(`(?:https://)?(?:ptb\.|canary\.)?discord(?:app)?\.com/channels/(\d{17,20})/(\d{17,20})/(\d{17,20})(\?[^\s>#]*)?`)
+
+// noEmbedParam can be added to a message link (e.g. ".../channels/1/2/3?noEmbed") so it isn't embedded.
+const noEmbedParam = "noEmbed"
 
 // messageLink is a link to a Discord message.
 type messageLink struct {
@@ -174,11 +202,16 @@ type messageLink struct {
 	MessageID snowflake.ID
 }
 
-// parseMessageLinks returns the message links in content, without duplicates.
+// parseMessageLinks returns the message links in content, without duplicates. Links with the
+// noEmbed query parameter are left out.
 func parseMessageLinks(content string) []messageLink {
 	var links []messageLink
 
 	for _, match := range messageLinkRegex.FindAllStringSubmatch(content, -1) {
+		if hasNoEmbedParam(match[4]) {
+			continue
+		}
+
 		guildID, err1 := snowflake.Parse(match[1])
 		channelID, err2 := snowflake.Parse(match[2])
 		messageID, err3 := snowflake.Parse(match[3])
@@ -195,6 +228,23 @@ func parseMessageLinks(content string) []messageLink {
 	}
 
 	return links
+}
+
+// hasNoEmbedParam reports whether a link's query string (e.g. "?noEmbed" or "?foo=1&noembed=true")
+// has the noEmbed parameter. The name isn't case sensitive and its value doesn't matter.
+func hasNoEmbedParam(query string) bool {
+	values, err := url.ParseQuery(strings.TrimPrefix(query, "?"))
+	if err != nil {
+		return false
+	}
+
+	for key := range values {
+		if strings.EqualFold(key, noEmbedParam) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // option encodes the link as a select menu option value.
@@ -226,7 +276,7 @@ func parseMessageLinkOption(value string) (messageLink, error) {
 }
 
 // messageLinkMenu builds the menu for switching between the linked messages.
-func messageLinkMenu(links []messageLink) discord.ActionRowComponent {
+func messageLinkMenu(links []messageLink) discord.StringSelectMenuComponent {
 	options := make([]discord.StringSelectMenuOption, 0, len(links))
 	for i, link := range links {
 		if i == maxMessageLinkOptions {
@@ -238,11 +288,11 @@ func messageLinkMenu(links []messageLink) discord.ActionRowComponent {
 		})
 	}
 
-	return discord.NewActionRow(discord.StringSelectMenuComponent{
+	return discord.StringSelectMenuComponent{
 		CustomID:    messageEmbedSelectID,
 		Placeholder: "Select a Message",
 		Options:     options,
-	})
+	}
 }
 
 // isIgnoredChannel reports whether a channel, its parent channel (for threads) or its category is
