@@ -44,6 +44,7 @@ type ActivityStats struct {
 
 	// Ranks are 0 when the member isn't on that leaderboard.
 	AllTimeRank int
+	DailyRank   int
 	WeeklyRank  int
 	MonthlyRank int
 
@@ -226,8 +227,9 @@ func drawActivityPanel(ctx *canvas.Context, f *Fonts, r Rect, p activityPanel) {
 	}
 	f.text(ctx, f.truncate(points, pointsStyle, textW), textX, f.baseline(in.Y+27.5, 19, pointsStyle), pointsStyle, white, alignLeft)
 
-	// row 2: week and month chips.
+	// row 2: day, week and month chips.
 	x := in.X
+	x += drawRankChip(ctx, f, p.accent, x, in.Y+61, "Day", s.DailyRank) + 10
 	x += drawRankChip(ctx, f, p.accent, x, in.Y+61, "Week", s.WeeklyRank) + 10
 	drawRankChip(ctx, f, p.accent, x, in.Y+61, "Month", s.MonthlyRank)
 

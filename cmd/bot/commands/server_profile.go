@@ -182,6 +182,7 @@ type profileCard struct {
 	Points      int32
 	AllTimeRank int64
 	// 0 when the member has no points on that leaderboard.
+	DailyRank   int32
 	WeeklyRank  int32
 	MonthlyRank int32
 
@@ -242,6 +243,7 @@ func (p *profileCards) load(ctx context.Context, client *bot.Client, guildID sno
 		AvatarURL:   member.EffectiveAvatarURL(profileImageOpts...),
 		Points:      profile.ChatActivity,
 		AllTimeRank: profile.ChatActivityRank,
+		DailyRank:   rankings.DailyLeaderboardRank,
 		WeeklyRank:  rankings.WeeklyLeaderboardRank,
 		MonthlyRank: rankings.MonthlyLeaderboardRank,
 	}
@@ -324,6 +326,7 @@ func (p *profileCards) draw(ctx context.Context, card profileCard) (*discord.Fil
 		Chat: render.ActivityStats{
 			Points:      int(card.Points),
 			AllTimeRank: int(card.AllTimeRank),
+			DailyRank:   int(card.DailyRank),
 			WeeklyRank:  int(card.WeeklyRank),
 			MonthlyRank: int(card.MonthlyRank),
 		},
