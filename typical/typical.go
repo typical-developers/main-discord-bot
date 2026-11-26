@@ -8,6 +8,7 @@ import (
 
 	"github.com/disgoorg/disgo/bot"
 	"github.com/disgoorg/disgo/discord"
+	"github.com/disgoorg/disgo/events"
 	"github.com/disgoorg/disgo/handler"
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/typical-developers/main-discord-bot/cmd/bot/commands"
@@ -57,6 +58,14 @@ func New(c *bot.Client, r *handler.Mux, cfg *config.Config, db *database.Databas
 		}
 	}
 
+	// SyncCommands only overwrites the guilds that have commands, so every other guild is
+	// checked for leftover commands once the bot sees it.
+	c.AddEventListeners(&events.ListenerAdapter{
+		// fires for every guild the bot is already in when it connects.
+		OnGuildReady: func(e *events.GuildReady) { t.clearStaleGuildCommands(e.GuildID) },
+		OnGuildJoin:  func(e *events.GuildJoin) { t.clearStaleGuildCommands(e.GuildID) },
+	})
+
 	return t, nil
 }
 
@@ -97,6 +106,35 @@ func (t *TypicalBot) SyncCommands() error {
 	}
 
 	return nil
+}
+
+// clearStaleGuildCommands removes the commands left in a guild that has no guild commands anymore,
+// such as ones registered while the bot used a development guild or ones from a guild that was
+// removed from commands.GuildCommands. Guilds with guild commands are handled by SyncCommands.
+func (t *TypicalBot) clearStaleGuildCommands(guildID snowflake.ID) {
+	if _, ok := t.guildCommands[guildID]; ok {
+		return
+	}
+
+	log := slog.With(slog.String("guild_id", guildID.String()))
+
+	existing, err := t.client.Rest.GetGuildCommands(t.client.ApplicationID, guildID, false)
+	if err != nil {
+		log.Error("failed to get guild commands", slog.Any("err", err))
+		return
+	}
+
+	if len(existing) == 0 {
+		return
+	}
+
+	// an empty (not nil) slice, so it's sent as [] and removes every command.
+	if _, err := t.client.Rest.SetGuildCommands(t.client.ApplicationID, guildID, []discord.ApplicationCommandCreate{}); err != nil {
+		log.Error("failed to remove stale guild commands", slog.Any("err", err))
+		return
+	}
+
+	log.Info("removed stale guild commands", slog.Int("count", len(existing)))
 }
 
 // handleInteractionEventError replies with the message of a disgox.UserError, or logs
