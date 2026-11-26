@@ -145,17 +145,16 @@ func (l LeaderboardCard) drawHeader(ctx *canvas.Context, f *Fonts, r Rect) {
 
 // drawTable draws the column headings and the rows, highlighting every other row from the first.
 func (l LeaderboardCard) drawTable(ctx *canvas.Context, f *Fonts, r Rect) {
-	// columns, from the left edge of the table.
+	// columns, from the left edge of the table. The "Member" heading lines up with the avatars.
 	const (
-		headingMemberX = 145 // "#" is 105 wide in the heading row
-		rowMemberX     = 135 // and 95 wide in the rows
-		valueRight     = 718
-		nameMaxW       = 257.5
+		memberX    = 135
+		valueRight = 718
+		nameMaxW   = 257.5
 	)
 
 	headingBase := f.baseline(r.Y-1, 24, columnStyle)
 	f.text(ctx, "#", r.X+rowPadX, headingBase, columnStyle, white, alignLeft)
-	f.text(ctx, "Member", r.X+headingMemberX, headingBase, columnStyle, white, alignLeft)
+	f.text(ctx, "Member", r.X+memberX, headingBase, columnStyle, white, alignLeft)
 	f.text(ctx, l.ValueLabel, r.X+valueRight, headingBase, columnStyle, white, alignRight)
 
 	y := r.Y + tableHeaderHeight + tableGap
@@ -168,7 +167,7 @@ func (l LeaderboardCard) drawTable(ctx *canvas.Context, f *Fonts, r Rect) {
 		textTop := y + rowPadY
 		f.text(ctx, rankText(row.Rank), r.X+rowPadX, f.baseline(textTop, 24, rowRankStyle), rowRankStyle, white, alignLeft)
 
-		avatar := Rect{r.X + rowMemberX, textTop, rowAvatar, rowAvatar}
+		avatar := Rect{r.X + memberX, textTop, rowAvatar, rowAvatar}
 		if row.Avatar != nil {
 			drawImage(ctx, roundCorners(coverSquare(row.Avatar, rowAvatar*Scale), rowAvatar/2*Scale), avatar)
 		} else {
