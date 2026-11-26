@@ -135,38 +135,69 @@ func (m *members) GrantActivityPoints(ctx context.Context, guildID, memberID sno
 	return profile, nil
 }
 
+// ProfileMigration is the result of MigrateProfile.
+type ProfileMigration struct {
+	// From is the old member's profile as it was before the migration reset it.
+	From gen.GuildProfile
+	// To is the new member's profile after the old profile's points were added to it.
+	To gen.GuildProfile
+}
+
 // MigrateProfile moves a member's profile to another member (for example, an alt account).
 //
-// If the other member already has a profile, the points are added together and the card style
-// and last grant times are taken from the old profile. The old profile is reset to its defaults.
+// If the other member already has a profile, the points are added together, the card style is
+// taken from the old profile and the latest grant times are kept. The old profile is reset to its defaults.
 // Points in the activity grant log (daily, weekly, monthly and yearly leaderboards) are not moved.
-func (m *members) MigrateProfile(ctx context.Context, guildID, fromMemberID, toMemberID snowflake.ID) error {
+//
+// The old profile is locked for the whole transaction, so points granted to it while the
+// migration runs are either moved with it or wait until it has been reset.
+func (m *members) MigrateProfile(ctx context.Context, guildID, fromMemberID, toMemberID snowflake.ID) (ProfileMigration, error) {
 	if fromMemberID == toMemberID {
-		return ErrMemberProfileMigrateSelf
+		return ProfileMigration{}, ErrMemberProfileMigrateSelf
 	}
 
-	return m.db.WithTx(ctx, func(ctx context.Context, txDb *Database) error {
-		profile, err := txDb.Members.GetProfile(ctx, guildID, fromMemberID)
+	var migration ProfileMigration
+
+	err := m.db.WithTx(ctx, func(ctx context.Context, txDb *Database) error {
+		from, err := txDb.queries.GetMemberProfileForUpdate(ctx, txDb.dbtx, gen.GetMemberProfileForUpdateParams{
+			GuildID:  guildID,
+			MemberID: fromMemberID,
+		})
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return ErrMemberProfileNotFound
+			}
+
+			return err
+		}
+
+		to, err := txDb.queries.MigrateMemberProfile(ctx, txDb.dbtx, gen.MigrateMemberProfileParams{
+			GuildID:    guildID,
+			ToMemberID: toMemberID,
+			CardStyle:  from.CardStyle,
+
+			ChatActivity:          from.ChatActivity,
+			LastChatActivityGrant: from.LastChatActivityGrant,
+
+			VoiceActivity:          from.VoiceActivity,
+			LastVoiceActivityGrant: from.LastVoiceActivityGrant,
+		})
 		if err != nil {
 			return err
 		}
 
-		if err := txDb.queries.MigrateMemberProfile(ctx, txDb.dbtx, gen.MigrateMemberProfileParams{
-			GuildID:    guildID,
-			ToMemberID: toMemberID,
-			CardStyle:  profile.CardStyle,
-
-			ChatActivity:          profile.ChatActivity,
-			LastChatActivityGrant: profile.LastChatActivityGrant,
-
-			VoiceActivity:          profile.VoiceActivity,
-			LastVoiceActivityGrant: profile.LastVoiceActivityGrant,
-		}); err != nil {
+		if err := txDb.Members.ResetProfile(ctx, guildID, fromMemberID); err != nil {
 			return err
 		}
 
-		return txDb.Members.ResetProfile(ctx, guildID, fromMemberID)
+		migration = ProfileMigration{From: from, To: to}
+		return nil
 	})
+	if err != nil {
+		return ProfileMigration{}, err
+	}
+
+	return migration, nil
 }
 
 // ResetProfile resets a member's card style, points and grant times to their defaults.

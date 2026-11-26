@@ -169,6 +169,38 @@ func (q *Queries) GetMemberProfile(ctx context.Context, db DBTX, arg GetMemberPr
 	return i, err
 }
 
+const getMemberProfileForUpdate = `-- name: GetMemberProfileForUpdate :one
+SELECT insert_epoch, guild_id, member_id, card_style, chat_activity, last_chat_activity_grant, voice_activity, last_voice_activity_grant
+FROM guild_profiles
+WHERE
+    guild_id = $1
+    AND member_id = $2
+FOR UPDATE
+`
+
+type GetMemberProfileForUpdateParams struct {
+	GuildID  snowflake.ID
+	MemberID snowflake.ID
+}
+
+// Locks the member's profile until the transaction ends, so no points can be granted to it
+// while it's being migrated.
+func (q *Queries) GetMemberProfileForUpdate(ctx context.Context, db DBTX, arg GetMemberProfileForUpdateParams) (GuildProfile, error) {
+	row := db.QueryRow(ctx, getMemberProfileForUpdate, arg.GuildID, arg.MemberID)
+	var i GuildProfile
+	err := row.Scan(
+		&i.InsertEpoch,
+		&i.GuildID,
+		&i.MemberID,
+		&i.CardStyle,
+		&i.ChatActivity,
+		&i.LastChatActivityGrant,
+		&i.VoiceActivity,
+		&i.LastVoiceActivityGrant,
+	)
+	return i, err
+}
+
 const incrementMemberChatActivity = `-- name: IncrementMemberChatActivity :one
 UPDATE guild_profiles
 SET
@@ -275,7 +307,7 @@ func (q *Queries) MemberProfileExists(ctx context.Context, db DBTX, arg MemberPr
 	return exists, err
 }
 
-const migrateMemberProfile = `-- name: MigrateMemberProfile :exec
+const migrateMemberProfile = `-- name: MigrateMemberProfile :one
 INSERT INTO guild_profiles (
     guild_id, member_id,
     card_style, chat_activity, last_chat_activity_grant,
@@ -289,10 +321,11 @@ VALUES (
 ON CONFLICT (guild_id, member_id)
 DO UPDATE SET
     card_style = EXCLUDED.card_style,
-    chat_activity = EXCLUDED.chat_activity + guild_profiles.chat_activity,
-    last_chat_activity_grant = EXCLUDED.last_chat_activity_grant,
-    voice_activity = EXCLUDED.voice_activity + guild_profiles.voice_activity,
-    last_voice_activity_grant = EXCLUDED.last_voice_activity_grant
+    chat_activity = guild_profiles.chat_activity + EXCLUDED.chat_activity,
+    last_chat_activity_grant = GREATEST(guild_profiles.last_chat_activity_grant, EXCLUDED.last_chat_activity_grant),
+    voice_activity = guild_profiles.voice_activity + EXCLUDED.voice_activity,
+    last_voice_activity_grant = GREATEST(guild_profiles.last_voice_activity_grant, EXCLUDED.last_voice_activity_grant)
+RETURNING insert_epoch, guild_id, member_id, card_style, chat_activity, last_chat_activity_grant, voice_activity, last_voice_activity_grant
 `
 
 type MigrateMemberProfileParams struct {
@@ -305,8 +338,11 @@ type MigrateMemberProfileParams struct {
 	LastVoiceActivityGrant int32
 }
 
-func (q *Queries) MigrateMemberProfile(ctx context.Context, db DBTX, arg MigrateMemberProfileParams) error {
-	_, err := db.Exec(ctx, migrateMemberProfile,
+// Adds the old profile's points to the new member's profile, creating it if it doesn't exist.
+// The card style is taken from the old profile, and the latest of the two grant times is kept
+// so the migration can't reset either member's cooldown.
+func (q *Queries) MigrateMemberProfile(ctx context.Context, db DBTX, arg MigrateMemberProfileParams) (GuildProfile, error) {
+	row := db.QueryRow(ctx, migrateMemberProfile,
 		arg.GuildID,
 		arg.ToMemberID,
 		arg.CardStyle,
@@ -315,7 +351,18 @@ func (q *Queries) MigrateMemberProfile(ctx context.Context, db DBTX, arg Migrate
 		arg.VoiceActivity,
 		arg.LastVoiceActivityGrant,
 	)
-	return err
+	var i GuildProfile
+	err := row.Scan(
+		&i.InsertEpoch,
+		&i.GuildID,
+		&i.MemberID,
+		&i.CardStyle,
+		&i.ChatActivity,
+		&i.LastChatActivityGrant,
+		&i.VoiceActivity,
+		&i.LastVoiceActivityGrant,
+	)
+	return i, err
 }
 
 const resetMemberProfile = `-- name: ResetMemberProfile :exec

@@ -108,7 +108,20 @@ SELECT EXISTS (
         AND member_id = @member_id
 );
 
--- name: MigrateMemberProfile :exec
+-- name: GetMemberProfileForUpdate :one
+-- Locks the member's profile until the transaction ends, so no points can be granted to it
+-- while it's being migrated.
+SELECT *
+FROM guild_profiles
+WHERE
+    guild_id = @guild_id
+    AND member_id = @member_id
+FOR UPDATE;
+
+-- name: MigrateMemberProfile :one
+-- Adds the old profile's points to the new member's profile, creating it if it doesn't exist.
+-- The card style is taken from the old profile, and the latest of the two grant times is kept
+-- so the migration can't reset either member's cooldown.
 INSERT INTO guild_profiles (
     guild_id, member_id,
     card_style, chat_activity, last_chat_activity_grant,
@@ -122,10 +135,11 @@ VALUES (
 ON CONFLICT (guild_id, member_id)
 DO UPDATE SET
     card_style = EXCLUDED.card_style,
-    chat_activity = EXCLUDED.chat_activity + guild_profiles.chat_activity,
-    last_chat_activity_grant = EXCLUDED.last_chat_activity_grant,
-    voice_activity = EXCLUDED.voice_activity + guild_profiles.voice_activity,
-    last_voice_activity_grant = EXCLUDED.last_voice_activity_grant;
+    chat_activity = guild_profiles.chat_activity + EXCLUDED.chat_activity,
+    last_chat_activity_grant = GREATEST(guild_profiles.last_chat_activity_grant, EXCLUDED.last_chat_activity_grant),
+    voice_activity = guild_profiles.voice_activity + EXCLUDED.voice_activity,
+    last_voice_activity_grant = GREATEST(guild_profiles.last_voice_activity_grant, EXCLUDED.last_voice_activity_grant)
+RETURNING *;
 
 -- name: ResetMemberProfile :exec
 UPDATE guild_profiles
