@@ -27,13 +27,17 @@ var guildOnly = []discord.InteractionContextType{
 
 // GlobalCommands returns the commands available in every guild.
 func GlobalCommands(cfg *config.Config, db *database.Database) []Command {
+	// /server-profile and the "Get User's Profile" context menu draw the same card, so they
+	// share its image cache.
+	profileCards := newProfileCards(db)
+
 	return []Command{
 		// moderation
 		newSlowmodeCommand(),
 
 		// server
-		newServerProfileCommand(db),
-		newUserProfileMenuCommand(db),
+		newServerProfileCommand(profileCards),
+		newUserProfileMenuCommand(profileCards),
 		newServerLeaderboardCommand(db),
 		newMigrateMemberProfileCommand(cfg, db),
 
