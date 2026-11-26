@@ -73,6 +73,12 @@ func (g *gifSpamPrevention) allow(channelID snowflake.ID, now time.Time) bool {
 		return false
 	}
 
+	for id, times := range g.recent {
+		if id != channelID && (len(times) == 0 || !times[len(times)-1].After(cutoff)) {
+			delete(g.recent, id)
+		}
+	}
+
 	g.recent[channelID] = append(recent, now)
 	return true
 }
