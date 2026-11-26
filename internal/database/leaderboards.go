@@ -2,10 +2,15 @@ package database
 
 import (
 	"context"
+	"time"
 
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/typical-developers/main-discord-bot/internal/database/gen"
 )
+
+// LeaderboardRefreshInterval is how often the workers refresh the daily, weekly, monthly and
+// yearly leaderboards. Keep it in sync with the refresh job's cron spec (*/5 * * * *).
+const LeaderboardRefreshInterval = 5 * time.Minute
 
 type leaderboards struct {
 	db *Database
@@ -25,7 +30,12 @@ type LeaderboardPage struct {
 	// The page that was returned. This is 1 when the requested page was out of range.
 	Page       int32
 	TotalPages int32
-	Entries    []LeaderboardEntry
+	// TotalEntries is how many members are on the whole leaderboard.
+	TotalEntries int32
+	Entries      []LeaderboardEntry
+	// UpdatedAt is roughly when the leaderboard's data was last updated (UTC). All time
+	// leaderboards are live; the others are as of the last scheduled refresh.
+	UpdatedAt time.Time
 }
 
 // GetPage returns a page of a guild's activity leaderboard. Pages start at 1.
@@ -42,29 +52,29 @@ func (l *leaderboards) GetPage(ctx context.Context, guildID snowflake.ID, activi
 	}
 
 	var (
-		totalPages int32
-		err        error
+		totalEntries int32
+		err          error
+		updatedAt    = time.Now().UTC()
 	)
 
 	switch period {
 	case TimePeriodAllTime:
-		totalPages, err = l.db.queries.GetAllTimeActivityLeaderboardPages(ctx, l.db.dbtx, gen.GetAllTimeActivityLeaderboardPagesParams{
-			GuildID: guildID,
-			LimitBy: perPage,
-		})
+		totalEntries, err = l.db.queries.GetAllTimeActivityLeaderboardSize(ctx, l.db.dbtx, guildID)
 	case TimePeriodDaily, TimePeriodWeekly, TimePeriodMonthly, TimePeriodYearly:
-		totalPages, err = l.db.queries.GetActivityLeaderboardPages(ctx, l.db.dbtx, gen.GetActivityLeaderboardPagesParams{
+		totalEntries, err = l.db.queries.GetActivityLeaderboardSize(ctx, l.db.dbtx, gen.GetActivityLeaderboardSizeParams{
 			GuildID:   guildID,
 			GrantType: string(activityType),
 			Period:    period.truncUnit(),
-			LimitBy:   perPage,
 		})
+		updatedAt = updatedAt.Truncate(LeaderboardRefreshInterval)
 	default:
 		return LeaderboardPage{}, ErrInvalidTimePeriod
 	}
 	if err != nil {
 		return LeaderboardPage{}, err
 	}
+
+	totalPages := (totalEntries + perPage - 1) / perPage
 
 	if page < 1 || page > totalPages {
 		page = 1
@@ -106,9 +116,11 @@ func (l *leaderboards) GetPage(ctx context.Context, guildID snowflake.ID, activi
 	}
 
 	return LeaderboardPage{
-		Page:       page,
-		TotalPages: totalPages,
-		Entries:    entries,
+		Page:         page,
+		TotalPages:   totalPages,
+		TotalEntries: totalEntries,
+		Entries:      entries,
+		UpdatedAt:    updatedAt,
 	}, nil
 }
 

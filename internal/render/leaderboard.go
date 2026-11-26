@@ -1,6 +1,7 @@
 package render
 
 import (
+	"fmt"
 	"image"
 	"math"
 
@@ -24,6 +25,13 @@ type LeaderboardCard struct {
 	ValueLabel string
 
 	Rows []LeaderboardRow
+
+	// Page is the page being shown, and TotalEntries how many members are on the whole
+	// leaderboard; they make up the footer's "Page 1 • Showing 15 of 1,234".
+	Page         int
+	TotalEntries int
+	// UpdatedAt is when the leaderboard was last updated, e.g. "20:25".
+	UpdatedAt string
 }
 
 type LeaderboardRow struct {
@@ -53,11 +61,17 @@ const (
 	// table
 	tableHeaderHeight = 27
 	tableGap          = 10 // between the column headings and the first row
-	rowHeight         = 44
+	rowHeight         = 48
 	rowGap            = 5
 	rowPadX           = 15
-	rowPadY           = 10
+	rowPadY           = 12
 	rowAvatar         = 24
+
+	// footer
+	footerHeight = 17
+	footerPadX   = 10
+	footerGap    = 10 // between the page, the dot and the row count
+	footerDot    = 4
 )
 
 var (
@@ -67,6 +81,7 @@ var (
 	columnStyle     = textStyle{displaySemiBold, 20}
 	rowRankStyle    = textStyle{displayBlack, 20}
 	rowStyle        = textStyle{displaySemiBold, 20}
+	footerStyle     = textStyle{displaySemiBold, 14}
 
 	rowHighlight = hex("#17181e")
 	resetFill    = hex("#0e0f18")
@@ -81,7 +96,7 @@ func (l LeaderboardCard) margin() (x, y float64) {
 func (l LeaderboardCard) Layout(f *Fonts) (float64, float64, func(ctx *canvas.Context)) {
 	n := float64(len(l.Rows))
 	tableH := tableHeaderHeight + tableGap + n*rowHeight + math.Max(0, n-1)*rowGap
-	h := leaderboardPadding + serverIconSize + leaderboardGap + tableH + leaderboardPadding
+	h := leaderboardPadding + serverIconSize + leaderboardGap + tableH + leaderboardGap + footerHeight + leaderboardPadding
 	w := float64(leaderboardWidth)
 
 	return w, h, func(ctx *canvas.Context) {
@@ -91,7 +106,30 @@ func (l LeaderboardCard) Layout(f *Fonts) (float64, float64, func(ctx *canvas.Co
 
 		inner := card.Inset(leaderboardPadding)
 		l.drawHeader(ctx, f, Rect{inner.X, inner.Y, inner.W, serverIconSize})
-		l.drawTable(ctx, f, Rect{inner.X, inner.Y + serverIconSize + leaderboardGap, inner.W, tableH})
+		tableY := inner.Y + serverIconSize + leaderboardGap
+		l.drawTable(ctx, f, Rect{inner.X, tableY, inner.W, tableH})
+		l.drawFooter(ctx, f, Rect{inner.X, tableY + tableH + leaderboardGap, inner.W, footerHeight})
+	}
+}
+
+// drawFooter draws "Page 1 • Showing 15 of 1,234" on the left and when it was last updated on the right.
+func (l LeaderboardCard) drawFooter(ctx *canvas.Context, f *Fonts, r Rect) {
+	col := alpha(white, 0.5)
+	base := f.baseline(r.Y, r.H, footerStyle)
+
+	x := r.X + footerPadX
+	page := fmt.Sprintf("Page %s", commas(l.Page))
+	f.text(ctx, page, x, base, footerStyle, col, alignLeft)
+	x += f.width(page, footerStyle) + footerGap
+
+	fillRoundRect(ctx, Rect{x, r.Y + (r.H-footerDot)/2, footerDot, footerDot}, footerDot/2, solid(alpha(white, 0.25)))
+	x += footerDot + footerGap
+
+	showing := fmt.Sprintf("Showing %s of %s", commas(len(l.Rows)), commas(l.TotalEntries))
+	f.text(ctx, showing, x, base, footerStyle, col, alignLeft)
+
+	if l.UpdatedAt != "" {
+		f.text(ctx, "Last Updated: "+l.UpdatedAt, r.Right()-footerPadX, base, footerStyle, col, alignRight)
 	}
 }
 

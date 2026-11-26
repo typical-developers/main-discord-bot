@@ -30,9 +30,10 @@ FROM (
 LIMIT @limit_by
 OFFSET @offset_by;
 
--- name: GetAllTimeActivityLeaderboardPages :one
+-- name: GetAllTimeActivityLeaderboardSize :one
+-- Returns how many members are on the all time leaderboard.
 SELECT
-    CAST(CEIL(COUNT(*)::DECIMAL / @limit_by::INT) AS INT) AS total_pages
+    COUNT(*)::INT AS total_entries
 FROM guild_profiles
 WHERE
     guild_id = @guild_id;
@@ -52,9 +53,10 @@ ORDER BY rank
 LIMIT @limit_by
 OFFSET @offset_by;
 
--- name: GetActivityLeaderboardPages :one
+-- name: GetActivityLeaderboardSize :one
+-- Returns how many members are on the current leaderboard for a period.
 SELECT
-    CAST(CEIL(COUNT(*)::DECIMAL / @limit_by::INT) AS INT) AS total_pages
+    COUNT(*)::INT AS total_entries
 FROM guild_activity_leaderboards
 WHERE
     guild_id = @guild_id

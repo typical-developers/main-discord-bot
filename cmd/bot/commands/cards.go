@@ -13,6 +13,7 @@ import (
 	"image"
 	"image/color"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
@@ -213,7 +214,7 @@ func loadLeaderboardCard(ctx context.Context, client *bot.Client, db *database.D
 	}
 
 	if len(lb.Entries) == 0 {
-		return leaderboardCard{}, disgox.UserErrorf("The leaderboard currently has no rows.")
+		return leaderboardCard{}, disgox.UserErrorf("This leaderboard is not available yet, check back in a bit!")
 	}
 
 	card := leaderboardCard{
@@ -292,6 +293,10 @@ func leaderboardCardFile(ctx context.Context, card leaderboardCard) (*discord.Fi
 		ResetsIn:   resetsIn,
 		ValueLabel: "Points",
 		Rows:       make([]render.LeaderboardRow, len(card.Page.Entries)),
+
+		Page:         int(card.Page.Page),
+		TotalEntries: int(card.Page.TotalEntries),
+		UpdatedAt:    card.Page.UpdatedAt.Format("15:04"),
 	}
 
 	// the server icon and every member's avatar are fetched together.
@@ -356,13 +361,32 @@ func leaderboardPeriod(period database.TimePeriod, now time.Time) (text string, 
 	const date = "01/02/2006"
 	text = fmt.Sprintf("%s (%s - %s)", label, start.Format(date), end.AddDate(0, 0, -1).Format(date))
 
-	left := end.Sub(now)
-	days := int(left / (24 * time.Hour))
-	hours := int(left/time.Hour) % 24
-	minutes := int(left/time.Minute) % 60
-	resetsIn = fmt.Sprintf("%02dd %02dh %02dm", days, hours, minutes)
+	return text, formatResetsIn(end.Sub(now))
+}
 
-	return text, resetsIn
+// formatResetsIn formats the time left until a leaderboard resets, e.g. "07d 12h 10m". Units that
+// are 0 are left out ("12h 10m", "07d 10m"), and anything under a minute is "<1m".
+func formatResetsIn(left time.Duration) string {
+	units := []struct {
+		value  int
+		suffix string
+	}{
+		{int(left / (24 * time.Hour)), "d"},
+		{int(left/time.Hour) % 24, "h"},
+		{int(left/time.Minute) % 60, "m"},
+	}
+
+	parts := make([]string, 0, len(units))
+	for _, u := range units {
+		if u.value > 0 {
+			parts = append(parts, fmt.Sprintf("%02d%s", u.value, u.suffix))
+		}
+	}
+
+	if len(parts) == 0 {
+		return "<1m"
+	}
+	return strings.Join(parts, " ")
 }
 
 // Downloaded avatars and icons are remembered for a while, since leaderboard pages are paginated

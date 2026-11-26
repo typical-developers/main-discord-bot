@@ -67,35 +67,6 @@ func (q *Queries) GetActivityLeaderboard(ctx context.Context, db DBTX, arg GetAc
 	return items, nil
 }
 
-const getActivityLeaderboardPages = `-- name: GetActivityLeaderboardPages :one
-SELECT
-    CAST(CEIL(COUNT(*)::DECIMAL / $1::INT) AS INT) AS total_pages
-FROM guild_activity_leaderboards
-WHERE
-    guild_id = $2
-    AND grant_type = $3
-    AND period = $4
-`
-
-type GetActivityLeaderboardPagesParams struct {
-	LimitBy   int32
-	GuildID   snowflake.ID
-	GrantType string
-	Period    string
-}
-
-func (q *Queries) GetActivityLeaderboardPages(ctx context.Context, db DBTX, arg GetActivityLeaderboardPagesParams) (int32, error) {
-	row := db.QueryRow(ctx, getActivityLeaderboardPages,
-		arg.LimitBy,
-		arg.GuildID,
-		arg.GrantType,
-		arg.Period,
-	)
-	var total_pages int32
-	err := row.Scan(&total_pages)
-	return total_pages, err
-}
-
 const getActivityLeaderboardRankings = `-- name: GetActivityLeaderboardRankings :one
 SELECT
     m.member_id,
@@ -147,6 +118,30 @@ func (q *Queries) GetActivityLeaderboardRankings(ctx context.Context, db DBTX, a
 		&i.YearlyLeaderboardRank,
 	)
 	return i, err
+}
+
+const getActivityLeaderboardSize = `-- name: GetActivityLeaderboardSize :one
+SELECT
+    COUNT(*)::INT AS total_entries
+FROM guild_activity_leaderboards
+WHERE
+    guild_id = $1
+    AND grant_type = $2
+    AND period = $3
+`
+
+type GetActivityLeaderboardSizeParams struct {
+	GuildID   snowflake.ID
+	GrantType string
+	Period    string
+}
+
+// Returns how many members are on the current leaderboard for a period.
+func (q *Queries) GetActivityLeaderboardSize(ctx context.Context, db DBTX, arg GetActivityLeaderboardSizeParams) (int32, error) {
+	row := db.QueryRow(ctx, getActivityLeaderboardSize, arg.GuildID, arg.GrantType, arg.Period)
+	var total_entries int32
+	err := row.Scan(&total_entries)
+	return total_entries, err
 }
 
 const getAllTimeActivityLeaderboard = `-- name: GetAllTimeActivityLeaderboard :many
@@ -220,24 +215,20 @@ func (q *Queries) GetAllTimeActivityLeaderboard(ctx context.Context, db DBTX, ar
 	return items, nil
 }
 
-const getAllTimeActivityLeaderboardPages = `-- name: GetAllTimeActivityLeaderboardPages :one
+const getAllTimeActivityLeaderboardSize = `-- name: GetAllTimeActivityLeaderboardSize :one
 SELECT
-    CAST(CEIL(COUNT(*)::DECIMAL / $1::INT) AS INT) AS total_pages
+    COUNT(*)::INT AS total_entries
 FROM guild_profiles
 WHERE
-    guild_id = $2
+    guild_id = $1
 `
 
-type GetAllTimeActivityLeaderboardPagesParams struct {
-	LimitBy int32
-	GuildID snowflake.ID
-}
-
-func (q *Queries) GetAllTimeActivityLeaderboardPages(ctx context.Context, db DBTX, arg GetAllTimeActivityLeaderboardPagesParams) (int32, error) {
-	row := db.QueryRow(ctx, getAllTimeActivityLeaderboardPages, arg.LimitBy, arg.GuildID)
-	var total_pages int32
-	err := row.Scan(&total_pages)
-	return total_pages, err
+// Returns how many members are on the all time leaderboard.
+func (q *Queries) GetAllTimeActivityLeaderboardSize(ctx context.Context, db DBTX, guildID snowflake.ID) (int32, error) {
+	row := db.QueryRow(ctx, getAllTimeActivityLeaderboardSize, guildID)
+	var total_entries int32
+	err := row.Scan(&total_entries)
+	return total_entries, err
 }
 
 const logActivityGrant = `-- name: LogActivityGrant :exec
