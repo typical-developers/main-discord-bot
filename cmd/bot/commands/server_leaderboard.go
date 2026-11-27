@@ -250,7 +250,8 @@ func (c *serverLeaderboardCommand) load(ctx context.Context, client *bot.Client,
 
 // members looks up the username and avatar of everyone on a leaderboard page, from
 // disgo's member cache where possible. Members who left the server are looked up as users, and
-// anyone who can't be found (for example, deleted accounts) is left out.
+// anyone who can't be found (for example, deleted accounts) is shown as an unknown user with the
+// default avatar for their ID.
 func (c *serverLeaderboardCommand) members(ctx context.Context, client *bot.Client, guildID snowflake.ID, entries []database.LeaderboardEntry) map[snowflake.ID]leaderboardMember {
 	avatarOpts := []discord.CDNOpt{discord.WithSize(64), discord.WithFormat(discord.FileFormatPNG)}
 
@@ -280,7 +281,9 @@ func (c *serverLeaderboardCommand) members(ctx context.Context, client *bot.Clie
 			} else if user, err := client.Rest.GetUser(entry.MemberID, rest.WithCtx(ctx)); err == nil {
 				member = leaderboardMember{Username: user.Username, AvatarURL: user.EffectiveAvatarURL(avatarOpts...)}
 			} else {
-				return
+				// a discriminator of 0 picks the default avatar from the ID, like Discord does.
+				unknown := discord.User{ID: entry.MemberID, Discriminator: "0"}
+				member = leaderboardMember{Username: "Unknown User", AvatarURL: unknown.DefaultAvatarURL(avatarOpts...)}
 			}
 
 			mu.Lock()
