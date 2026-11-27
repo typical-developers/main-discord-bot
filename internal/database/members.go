@@ -196,7 +196,7 @@ func (m *members) GrantActivityPoints(ctx context.Context, guildID, memberID sno
 	return grant, nil
 }
 
-// ProfileMigration is the result of MigrateProfile.
+// ProfileMigration is what migrating a profile changed in one guild.
 type ProfileMigration struct {
 	// From is the old member's profile as it was before the migration reset it.
 	From gen.GuildProfile
@@ -204,67 +204,112 @@ type ProfileMigration struct {
 	To gen.GuildProfile
 }
 
-// MigrateProfile moves a member's profile to another member (for example, an alt account).
+// GuildProfileMigration is the result of migrating a profile in one guild.
+type GuildProfileMigration struct {
+	GuildID snowflake.ID
+	ProfileMigration
+}
+
+// MigrateProfiles moves a member's profile to another member (for example, an alt account) in each of
+// the guilds, all in one transaction. The results are in the order the guilds are given. Guilds where
+// the old member has no profile are skipped, and ErrMemberProfileNotFound is returned when they have
+// no profile in any of them.
 //
 // If the other member already has a profile, the points are added together, the card style is
 // taken from the old profile and the latest grant times are kept. The old profile is reset to its defaults.
 // Points in the activity grant log (daily, weekly, monthly and yearly leaderboards) are not moved.
 //
-// The old profile is locked for the whole transaction, so points granted to it while the
-// migration runs are either moved with it or wait until it has been reset.
-func (m *members) MigrateProfile(ctx context.Context, guildID, fromMemberID, toMemberID snowflake.ID) (ProfileMigration, error) {
+// The old profiles are locked for the whole transaction, so points granted to them while the
+// migration runs are either moved with them or wait until they have been reset.
+//
+// Each step is sent as a single batch for every guild, so a migration takes the same three round
+// trips however many guilds it covers.
+func (m *members) MigrateProfiles(ctx context.Context, guildIDs []snowflake.ID, fromMemberID, toMemberID snowflake.ID) ([]GuildProfileMigration, error) {
 	if fromMemberID == toMemberID {
-		return ProfileMigration{}, ErrMemberProfileMigrateSelf
+		return nil, ErrMemberProfileMigrateSelf
 	}
 
-	var migration ProfileMigration
+	var migrations []GuildProfileMigration
 
 	err := m.db.WithTx(ctx, func(ctx context.Context, txDb *Database) error {
-		from, err := txDb.queries.GetMemberProfileForUpdate(ctx, txDb.dbtx, gen.GetMemberProfileForUpdateParams{
-			GuildID:  guildID,
-			MemberID: fromMemberID,
-		})
-		if err != nil {
+		migrations = nil
+
+		// a batch keeps going after a failed query, so only the first error is kept.
+		var batchErr error
+		keepErr := func(err error) {
+			if err != nil && batchErr == nil {
+				batchErr = err
+			}
+		}
+
+		// lock the old member's profiles.
+		lock := make([]gen.GetMemberProfileForUpdateParams, len(guildIDs))
+		for i, guildID := range guildIDs {
+			lock[i] = gen.GetMemberProfileForUpdateParams{GuildID: guildID, MemberID: fromMemberID}
+		}
+
+		txDb.queries.GetMemberProfileForUpdate(ctx, txDb.dbtx, lock).QueryRow(func(i int, from gen.GuildProfile, err error) {
 			if errors.Is(err, pgx.ErrNoRows) {
-				return ErrMemberProfileNotFound
+				// there's no profile to migrate in this guild.
+				return
+			}
+			if err != nil {
+				keepErr(err)
+				return
 			}
 
-			return err
-		}
-
-		to, err := txDb.queries.MigrateMemberProfile(ctx, txDb.dbtx, gen.MigrateMemberProfileParams{
-			GuildID:    guildID,
-			ToMemberID: toMemberID,
-			CardStyle:  from.CardStyle,
-
-			ChatActivity:          from.ChatActivity,
-			LastChatActivityGrant: from.LastChatActivityGrant,
-
-			VoiceActivity:          from.VoiceActivity,
-			LastVoiceActivityGrant: from.LastVoiceActivityGrant,
+			migrations = append(migrations, GuildProfileMigration{
+				GuildID:          guildIDs[i],
+				ProfileMigration: ProfileMigration{From: from},
+			})
 		})
-		if err != nil {
-			return err
+		if batchErr != nil {
+			return batchErr
 		}
 
-		if err := txDb.Members.ResetProfile(ctx, guildID, fromMemberID); err != nil {
-			return err
+		if len(migrations) == 0 {
+			return ErrMemberProfileNotFound
 		}
 
-		migration = ProfileMigration{From: from, To: to}
-		return nil
+		// add the old profiles' points to the new member's profiles.
+		migrate := make([]gen.MigrateMemberProfileParams, len(migrations))
+		for i, migration := range migrations {
+			from := migration.From
+			migrate[i] = gen.MigrateMemberProfileParams{
+				GuildID:    migration.GuildID,
+				ToMemberID: toMemberID,
+				CardStyle:  from.CardStyle,
+
+				ChatActivity:          from.ChatActivity,
+				LastChatActivityGrant: from.LastChatActivityGrant,
+
+				VoiceActivity:          from.VoiceActivity,
+				LastVoiceActivityGrant: from.LastVoiceActivityGrant,
+			}
+		}
+
+		txDb.queries.MigrateMemberProfile(ctx, txDb.dbtx, migrate).QueryRow(func(i int, to gen.GuildProfile, err error) {
+			keepErr(err)
+			migrations[i].To = to
+		})
+		if batchErr != nil {
+			return batchErr
+		}
+
+		// reset the old profiles.
+		reset := make([]gen.ResetMemberProfileParams, len(migrations))
+		for i, migration := range migrations {
+			reset[i] = gen.ResetMemberProfileParams{GuildID: migration.GuildID, MemberID: fromMemberID}
+		}
+
+		txDb.queries.ResetMemberProfile(ctx, txDb.dbtx, reset).Exec(func(_ int, err error) {
+			keepErr(err)
+		})
+		return batchErr
 	})
 	if err != nil {
-		return ProfileMigration{}, err
+		return nil, err
 	}
 
-	return migration, nil
-}
-
-// ResetProfile resets a member's card style, points and grant times to their defaults.
-func (m *members) ResetProfile(ctx context.Context, guildID, memberID snowflake.ID) error {
-	return m.db.queries.ResetMemberProfile(ctx, m.db.dbtx, gen.ResetMemberProfileParams{
-		GuildID:  guildID,
-		MemberID: memberID,
-	})
+	return migrations, nil
 }

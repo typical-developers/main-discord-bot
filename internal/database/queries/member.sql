@@ -206,7 +206,7 @@ SELECT EXISTS (
         AND member_id = @member_id
 );
 
--- name: GetMemberProfileForUpdate :one
+-- name: GetMemberProfileForUpdate :batchone
 -- Locks the member's profile until the transaction ends, so no points can be granted to it
 -- while it's being migrated.
 SELECT *
@@ -216,7 +216,7 @@ WHERE
     AND member_id = @member_id
 FOR UPDATE;
 
--- name: MigrateMemberProfile :one
+-- name: MigrateMemberProfile :batchone
 -- Adds the old profile's points to the new member's profile, creating it if it doesn't exist.
 -- The card style is taken from the old profile, and the latest of the two grant times is kept
 -- so the migration can't reset either member's cooldown.
@@ -239,7 +239,7 @@ DO UPDATE SET
     last_voice_activity_grant = GREATEST(guild_profiles.last_voice_activity_grant, EXCLUDED.last_voice_activity_grant)
 RETURNING *;
 
--- name: ResetMemberProfile :exec
+-- name: ResetMemberProfile :batchexec
 UPDATE guild_profiles
 SET
     card_style = DEFAULT,
