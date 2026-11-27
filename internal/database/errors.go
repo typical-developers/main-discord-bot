@@ -17,6 +17,11 @@ var (
 	ErrActivityRoleExists       = errors.New("activity role already exists")
 	ErrActivityRoleNotFound     = errors.New("activity role was not found")
 
+	// Guild link errors
+	ErrGuildLinkSelf       = errors.New("cannot link a guild to itself")
+	ErrGuildsAlreadyLinked = errors.New("guilds are already linked")
+	ErrGuildNotLinked      = errors.New("guild is not linked to any other guilds")
+
 	// Member errors
 	ErrMemberProfileExists      = errors.New("member profile already exists")
 	ErrMemberProfileNotFound    = errors.New("member profile was not found")

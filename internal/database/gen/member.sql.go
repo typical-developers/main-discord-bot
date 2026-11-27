@@ -112,34 +112,141 @@ func (q *Queries) GetMemberActivityRoleInfo(ctx context.Context, db DBTX, arg Ge
 	return i, err
 }
 
-const getMemberProfile = `-- name: GetMemberProfile :one
-WITH profiles AS (
-    SELECT
-        member_id,
-        card_style,
-
-        -- chat activity info
-        ROW_NUMBER() OVER (ORDER BY chat_activity DESC, last_chat_activity_grant DESC) AS chat_activity_rank,
-        chat_activity,
-        last_chat_activity_grant,
-
-        -- voice activity info
-        ROW_NUMBER() OVER (ORDER BY voice_activity DESC, last_voice_activity_grant DESC) AS voice_activity_rank,
-        voice_activity,
-        last_voice_activity_grant
-    FROM guild_profiles
-    WHERE
-        guild_profiles.guild_id = $2
-)
-SELECT member_id, card_style, chat_activity_rank, chat_activity, last_chat_activity_grant, voice_activity_rank, voice_activity, last_voice_activity_grant
-FROM profiles
+const getMemberLinkedActivity = `-- name: GetMemberLinkedActivity :one
+SELECT
+    CAST(COALESCE(SUM(guild_profiles.chat_activity), 0) AS INT) AS chat_activity,
+    CAST(COALESCE(SUM(guild_profiles.voice_activity), 0) AS INT) AS voice_activity
+FROM guild_profiles
 WHERE
-    member_id = $1
+    guild_profiles.member_id = $1
+    AND (
+        guild_profiles.guild_id = $2
+        OR guild_profiles.guild_id IN (
+            SELECT others.guild_id
+            FROM guild_links AS self
+            JOIN guild_links AS others ON others.group_id = self.group_id
+            WHERE self.guild_id = $2
+        )
+    )
+`
+
+type GetMemberLinkedActivityParams struct {
+	MemberID snowflake.ID
+	GuildID  snowflake.ID
+}
+
+type GetMemberLinkedActivityRow struct {
+	ChatActivity  int32
+	VoiceActivity int32
+}
+
+// Returns the member's chat and voice points added up across every guild linked to this one
+// (just this guild when it isn't linked). Both are 0 when the member has no profiles.
+func (q *Queries) GetMemberLinkedActivity(ctx context.Context, db DBTX, arg GetMemberLinkedActivityParams) (GetMemberLinkedActivityRow, error) {
+	row := db.QueryRow(ctx, getMemberLinkedActivity, arg.MemberID, arg.GuildID)
+	var i GetMemberLinkedActivityRow
+	err := row.Scan(&i.ChatActivity, &i.VoiceActivity)
+	return i, err
+}
+
+const getMemberProfile = `-- name: GetMemberProfile :one
+(
+    SELECT
+        ranked.member_id,
+        ranked.card_style,
+
+        ranked.chat_activity_rank,
+        ranked.chat_activity,
+        ranked.last_chat_activity_grant,
+
+        ranked.voice_activity_rank,
+        ranked.voice_activity,
+        ranked.last_voice_activity_grant,
+
+        ranked.chat_activity AS guild_chat_activity,
+        ranked.voice_activity AS guild_voice_activity
+    FROM (
+        SELECT
+            guild_profiles.member_id,
+            guild_profiles.card_style,
+
+            -- chat activity info
+            ROW_NUMBER() OVER (ORDER BY guild_profiles.chat_activity DESC, guild_profiles.last_chat_activity_grant DESC) AS chat_activity_rank,
+            guild_profiles.chat_activity,
+            guild_profiles.last_chat_activity_grant,
+
+            -- voice activity info
+            ROW_NUMBER() OVER (ORDER BY guild_profiles.voice_activity DESC, guild_profiles.last_voice_activity_grant DESC) AS voice_activity_rank,
+            guild_profiles.voice_activity,
+            guild_profiles.last_voice_activity_grant
+        FROM guild_profiles
+        WHERE
+            guild_profiles.guild_id = $1
+            AND NOT EXISTS (
+                SELECT 1
+                FROM guild_links AS link
+                WHERE link.guild_id = $1
+            )
+    ) AS ranked
+    WHERE
+        ranked.member_id = $2::SNOWFLAKE
+)
+UNION ALL
+(
+    SELECT
+        ranked.member_id,
+        ranked.card_style,
+
+        ranked.chat_activity_rank,
+        ranked.chat_activity,
+        ranked.last_chat_activity_grant,
+
+        ranked.voice_activity_rank,
+        ranked.voice_activity,
+        ranked.last_voice_activity_grant,
+
+        ranked.guild_chat_activity,
+        ranked.guild_voice_activity
+    FROM (
+        SELECT
+            own.member_id,
+            own.card_style,
+
+            -- chat activity info
+            ROW_NUMBER() OVER (ORDER BY SUM(linked.chat_activity) DESC, MAX(linked.last_chat_activity_grant) DESC) AS chat_activity_rank,
+            CAST(SUM(linked.chat_activity) AS INT) AS chat_activity,
+            CAST(MAX(linked.last_chat_activity_grant) AS INT) AS last_chat_activity_grant,
+
+            -- voice activity info
+            ROW_NUMBER() OVER (ORDER BY SUM(linked.voice_activity) DESC, MAX(linked.last_voice_activity_grant) DESC) AS voice_activity_rank,
+            CAST(SUM(linked.voice_activity) AS INT) AS voice_activity,
+            CAST(MAX(linked.last_voice_activity_grant) AS INT) AS last_voice_activity_grant,
+
+            own.chat_activity AS guild_chat_activity,
+            own.voice_activity AS guild_voice_activity
+        FROM guild_profiles AS own
+        JOIN guild_links AS self ON self.guild_id = own.guild_id
+        JOIN guild_links AS others ON others.group_id = self.group_id
+        JOIN guild_profiles AS linked
+            ON linked.guild_id = others.guild_id
+            AND linked.member_id = own.member_id
+        WHERE
+            own.guild_id = $1
+            AND EXISTS (
+                SELECT 1
+                FROM guild_links AS link
+                WHERE link.guild_id = $1
+            )
+        GROUP BY own.guild_id, own.member_id, own.card_style, own.chat_activity, own.voice_activity
+    ) AS ranked
+    WHERE
+        ranked.member_id = $2::SNOWFLAKE
+)
 `
 
 type GetMemberProfileParams struct {
-	MemberID snowflake.ID
 	GuildID  snowflake.ID
+	MemberID snowflake.ID
 }
 
 type GetMemberProfileRow struct {
@@ -151,10 +258,21 @@ type GetMemberProfileRow struct {
 	VoiceActivityRank      int64
 	VoiceActivity          int32
 	LastVoiceActivityGrant int32
+	GuildChatActivity      int32
+	GuildVoiceActivity     int32
 }
 
+// Returns the member's profile in the guild with their all time chat and voice rank.
+//
+// chat_activity, voice_activity, the last grant times and the ranks are added up across every
+// guild linked to this one. Ranks are only against members with a profile in this guild, the same
+// as the all time leaderboard. guild_chat_activity and guild_voice_activity are the points earned
+// in this guild alone.
+//
+// Like the all time leaderboard, guilds that aren't linked take the first branch, which ranks the
+// guild's profiles as they are, and linked guilds take the second. Only one branch returns a row.
 func (q *Queries) GetMemberProfile(ctx context.Context, db DBTX, arg GetMemberProfileParams) (GetMemberProfileRow, error) {
-	row := db.QueryRow(ctx, getMemberProfile, arg.MemberID, arg.GuildID)
+	row := db.QueryRow(ctx, getMemberProfile, arg.GuildID, arg.MemberID)
 	var i GetMemberProfileRow
 	err := row.Scan(
 		&i.MemberID,
@@ -165,6 +283,8 @@ func (q *Queries) GetMemberProfile(ctx context.Context, db DBTX, arg GetMemberPr
 		&i.VoiceActivityRank,
 		&i.VoiceActivity,
 		&i.LastVoiceActivityGrant,
+		&i.GuildChatActivity,
+		&i.GuildVoiceActivity,
 	)
 	return i, err
 }

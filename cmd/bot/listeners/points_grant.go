@@ -7,18 +7,21 @@ import (
 	"log/slog"
 	"slices"
 
+	"github.com/disgoorg/disgo/bot"
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/events"
 	"github.com/disgoorg/disgo/rest"
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/typical-developers/main-discord-bot/internal/database"
-	"github.com/typical-developers/main-discord-bot/internal/database/gen"
 	"github.com/typical-developers/main-discord-bot/internal/disgox"
 	"github.com/typical-developers/main-discord-bot/internal/ptr"
 )
 
 // pointsGrant grants chat activity points for messages, hands out the activity roles
 // members have earned, and congratulates them when they unlock a new one.
+//
+// Points earned in linked servers count towards this server's activity roles, but roles are only
+// handed out in the server the points were granted in.
 type pointsGrant struct {
 	db *database.Database
 }
@@ -56,7 +59,7 @@ func (p *pointsGrant) guildMessageCreate(e *events.GuildMessageCreate) {
 		return
 	}
 
-	profile, err := p.grant(ctx, e.GuildID, message.Author.ID)
+	grant, err := p.grant(ctx, e.GuildID, message.Author.ID)
 	if err != nil {
 		if errors.Is(err, database.ErrMemberOnGrantCooldown) || errors.Is(err, database.ErrActivityTrackingDisabled) {
 			return
@@ -66,26 +69,18 @@ func (p *pointsGrant) guildMessageCreate(e *events.GuildMessageCreate) {
 		return
 	}
 
-	roles, err := p.db.Members.GetActivityRoleInfo(ctx, e.GuildID, database.ActivityTypeChat, profile.ChatActivity)
+	// activity roles are earned with the member's points across every linked server,
+	// but only this server's roles are given out.
+	roles, err := p.db.Members.GetActivityRoleInfo(ctx, e.GuildID, database.ActivityTypeChat, grant.LinkedPoints)
 	if err != nil {
 		log.Error("failed to get activity role info", slog.Any("err", err))
 		return
 	}
 
-	for _, roleID := range roles.CurrentRolesIds {
-		if slices.Contains(message.Member.RoleIDs, roleID) {
-			continue
-		}
-
-		if err := e.Client().Rest.AddMemberRole(e.GuildID, message.Author.ID, roleID,
-			rest.WithReason("Automated Action - Member earned a chat activity role."),
-		); err != nil {
-			log.Error("failed to add activity role", slog.String("role_id", roleID.String()), slog.Any("err", err))
-		}
-	}
+	p.addRoles(e.Client(), e.GuildID, message.Author.ID, message.Member.RoleIDs, roles.CurrentRolesIds, log)
 
 	// the member unlocked a new role if they didn't have enough points for it before this grant.
-	previousPoints := profile.ChatActivity - settings.GrantAmount
+	previousPoints := grant.LinkedPoints - grant.Granted
 	if roles.CurrentRoleID == nil || ptr.Value(roles.CurrentRoleRequiredPoints) <= previousPoints {
 		return
 	}
@@ -105,15 +100,31 @@ func (p *pointsGrant) guildMessageCreate(e *events.GuildMessageCreate) {
 	}
 }
 
+// addRoles gives a member the activity roles they've earned and don't have yet.
+// held are the roles the member already has.
+func (p *pointsGrant) addRoles(client *bot.Client, guildID, memberID snowflake.ID, held, earned []snowflake.ID, log *slog.Logger) {
+	for _, roleID := range earned {
+		if slices.Contains(held, roleID) {
+			continue
+		}
+
+		if err := client.Rest.AddMemberRole(guildID, memberID, roleID,
+			rest.WithReason("Automated Action - Member earned a chat activity role."),
+		); err != nil {
+			log.Error("failed to add activity role", slog.String("role_id", roleID.String()), slog.Any("err", err))
+		}
+	}
+}
+
 // grant grants chat activity points, creating the member's profile first if they don't have one.
-func (p *pointsGrant) grant(ctx context.Context, guildID, memberID snowflake.ID) (gen.GuildProfile, error) {
-	profile, err := p.db.Members.GrantActivityPoints(ctx, guildID, memberID, database.ActivityTypeChat)
+func (p *pointsGrant) grant(ctx context.Context, guildID, memberID snowflake.ID) (database.ActivityGrant, error) {
+	grant, err := p.db.Members.GrantActivityPoints(ctx, guildID, memberID, database.ActivityTypeChat)
 	if !errors.Is(err, database.ErrMemberProfileNotFound) {
-		return profile, err
+		return grant, err
 	}
 
 	if _, err := p.db.Members.CreateProfile(ctx, guildID, memberID); err != nil && !errors.Is(err, database.ErrMemberProfileExists) {
-		return gen.GuildProfile{}, err
+		return database.ActivityGrant{}, err
 	}
 
 	return p.db.Members.GrantActivityPoints(ctx, guildID, memberID, database.ActivityTypeChat)

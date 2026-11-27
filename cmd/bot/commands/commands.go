@@ -43,6 +43,7 @@ func GlobalCommands(cfg *config.Config, db *database.Database) []Command {
 
 		// server settings
 		newChatActivityCommand(db),
+		newLinkedServersCommand(db),
 		newMessageEmbedsCommand(db),
 		newVoiceRoomLobbyCommand(db),
 	}

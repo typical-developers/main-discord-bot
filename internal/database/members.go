@@ -34,6 +34,9 @@ func (m *members) CreateProfile(ctx context.Context, guildID, memberID snowflake
 }
 
 // GetProfile returns the member's profile along with their all-time chat and voice rank.
+//
+// ChatActivity, VoiceActivity and the ranks are added up across every guild linked to this one.
+// GuildChatActivity and GuildVoiceActivity are the points earned in this guild alone.
 func (m *members) GetProfile(ctx context.Context, guildID, memberID snowflake.ID) (gen.GetMemberProfileRow, error) {
 	profile, err := m.db.queries.GetMemberProfile(ctx, m.db.dbtx, gen.GetMemberProfileParams{
 		GuildID:  guildID,
@@ -48,6 +51,36 @@ func (m *members) GetProfile(ctx context.Context, guildID, memberID snowflake.ID
 	}
 
 	return profile, nil
+}
+
+// ActivityPoints are a member's chat and voice points.
+type ActivityPoints struct {
+	Chat  int32
+	Voice int32
+}
+
+// Of returns the points for an activity type.
+func (p ActivityPoints) Of(activityType ActivityType) int32 {
+	if activityType == ActivityTypeVoice {
+		return p.Voice
+	}
+
+	return p.Chat
+}
+
+// GetLinkedPoints returns the member's points added up across every guild linked to this one
+// (just this guild when it isn't linked). These are the points activity roles are earned with.
+// Both are 0 when the member has no profiles.
+func (m *members) GetLinkedPoints(ctx context.Context, guildID, memberID snowflake.ID) (ActivityPoints, error) {
+	row, err := m.db.queries.GetMemberLinkedActivity(ctx, m.db.dbtx, gen.GetMemberLinkedActivityParams{
+		GuildID:  guildID,
+		MemberID: memberID,
+	})
+	if err != nil {
+		return ActivityPoints{}, err
+	}
+
+	return ActivityPoints{Chat: row.ChatActivity, Voice: row.VoiceActivity}, nil
 }
 
 // GetActivityRoleInfo returns the activity roles a member has earned with the given amount of points,
@@ -66,15 +99,29 @@ func (m *members) GetActivityRoleInfo(ctx context.Context, guildID snowflake.ID,
 	})
 }
 
+// ActivityGrant is the result of GrantActivityPoints.
+type ActivityGrant struct {
+	// Profile is the member's profile in the guild the points were granted in, after the grant.
+	Profile gen.GuildProfile
+	// Granted is how many points were granted.
+	Granted int32
+	// LinkedPoints are the member's points for the activity type added up across every guild
+	// linked to this one, including this grant. Activity roles are earned with these.
+	LinkedPoints int32
+}
+
 // GrantActivityPoints grants the guild's configured amount of activity points to the member,
 // and adds them to the activity grant log that the daily, weekly, monthly and yearly leaderboards are built from.
 //
+// The points are only added to the member's profile in this guild, and the cooldown is only this guild's.
 // The cooldown is checked in the same statement that grants the points,
 // so concurrent grants for the same member can't both succeed.
-func (m *members) GrantActivityPoints(ctx context.Context, guildID, memberID snowflake.ID, activityType ActivityType) (gen.GuildProfile, error) {
-	var profile gen.GuildProfile
+func (m *members) GrantActivityPoints(ctx context.Context, guildID, memberID snowflake.ID, activityType ActivityType) (ActivityGrant, error) {
+	var grant ActivityGrant
 
 	err := m.db.WithTx(ctx, func(ctx context.Context, txDb *Database) error {
+		var profile gen.GuildProfile
+
 		settings, err := txDb.Guilds.GetActivitySettings(ctx, guildID, activityType)
 		if err != nil {
 			return err
@@ -121,18 +168,32 @@ func (m *members) GrantActivityPoints(ctx context.Context, guildID, memberID sno
 			return ErrMemberOnGrantCooldown
 		}
 
-		return txDb.queries.LogActivityGrant(ctx, txDb.dbtx, gen.LogActivityGrantParams{
+		if err := txDb.queries.LogActivityGrant(ctx, txDb.dbtx, gen.LogActivityGrantParams{
 			GuildID:      guildID,
 			MemberID:     memberID,
 			GrantType:    string(activityType),
 			EarnedPoints: settings.GrantAmount,
-		})
+		}); err != nil {
+			return err
+		}
+
+		linked, err := txDb.Members.GetLinkedPoints(ctx, guildID, memberID)
+		if err != nil {
+			return err
+		}
+
+		grant = ActivityGrant{
+			Profile:      profile,
+			Granted:      settings.GrantAmount,
+			LinkedPoints: linked.Of(activityType),
+		}
+		return nil
 	})
 	if err != nil {
-		return gen.GuildProfile{}, err
+		return ActivityGrant{}, err
 	}
 
-	return profile, nil
+	return grant, nil
 }
 
 // ProfileMigration is the result of MigrateProfile.

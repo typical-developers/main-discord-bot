@@ -88,6 +88,17 @@ type GuildChatActivitySetting struct {
 	DenyRoles     []snowflake.ID
 }
 
+type GuildLink struct {
+	GuildID  snowflake.ID
+	GroupID  int64
+	LinkedAt pgtype.Timestamptz
+}
+
+type GuildLinkGroup struct {
+	GroupID   int64
+	CreatedAt pgtype.Timestamptz
+}
+
 type GuildMessageEmbedsSetting struct {
 	GuildID          snowflake.ID
 	IsEnabled        bool

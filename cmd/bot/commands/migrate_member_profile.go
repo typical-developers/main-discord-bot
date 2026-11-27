@@ -166,7 +166,14 @@ func (c *migrateMemberProfileCommand) confirm(e *handler.ModalEvent) error {
 	}
 
 	// the profile has been migrated at this point, so role changes are best effort.
-	granted, grantedAll := c.grantActivityRoles(e.Ctx, e.Client().Rest, guildID, toID, migration.To.ChatActivity)
+	// roles are earned with the new member's points across every linked server.
+	var granted []snowflake.ID
+	grantedAll := false
+	if linked, err := c.db.Members.GetLinkedPoints(e.Ctx, guildID, toID); err != nil {
+		slog.Error("failed to get migrated member's linked points", slog.String("member_id", toID.String()), slog.Any("err", err))
+	} else {
+		granted, grantedAll = c.grantActivityRoles(e.Ctx, e.Client().Rest, guildID, toID, linked.Chat)
+	}
 	removed, removedAll := c.removeActivityRoles(e.Ctx, e.Client().Rest, guildID, fromID)
 
 	card := c.resultCard(fromID, toID, migration, granted, removed, grantedAll, removedAll)
@@ -199,19 +206,32 @@ type migrationPreview struct {
 	fromProfile  gen.GetMemberProfileRow
 	toProfile    gen.GetMemberProfileRow
 	toHasProfile bool
-	fromInServer bool
+	// toLinkedPoints are the new member's points across every linked server, before the migration.
+	toLinkedPoints database.ActivityPoints
+	fromInServer   bool
 	// grantRoles are the chat activity roles the new member earns with the combined points and doesn't have yet.
 	grantRoles []snowflake.ID
 	// removeRoles are the chat activity roles the old member has.
 	removeRoles []snowflake.ID
 }
 
+// Only the points earned in this server are migrated. The Guild* fields are this server's points;
+// the others are added up across every linked server.
+
+// chatTotal is the new member's chat points in this server after the migration.
 func (p migrationPreview) chatTotal() int32 {
-	return p.toProfile.ChatActivity + p.fromProfile.ChatActivity
+	return p.toProfile.GuildChatActivity + p.fromProfile.GuildChatActivity
 }
 
+// voiceTotal is the new member's voice points in this server after the migration.
 func (p migrationPreview) voiceTotal() int32 {
-	return p.toProfile.VoiceActivity + p.fromProfile.VoiceActivity
+	return p.toProfile.GuildVoiceActivity + p.fromProfile.GuildVoiceActivity
+}
+
+// linkedChatTotal is the new member's chat points across every linked server after the migration,
+// which activity roles are earned with.
+func (p migrationPreview) linkedChatTotal() int32 {
+	return p.toLinkedPoints.Chat + p.fromProfile.GuildChatActivity
 }
 
 // preview works out what migrating from's profile to to would change, without changing anything.
@@ -244,7 +264,13 @@ func (c *migrateMemberProfileCommand) preview(ctx context.Context, client *bot.C
 		return p, err
 	}
 
-	earned, err := c.db.Members.GetActivityRoleInfo(ctx, guildID, database.ActivityTypeChat, p.chatTotal())
+	// the new member may have points in linked servers even without a profile in this one.
+	p.toLinkedPoints, err = c.db.Members.GetLinkedPoints(ctx, guildID, to.ID)
+	if err != nil {
+		return p, err
+	}
+
+	earned, err := c.db.Members.GetActivityRoleInfo(ctx, guildID, database.ActivityTypeChat, p.linkedChatTotal())
 	if err != nil {
 		return p, err
 	}
@@ -288,8 +314,8 @@ func (c *migrateMemberProfileCommand) previewCard(p migrationPreview) discord.Co
 			"### Points\n"+
 				"**Chat Activity:** `%d` transferred (`%d` → `%d`)\n"+
 				"**Voice Activity:** `%d` transferred (`%d` → `%d`)",
-			p.fromProfile.ChatActivity, p.toProfile.ChatActivity, p.chatTotal(),
-			p.fromProfile.VoiceActivity, p.toProfile.VoiceActivity, p.voiceTotal(),
+			p.fromProfile.GuildChatActivity, p.toProfile.GuildChatActivity, p.chatTotal(),
+			p.fromProfile.GuildVoiceActivity, p.toProfile.GuildVoiceActivity, p.voiceTotal(),
 		)),
 		discord.NewTextDisplay(fmt.Sprintf(
 			"### Roles\n**%s will receive:** %s\n**%s will lose:** %s",

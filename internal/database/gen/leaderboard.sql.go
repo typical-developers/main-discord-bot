@@ -145,36 +145,78 @@ func (q *Queries) GetActivityLeaderboardSize(ctx context.Context, db DBTX, arg G
 }
 
 const getAllTimeActivityLeaderboard = `-- name: GetAllTimeActivityLeaderboard :many
-SELECT
-    rankings.member_id,
-    rankings.rank,
-    rankings.points
-FROM (
+(
     SELECT
-        member_id,
+        guild_profiles.member_id,
         ROW_NUMBER() OVER (
             ORDER BY
                 CASE LOWER($1)::TEXT
-                    WHEN 'chat' THEN chat_activity
-                    WHEN 'voice' THEN voice_activity
+                    WHEN 'chat' THEN guild_profiles.chat_activity
+                    WHEN 'voice' THEN guild_profiles.voice_activity
                 END DESC,
                 CASE LOWER($1)::TEXT
-                    WHEN 'chat' THEN last_chat_activity_grant
-                    WHEN 'voice' THEN last_voice_activity_grant
+                    WHEN 'chat' THEN guild_profiles.last_chat_activity_grant
+                    WHEN 'voice' THEN guild_profiles.last_voice_activity_grant
                 END DESC
         ) AS rank,
         CAST (
             CASE LOWER($1)::TEXT
-                WHEN 'chat' THEN chat_activity
-                WHEN 'voice' THEN voice_activity
+                WHEN 'chat' THEN guild_profiles.chat_activity
+                WHEN 'voice' THEN guild_profiles.voice_activity
             END AS INT
         ) AS points
     FROM guild_profiles
     WHERE
         guild_profiles.guild_id = $2
-) AS rankings
-LIMIT $4
-OFFSET $3
+        AND NOT EXISTS (
+            SELECT 1
+            FROM guild_links AS link
+            WHERE link.guild_id = $2
+        )
+    LIMIT $4
+    OFFSET $3
+)
+UNION ALL
+(
+    SELECT
+        totals.member_id,
+        ROW_NUMBER() OVER (ORDER BY totals.points DESC, totals.last_grant DESC) AS rank,
+        CAST(totals.points AS INT) AS points
+    FROM (
+        SELECT
+            own.member_id,
+            SUM(
+                CASE LOWER($1)::TEXT
+                    WHEN 'chat' THEN linked.chat_activity
+                    WHEN 'voice' THEN linked.voice_activity
+                END
+            ) AS points,
+            MAX(
+                CASE LOWER($1)::TEXT
+                    WHEN 'chat' THEN linked.last_chat_activity_grant
+                    WHEN 'voice' THEN linked.last_voice_activity_grant
+                END
+            ) AS last_grant
+        FROM guild_profiles AS own
+        JOIN guild_links AS self ON self.guild_id = own.guild_id
+        JOIN guild_links AS others ON others.group_id = self.group_id
+        JOIN guild_profiles AS linked
+            ON linked.guild_id = others.guild_id
+            AND linked.member_id = own.member_id
+        WHERE
+            own.guild_id = $2
+            AND EXISTS (
+                SELECT 1
+                FROM guild_links AS link
+                WHERE link.guild_id = $2
+            )
+        GROUP BY own.member_id
+    ) AS totals
+    ORDER BY rank
+    LIMIT $4
+    OFFSET $3
+)
+ORDER BY rank
 `
 
 type GetAllTimeActivityLeaderboardParams struct {
@@ -190,6 +232,12 @@ type GetAllTimeActivityLeaderboardRow struct {
 	Points   int32
 }
 
+// Returns a page of the all time leaderboard. Only members with a profile in the guild are on it,
+// but their points are added up across every guild linked to it.
+//
+// Guilds that aren't linked take the first branch, which reads the guild's profiles in leaderboard
+// order straight from the activity indexes. Linked guilds have to add every member's points up
+// before they can be ranked, so they take the second. Only one branch returns rows.
 func (q *Queries) GetAllTimeActivityLeaderboard(ctx context.Context, db DBTX, arg GetAllTimeActivityLeaderboardParams) ([]GetAllTimeActivityLeaderboardRow, error) {
 	rows, err := db.Query(ctx, getAllTimeActivityLeaderboard,
 		arg.ActivityType,

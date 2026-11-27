@@ -237,6 +237,8 @@ func (p *profileCards) load(ctx context.Context, client *bot.Client, guildID sno
 		return profileCard{}, err
 	}
 
+	// the points, all time rank and activity roles are added up across every linked server.
+	// The daily, weekly and monthly ranks are only for this server.
 	card := profileCard{
 		DisplayName: member.EffectiveName(),
 		Username:    member.User.Username,

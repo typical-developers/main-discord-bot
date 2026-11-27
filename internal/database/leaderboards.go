@@ -42,6 +42,9 @@ type LeaderboardPage struct {
 // Requesting a page that doesn't exist returns the first page.
 //
 // Leaderboards other than all time are only as current as the last Refresh, which the workers run.
+//
+// Every leaderboard only has members with a profile in this guild. The all time leaderboard adds
+// their points up across every guild linked to this one; the others only count points earned here.
 func (l *leaderboards) GetPage(ctx context.Context, guildID snowflake.ID, activityType ActivityType, period TimePeriod, page, perPage int32) (LeaderboardPage, error) {
 	if !activityType.Valid() {
 		return LeaderboardPage{}, ErrInvalidActivityType
