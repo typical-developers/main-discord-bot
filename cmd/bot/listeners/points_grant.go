@@ -59,6 +59,13 @@ func (p *pointsGrant) guildMessageCreate(e *events.GuildMessageCreate) {
 		return
 	}
 
+	// members with any of the denied roles don't earn chat activity points.
+	if slices.ContainsFunc(message.Member.RoleIDs, func(roleID snowflake.ID) bool {
+		return slices.Contains(settings.DenyRoles, roleID)
+	}) {
+		return
+	}
+
 	grant, err := p.grant(ctx, e.GuildID, message.Author.ID)
 	if err != nil {
 		if errors.Is(err, database.ErrMemberOnGrantCooldown) || errors.Is(err, database.ErrActivityTrackingDisabled) {
