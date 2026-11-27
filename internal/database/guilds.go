@@ -25,22 +25,20 @@ type ActivitySettings struct {
 }
 
 // UpdateActivitySettingsOpts only updates the fields that are not nil.
+// An empty, non-nil DenyRoles clears the denied roles.
 type UpdateActivitySettingsOpts struct {
 	IsEnabled     *bool
 	GrantAmount   *int32
 	GrantCooldown *int32
+	DenyRoles     []snowflake.ID
 }
 
-// UpdateMessageEmbedSettingsOpts only applies the fields that are not nil.
-type UpdateMessageEmbedSettingsOpts struct {
-	IsEnabled *bool
-
-	AddDisabledChannel    *snowflake.ID
-	RemoveDisabledChannel *snowflake.ID
-	AddIgnoredChannel     *snowflake.ID
-	RemoveIgnoredChannel  *snowflake.ID
-	AddIgnoredRole        *snowflake.ID
-	RemoveIgnoredRole     *snowflake.ID
+// MessageEmbedSettings are all of a guild's message embed settings.
+type MessageEmbedSettings struct {
+	IsEnabled        bool
+	DisabledChannels []snowflake.ID
+	IgnoredChannels  []snowflake.ID
+	IgnoredRoles     []snowflake.ID
 }
 
 // Register registers a guild.
@@ -120,6 +118,7 @@ func (g *guilds) UpdateActivitySettings(ctx context.Context, guildID snowflake.I
 			IsEnabled:     opts.IsEnabled,
 			GrantAmount:   opts.GrantAmount,
 			GrantCooldown: opts.GrantCooldown,
+			DenyRoles:     opts.DenyRoles,
 		})
 	case ActivityTypeVoice:
 		affected, err = g.db.queries.UpdateGuildVoiceActivitySettings(ctx, g.db.dbtx, gen.UpdateGuildVoiceActivitySettingsParams{
@@ -127,6 +126,7 @@ func (g *guilds) UpdateActivitySettings(ctx context.Context, guildID snowflake.I
 			IsEnabled:     opts.IsEnabled,
 			GrantAmount:   opts.GrantAmount,
 			GrantCooldown: opts.GrantCooldown,
+			DenyRoles:     opts.DenyRoles,
 		})
 	default:
 		return ErrInvalidActivityType
@@ -179,6 +179,24 @@ func (g *guilds) CreateActivityRole(ctx context.Context, guildID snowflake.ID, a
 	return nil
 }
 
+// UpdateActivityRole changes how many points are required to be given an activity role.
+func (g *guilds) UpdateActivityRole(ctx context.Context, guildID, roleID snowflake.ID, requiredPoints int32) error {
+	affected, err := g.db.queries.UpdateActivityRole(ctx, g.db.dbtx, gen.UpdateActivityRoleParams{
+		GuildID:        guildID,
+		RoleID:         roleID,
+		RequiredPoints: requiredPoints,
+	})
+	if err != nil {
+		return err
+	}
+
+	if affected == 0 {
+		return ErrActivityRoleNotFound
+	}
+
+	return nil
+}
+
 func (g *guilds) DeleteActivityRole(ctx context.Context, guildID, roleID snowflake.ID) error {
 	affected, err := g.db.queries.DeleteActivityRole(ctx, g.db.dbtx, gen.DeleteActivityRoleParams{
 		GuildID: guildID,
@@ -208,46 +226,31 @@ func (g *guilds) GetMessageEmbedSettings(ctx context.Context, guildID snowflake.
 	return settings, nil
 }
 
-// UpdateMessageEmbedSettings applies all of the changes in a single transaction.
-// IDs are added before they are removed, so passing the same ID to both leaves it removed.
-func (g *guilds) UpdateMessageEmbedSettings(ctx context.Context, guildID snowflake.ID, opts UpdateMessageEmbedSettingsOpts) error {
-	return g.db.WithTx(ctx, func(ctx context.Context, txDb *Database) error {
-		// ensures ErrGuildNotFound is returned even when there is nothing to change.
-		if _, err := txDb.Guilds.GetMessageEmbedSettings(ctx, guildID); err != nil {
-			return err
-		}
-
-		if opts.IsEnabled != nil {
-			if _, err := txDb.queries.UpdateGuildMessageEmbedSettings(ctx, txDb.dbtx, gen.UpdateGuildMessageEmbedSettingsParams{
-				GuildID:   guildID,
-				IsEnabled: opts.IsEnabled,
-			}); err != nil {
-				return err
-			}
-		}
-
-		if opts.AddDisabledChannel != nil || opts.AddIgnoredChannel != nil || opts.AddIgnoredRole != nil {
-			if _, err := txDb.queries.AppendGuildMessageEmbedSettingsArrays(ctx, txDb.dbtx, gen.AppendGuildMessageEmbedSettingsArraysParams{
-				GuildID:           guildID,
-				DisabledChannelID: opts.AddDisabledChannel,
-				IgnoredChannelID:  opts.AddIgnoredChannel,
-				IgnoredRoleID:     opts.AddIgnoredRole,
-			}); err != nil {
-				return err
-			}
-		}
-
-		if opts.RemoveDisabledChannel != nil || opts.RemoveIgnoredChannel != nil || opts.RemoveIgnoredRole != nil {
-			if _, err := txDb.queries.RemoveGuildMessageEmbedSettingsArrays(ctx, txDb.dbtx, gen.RemoveGuildMessageEmbedSettingsArraysParams{
-				GuildID:           guildID,
-				DisabledChannelID: opts.RemoveDisabledChannel,
-				IgnoredChannelID:  opts.RemoveIgnoredChannel,
-				IgnoredRoleID:     opts.RemoveIgnoredRole,
-			}); err != nil {
-				return err
-			}
-		}
-
-		return nil
+// SetMessageEmbedSettings replaces all of the guild's message embed settings.
+func (g *guilds) SetMessageEmbedSettings(ctx context.Context, guildID snowflake.ID, settings MessageEmbedSettings) error {
+	affected, err := g.db.queries.SetGuildMessageEmbedSettings(ctx, g.db.dbtx, gen.SetGuildMessageEmbedSettingsParams{
+		GuildID:          guildID,
+		IsEnabled:        settings.IsEnabled,
+		DisabledChannels: nonNilIDs(settings.DisabledChannels),
+		IgnoredChannels:  nonNilIDs(settings.IgnoredChannels),
+		IgnoredRoles:     nonNilIDs(settings.IgnoredRoles),
 	})
+	if err != nil {
+		return err
+	}
+
+	if affected == 0 {
+		return ErrGuildNotFound
+	}
+
+	return nil
+}
+
+// nonNilIDs returns an empty slice for nil, since a nil slice is sent to the database as NULL.
+func nonNilIDs(ids []snowflake.ID) []snowflake.ID {
+	if ids == nil {
+		return []snowflake.ID{}
+	}
+
+	return ids
 }

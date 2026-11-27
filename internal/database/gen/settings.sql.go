@@ -11,61 +11,6 @@ import (
 	snowflake "github.com/disgoorg/snowflake/v2"
 )
 
-const appendGuildMessageEmbedSettingsArrays = `-- name: AppendGuildMessageEmbedSettingsArrays :execrows
-UPDATE guild_message_embeds_settings SET
-    disabled_channels = CASE
-        WHEN $1::SNOWFLAKE IS NOT NULL THEN
-            ARRAY(
-                SELECT DISTINCT v
-                FROM UNNEST(ARRAY_APPEND(guild_message_embeds_settings.disabled_channels, $1::SNOWFLAKE)) AS v
-            )
-        ELSE
-            guild_message_embeds_settings.disabled_channels
-    END,
-
-    ignored_channels = CASE
-        WHEN $2::SNOWFLAKE IS NOT NULL THEN
-            ARRAY(
-                SELECT DISTINCT v
-                FROM UNNEST(ARRAY_APPEND(guild_message_embeds_settings.ignored_channels, $2::SNOWFLAKE)) AS v
-            )
-        ELSE
-            guild_message_embeds_settings.ignored_channels
-    END,
-
-    ignored_roles = CASE
-        WHEN $3::SNOWFLAKE IS NOT NULL THEN
-            ARRAY(
-                SELECT DISTINCT v
-                FROM UNNEST(ARRAY_APPEND(guild_message_embeds_settings.ignored_roles, $3::SNOWFLAKE)) AS v
-            )
-        ELSE
-            guild_message_embeds_settings.ignored_roles
-    END
-WHERE
-    guild_id = $4
-`
-
-type AppendGuildMessageEmbedSettingsArraysParams struct {
-	DisabledChannelID *snowflake.ID
-	IgnoredChannelID  *snowflake.ID
-	IgnoredRoleID     *snowflake.ID
-	GuildID           snowflake.ID
-}
-
-func (q *Queries) AppendGuildMessageEmbedSettingsArrays(ctx context.Context, db DBTX, arg AppendGuildMessageEmbedSettingsArraysParams) (int64, error) {
-	result, err := db.Exec(ctx, appendGuildMessageEmbedSettingsArrays,
-		arg.DisabledChannelID,
-		arg.IgnoredChannelID,
-		arg.IgnoredRoleID,
-		arg.GuildID,
-	)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected(), nil
-}
-
 const deleteActivityRole = `-- name: DeleteActivityRole :execrows
 DELETE FROM guild_activity_roles
 WHERE
@@ -255,46 +200,54 @@ func (q *Queries) RegisterGuild(ctx context.Context, db DBTX, guildID snowflake.
 	return i, err
 }
 
-const removeGuildMessageEmbedSettingsArrays = `-- name: RemoveGuildMessageEmbedSettingsArrays :execrows
+const setGuildMessageEmbedSettings = `-- name: SetGuildMessageEmbedSettings :execrows
 UPDATE guild_message_embeds_settings SET
-    disabled_channels = CASE
-        WHEN $1::SNOWFLAKE IS NOT NULL THEN
-            ARRAY_REMOVE(guild_message_embeds_settings.disabled_channels, $1::SNOWFLAKE)
-        ELSE
-            guild_message_embeds_settings.disabled_channels
-    END,
-
-    ignored_channels = CASE
-        WHEN $2::SNOWFLAKE IS NOT NULL THEN
-            ARRAY_REMOVE(guild_message_embeds_settings.ignored_channels, $2::SNOWFLAKE)
-        ELSE
-            guild_message_embeds_settings.ignored_channels
-    END,
-
-    ignored_roles = CASE
-        WHEN $3::SNOWFLAKE IS NOT NULL THEN
-            ARRAY_REMOVE(guild_message_embeds_settings.ignored_roles, $3::SNOWFLAKE)
-        ELSE
-            guild_message_embeds_settings.ignored_roles
-    END
+    is_enabled = $1,
+    disabled_channels = $2::SNOWFLAKE[],
+    ignored_channels = $3::SNOWFLAKE[],
+    ignored_roles = $4::SNOWFLAKE[]
 WHERE
-    guild_id = $4
+    guild_id = $5
 `
 
-type RemoveGuildMessageEmbedSettingsArraysParams struct {
-	DisabledChannelID *snowflake.ID
-	IgnoredChannelID  *snowflake.ID
-	IgnoredRoleID     *snowflake.ID
-	GuildID           snowflake.ID
+type SetGuildMessageEmbedSettingsParams struct {
+	IsEnabled        bool
+	DisabledChannels []snowflake.ID
+	IgnoredChannels  []snowflake.ID
+	IgnoredRoles     []snowflake.ID
+	GuildID          snowflake.ID
 }
 
-func (q *Queries) RemoveGuildMessageEmbedSettingsArrays(ctx context.Context, db DBTX, arg RemoveGuildMessageEmbedSettingsArraysParams) (int64, error) {
-	result, err := db.Exec(ctx, removeGuildMessageEmbedSettingsArrays,
-		arg.DisabledChannelID,
-		arg.IgnoredChannelID,
-		arg.IgnoredRoleID,
+func (q *Queries) SetGuildMessageEmbedSettings(ctx context.Context, db DBTX, arg SetGuildMessageEmbedSettingsParams) (int64, error) {
+	result, err := db.Exec(ctx, setGuildMessageEmbedSettings,
+		arg.IsEnabled,
+		arg.DisabledChannels,
+		arg.IgnoredChannels,
+		arg.IgnoredRoles,
 		arg.GuildID,
 	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const updateActivityRole = `-- name: UpdateActivityRole :execrows
+UPDATE guild_activity_roles SET
+    required_points = $1::INT
+WHERE
+    guild_id = $2
+    AND role_id = $3
+`
+
+type UpdateActivityRoleParams struct {
+	RequiredPoints int32
+	GuildID        snowflake.ID
+	RoleID         snowflake.ID
+}
+
+func (q *Queries) UpdateActivityRole(ctx context.Context, db DBTX, arg UpdateActivityRoleParams) (int64, error) {
+	result, err := db.Exec(ctx, updateActivityRole, arg.RequiredPoints, arg.GuildID, arg.RoleID)
 	if err != nil {
 		return 0, err
 	}
@@ -305,15 +258,17 @@ const updateGuildChatActivitySettings = `-- name: UpdateGuildChatActivitySetting
 UPDATE guild_chat_activity_settings SET
     is_enabled = COALESCE($1, guild_chat_activity_settings.is_enabled),
     grant_amount = COALESCE($2, guild_chat_activity_settings.grant_amount),
-    grant_cooldown = COALESCE($3, guild_chat_activity_settings.grant_cooldown)
+    grant_cooldown = COALESCE($3, guild_chat_activity_settings.grant_cooldown),
+    deny_roles = COALESCE($4::SNOWFLAKE[], guild_chat_activity_settings.deny_roles)
 WHERE
-    guild_id = $4
+    guild_id = $5
 `
 
 type UpdateGuildChatActivitySettingsParams struct {
 	IsEnabled     *bool
 	GrantAmount   *int32
 	GrantCooldown *int32
+	DenyRoles     []snowflake.ID
 	GuildID       snowflake.ID
 }
 
@@ -322,28 +277,9 @@ func (q *Queries) UpdateGuildChatActivitySettings(ctx context.Context, db DBTX, 
 		arg.IsEnabled,
 		arg.GrantAmount,
 		arg.GrantCooldown,
+		arg.DenyRoles,
 		arg.GuildID,
 	)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected(), nil
-}
-
-const updateGuildMessageEmbedSettings = `-- name: UpdateGuildMessageEmbedSettings :execrows
-UPDATE guild_message_embeds_settings SET
-    is_enabled = COALESCE($1, guild_message_embeds_settings.is_enabled)
-WHERE
-    guild_id = $2
-`
-
-type UpdateGuildMessageEmbedSettingsParams struct {
-	IsEnabled *bool
-	GuildID   snowflake.ID
-}
-
-func (q *Queries) UpdateGuildMessageEmbedSettings(ctx context.Context, db DBTX, arg UpdateGuildMessageEmbedSettingsParams) (int64, error) {
-	result, err := db.Exec(ctx, updateGuildMessageEmbedSettings, arg.IsEnabled, arg.GuildID)
 	if err != nil {
 		return 0, err
 	}
@@ -354,15 +290,17 @@ const updateGuildVoiceActivitySettings = `-- name: UpdateGuildVoiceActivitySetti
 UPDATE guild_voice_activity_settings SET
     is_enabled = COALESCE($1, guild_voice_activity_settings.is_enabled),
     grant_amount = COALESCE($2, guild_voice_activity_settings.grant_amount),
-    grant_cooldown = COALESCE($3, guild_voice_activity_settings.grant_cooldown)
+    grant_cooldown = COALESCE($3, guild_voice_activity_settings.grant_cooldown),
+    deny_roles = COALESCE($4::SNOWFLAKE[], guild_voice_activity_settings.deny_roles)
 WHERE
-    guild_id = $4
+    guild_id = $5
 `
 
 type UpdateGuildVoiceActivitySettingsParams struct {
 	IsEnabled     *bool
 	GrantAmount   *int32
 	GrantCooldown *int32
+	DenyRoles     []snowflake.ID
 	GuildID       snowflake.ID
 }
 
@@ -371,6 +309,7 @@ func (q *Queries) UpdateGuildVoiceActivitySettings(ctx context.Context, db DBTX,
 		arg.IsEnabled,
 		arg.GrantAmount,
 		arg.GrantCooldown,
+		arg.DenyRoles,
 		arg.GuildID,
 	)
 	if err != nil {

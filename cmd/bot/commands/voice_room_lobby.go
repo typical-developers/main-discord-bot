@@ -13,6 +13,7 @@ import (
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/typical-developers/main-discord-bot/cmd/bot/handlers"
 	"github.com/typical-developers/main-discord-bot/internal/database"
+	"github.com/typical-developers/main-discord-bot/internal/database/gen"
 	"github.com/typical-developers/main-discord-bot/internal/disgox"
 )
 
@@ -22,6 +23,16 @@ const (
 
 	// Discord shows at most 25 autocomplete choices.
 	maxAutocompleteChoices = 25
+
+	lobbyAddID    = "/voice-room-lobby/add/%s"
+	lobbyUpdateID = "/voice-room-lobby/update/%s"
+
+	lobbyUserLimitInput   = "user_limit"
+	lobbyPermissionsInput = "permissions"
+
+	lobbyCanRename      = "rename"
+	lobbyCanLock        = "lock"
+	lobbyCanAdjustLimit = "adjust_limit"
 )
 
 type voiceRoomLobbyCommand struct {
@@ -40,26 +51,6 @@ func (c *voiceRoomLobbyCommand) Create() discord.ApplicationCommandCreate {
 		Autocomplete: true,
 	}
 
-	settingsOptions := []discord.ApplicationCommandOption{
-		channelOption,
-		discord.ApplicationCommandOptionInt{
-			Name:        "user-limit",
-			Description: "How many users can join a created voice room. 0 means no limit.",
-		},
-		discord.ApplicationCommandOptionBool{
-			Name:        "can-rename",
-			Description: "Whether or not created voice rooms can be renamed.",
-		},
-		discord.ApplicationCommandOptionBool{
-			Name:        "can-lock",
-			Description: "Whether or not created voice rooms can be locked.",
-		},
-		discord.ApplicationCommandOptionBool{
-			Name:        "can-adjust-limit",
-			Description: "Whether or not created voice rooms can have their user limit adjusted.",
-		},
-	}
-
 	return discord.SlashCommandCreate{
 		Name:                     "voice-room-lobby",
 		Description:              "Manage voice room lobby settings.",
@@ -69,12 +60,12 @@ func (c *voiceRoomLobbyCommand) Create() discord.ApplicationCommandCreate {
 			discord.ApplicationCommandOptionSubCommand{
 				Name:        "add",
 				Description: "Create a new lobby for creating voice rooms.",
-				Options:     settingsOptions,
+				Options:     []discord.ApplicationCommandOption{channelOption},
 			},
 			discord.ApplicationCommandOptionSubCommand{
 				Name:        "update",
 				Description: "Update a lobby for creating voice rooms.",
-				Options:     settingsOptions,
+				Options:     []discord.ApplicationCommandOption{channelOption},
 			},
 			discord.ApplicationCommandOptionSubCommand{
 				Name:        "remove",
@@ -95,30 +86,69 @@ func (c *voiceRoomLobbyCommand) Register(r handler.Router) {
 	r.Autocomplete("/add", c.autocompleteChannels)
 	r.Autocomplete("/update", c.autocompleteLobbies)
 	r.Autocomplete("/remove", c.autocompleteLobbies)
+
+	r.Group(func(r handler.Router) {
+		// Discord only gates the command itself, so the modals are checked here too.
+		r.Use(handlers.RequirePermissions(discord.PermissionAdministrator))
+		r.Modal("/add/{channel}", c.addSubmit)
+		r.Modal("/update/{channel}", c.updateSubmit)
+	})
 }
 
-// lobbySettings reads the optional lobby settings. Options that weren't given are nil.
-func lobbySettings(data discord.SlashCommandInteractionData) (database.VoiceRoomLobbySettings, error) {
-	var settings database.VoiceRoomLobbySettings
-
-	if limit, ok := data.OptInt("user-limit"); ok {
-		if limit < 0 || limit > maxVoiceUserLimit {
-			return settings, disgox.UserErrorf("The user limit must be between 0 and %d.", maxVoiceUserLimit)
-		}
-		settings.UserLimit = new(int32(limit))
+// lobbySettingsModal builds the lobby settings modal, filled in with the given settings.
+func lobbySettingsModal(customID, title string, lobby gen.GuildVoiceRoomsSetting) discord.ModalCreate {
+	permission := func(value, label string, allowed bool) discord.CheckboxGroupOption {
+		return discord.NewCheckboxGroupOption(value, label).WithDefault(allowed)
 	}
 
-	if canRename, ok := data.OptBool("can-rename"); ok {
-		settings.CanRename = &canRename
-	}
-	if canLock, ok := data.OptBool("can-lock"); ok {
-		settings.CanLock = &canLock
-	}
-	if canAdjustLimit, ok := data.OptBool("can-adjust-limit"); ok {
-		settings.CanAdjustLimit = &canAdjustLimit
+	return discord.NewModalCreate(customID, title).
+		AddComponents(
+			discord.NewLabel("User Limit",
+				discord.NewShortTextInput(lobbyUserLimitInput).
+					WithValue(fmt.Sprint(lobby.UserLimit)).
+					WithPlaceholder(fmt.Sprintf("0 to %d", maxVoiceUserLimit)).
+					WithMaxLength(2).
+					WithRequired(true),
+			).WithDescription("How many users can join a created voice room. 0 means no limit."),
+			discord.NewLabel("Room Owners Can",
+				discord.CheckboxGroupComponent{}.
+					WithCustomID(lobbyPermissionsInput).
+					WithOptions(
+						permission(lobbyCanRename, "Rename the room", lobby.CanRename),
+						permission(lobbyCanLock, "Lock the room", lobby.CanLock),
+						permission(lobbyCanAdjustLimit, "Adjust the user limit", lobby.CanAdjustLimit),
+					).
+					WithMinValues(0).
+					WithRequired(false),
+			).WithDescription("What the owner of a created voice room is allowed to change."),
+		)
+}
+
+// lobbySettings reads the settings modal. Every field is set, since the modal always has all of them.
+func lobbySettings(data discord.ModalSubmitInteractionData) (database.VoiceRoomLobbySettings, error) {
+	limit, err := modalInt(data, lobbyUserLimitInput, "user limit", 0, maxVoiceUserLimit)
+	if err != nil {
+		return database.VoiceRoomLobbySettings{}, err
 	}
 
-	return settings, nil
+	permissions := modalCheckboxGroup(data, lobbyPermissionsInput)
+
+	return database.VoiceRoomLobbySettings{
+		UserLimit:      new(int32(limit)),
+		CanRename:      new(slices.Contains(permissions, lobbyCanRename)),
+		CanLock:        new(slices.Contains(permissions, lobbyCanLock)),
+		CanAdjustLimit: new(slices.Contains(permissions, lobbyCanAdjustLimit)),
+	}, nil
+}
+
+// modalChannelID returns the lobby's channel ID from the modal's custom ID.
+func modalChannelID(e *handler.ModalEvent) (snowflake.ID, error) {
+	channelID, err := snowflake.Parse(e.Vars["channel"])
+	if err != nil {
+		return 0, disgox.UserErrorf("The channel you specified does not exist.")
+	}
+
+	return channelID, nil
 }
 
 // voiceChannelOption returns the voice channel picked in the "channel" option.
@@ -142,13 +172,37 @@ func voiceChannelOption(data discord.SlashCommandInteractionData, e *handler.Com
 	return channel, nil
 }
 
+// add opens the settings modal for a new lobby. The lobby is created when the modal is submitted.
 func (c *voiceRoomLobbyCommand) add(data discord.SlashCommandInteractionData, e *handler.CommandEvent) error {
 	channel, err := voiceChannelOption(data, e)
 	if err != nil {
 		return err
 	}
 
-	settings, err := lobbySettings(data)
+	// checked before opening the modal, so the settings aren't filled in for nothing.
+	if _, err := c.db.VoiceRooms.GetLobby(e.Ctx, *e.GuildID(), channel.ID()); err == nil {
+		return disgox.UserErrorf("This channel is already a voice room lobby.")
+	} else if !errors.Is(err, database.ErrVoiceRoomLobbyNotFound) {
+		return err
+	}
+
+	if _, err := c.db.VoiceRooms.GetRoom(e.Ctx, *e.GuildID(), channel.ID()); err == nil {
+		return disgox.UserErrorf("This channel is an active voice room and cannot be a voice room lobby.")
+	} else if !errors.Is(err, database.ErrVoiceRoomNotFound) {
+		return err
+	}
+
+	// the zero value matches the defaults of a new lobby: no user limit and nothing allowed.
+	return e.Modal(lobbySettingsModal(fmt.Sprintf(lobbyAddID, channel.ID()), "New Voice Room Lobby", gen.GuildVoiceRoomsSetting{}))
+}
+
+func (c *voiceRoomLobbyCommand) addSubmit(e *handler.ModalEvent) error {
+	channelID, err := modalChannelID(e)
+	if err != nil {
+		return err
+	}
+
+	settings, err := lobbySettings(e.Data)
 	if err != nil {
 		return err
 	}
@@ -157,7 +211,7 @@ func (c *voiceRoomLobbyCommand) add(data discord.SlashCommandInteractionData, e 
 		return err
 	}
 
-	if _, err := c.db.VoiceRooms.CreateLobby(e.Ctx, *e.GuildID(), channel.ID(), settings); err != nil {
+	if _, err := c.db.VoiceRooms.CreateLobby(e.Ctx, *e.GuildID(), channelID, settings); err != nil {
 		switch {
 		case errors.Is(err, database.ErrVoiceRoomLobbyExists):
 			return disgox.WrapUserError(err, "This channel is already a voice room lobby.")
@@ -168,17 +222,36 @@ func (c *voiceRoomLobbyCommand) add(data discord.SlashCommandInteractionData, e 
 		return err
 	}
 
-	_, err = e.CreateFollowupMessage(discord.MessageCreate{Content: fmt.Sprintf("<#%s> is now a voice room lobby.", channel.ID())})
+	_, err = e.CreateFollowupMessage(discord.MessageCreate{Content: fmt.Sprintf("<#%s> is now a voice room lobby.", channelID)})
 	return err
 }
 
+// update opens the settings modal, filled in with the lobby's current settings.
 func (c *voiceRoomLobbyCommand) update(data discord.SlashCommandInteractionData, e *handler.CommandEvent) error {
 	channel, err := voiceChannelOption(data, e)
 	if err != nil {
 		return err
 	}
 
-	settings, err := lobbySettings(data)
+	lobby, err := c.db.VoiceRooms.GetLobby(e.Ctx, *e.GuildID(), channel.ID())
+	if err != nil {
+		if errors.Is(err, database.ErrVoiceRoomLobbyNotFound) {
+			return disgox.WrapUserError(err, "This channel is not a voice room lobby.")
+		}
+
+		return err
+	}
+
+	return e.Modal(lobbySettingsModal(fmt.Sprintf(lobbyUpdateID, channel.ID()), "Update Voice Room Lobby", lobby))
+}
+
+func (c *voiceRoomLobbyCommand) updateSubmit(e *handler.ModalEvent) error {
+	channelID, err := modalChannelID(e)
+	if err != nil {
+		return err
+	}
+
+	settings, err := lobbySettings(e.Data)
 	if err != nil {
 		return err
 	}
@@ -187,7 +260,7 @@ func (c *voiceRoomLobbyCommand) update(data discord.SlashCommandInteractionData,
 		return err
 	}
 
-	if _, err := c.db.VoiceRooms.UpdateLobby(e.Ctx, *e.GuildID(), channel.ID(), settings); err != nil {
+	if _, err := c.db.VoiceRooms.UpdateLobby(e.Ctx, *e.GuildID(), channelID, settings); err != nil {
 		if errors.Is(err, database.ErrVoiceRoomLobbyNotFound) {
 			return disgox.WrapUserError(err, "This channel is not a voice room lobby.")
 		}
@@ -195,7 +268,7 @@ func (c *voiceRoomLobbyCommand) update(data discord.SlashCommandInteractionData,
 		return err
 	}
 
-	_, err = e.CreateFollowupMessage(discord.MessageCreate{Content: "The voice room lobby has been updated."})
+	_, err = e.CreateFollowupMessage(discord.MessageCreate{Content: fmt.Sprintf("The voice room lobby <#%s> has been updated.", channelID)})
 	return err
 }
 
